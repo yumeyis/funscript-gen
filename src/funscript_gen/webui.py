@@ -416,8 +416,8 @@ _last_file: Path = DEFAULT_LAST_FILE
 
 def load_last_form() -> dict:
     try:
-        data = json.loads(_last_file.read_text())
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        data = json.loads(_last_file.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError, UnicodeDecodeError):
         return {}
     return data if isinstance(data, dict) else {}
 
@@ -430,7 +430,7 @@ def remember_settings_tab(values: dict) -> None:
 
 def save_last_form(values: dict) -> None:
     tmp = _last_file.with_name(_last_file.name + ".tmp")
-    tmp.write_text(json.dumps(values, ensure_ascii=False, indent=1))
+    tmp.write_text(json.dumps(values, ensure_ascii=False, indent=1), encoding="utf-8")
     os.replace(tmp, _last_file)
 
 

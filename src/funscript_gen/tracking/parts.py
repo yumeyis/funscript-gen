@@ -169,7 +169,7 @@ def cached_detect_span(detector, video: str | Path, start_ms: float, end_ms: flo
     path = _cache_path(video, start_ms, end_ms, fps, conf, getattr(detector, "device", None))
     if path is not None and path.exists():
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(path.read_text(encoding="utf-8"))
             boxes = [[(tuple(b), label, c) for b, label, c in frame] for frame in data["boxes"]]
             return data["times"], boxes, tuple(data["size"])
         except (OSError, ValueError, KeyError, TypeError):
@@ -186,7 +186,7 @@ def cached_detect_span(detector, video: str | Path, start_ms: float, end_ms: flo
     if path is not None and not (stop is not None and stop.is_set()):
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-        tmp.write_text(json.dumps({"times": times, "boxes": boxes, "size": size}))
+        tmp.write_text(json.dumps({"times": times, "boxes": boxes, "size": size}), encoding="utf-8")
         os.replace(tmp, path)
     return times, boxes, size
 

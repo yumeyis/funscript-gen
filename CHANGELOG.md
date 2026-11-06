@@ -7,6 +7,11 @@
 - CLI、Web UI、Windows 免安裝版（圖形介面與指令）、Docker；繁體中文與英文介面。
 - 授權：PolyForm Noncommercial 1.0.0（禁止商業使用）。
 
+## 2026-11-06 — 文字檔一律以 UTF-8 讀寫（commit: `Open text files as UTF-8 on every platform`）
+- 目的：GitHub Actions 的英文 Windows（cp1252）上 2 個測試失敗：沒指定編碼的讀寫用系統字碼頁，寫不出中文（`.webui-last.json`、驗證的記錄），`.funscript` 的中文備註也會受影響；免安裝版以 `-X utf8` 執行所以沒遇到。
+- 修改：`src/` 中 19 處 `read_text`／`write_text`／`open` 加 `encoding="utf-8"`（讀 `.funscript` 用 `utf-8-sig`，接受 BOM）；`validate` 的子程序設 `PYTHONUTF8=1`；新增 `tests/test_encoding.py`（以 AST 檢查沒有遺漏）。
+- 驗證：本機 `uv run pytest` 319 passed；GitHub Actions 的 Windows 結果見 PLAN。
+
 ## 2026-11-06 — 第一個公開版本 v1.0.0（commit: `Release v1.0.0`）
 - 目的：在 GitHub 公開發布第一版，訂出版本編碼原則。
 - 修改：版本號改為 1.0.0，只寫在 `__init__.py`（`pyproject.toml` 改用 hatch 動態讀取）；`pyproject.toml` 加 `[project.urls]`；README 中英文版的下載連結指向 Releases；DEVELOPMENT 新增「版本與發布」（SemVer、公開介面、發布步驟），CONTRIBUTING 加版本一節；CHANGELOG 加版本標題；`scripts/check_history.py` 可以只檢查指定的分支與標籤。

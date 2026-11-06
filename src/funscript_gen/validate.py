@@ -195,7 +195,7 @@ def score(reference: Path, output: Path, debug: Path | None = None, ignore_low_f
     """Scores of `output` against the hand-made `reference`. `f1` skips the stretches in `ignore_spans` when
     `ignore_low_flow` (needs the debug data); `f1_noign` is the same without skipping, `f1_raw` the all-points measure until 2026-11-05."""
     ref, pred = Funscript.load(reference), Funscript.load(output)
-    scenes_raw = json.loads(debug.read_text())["scenes"] if debug is not None and debug.exists() else None
+    scenes_raw = json.loads(debug.read_text(encoding="utf-8"))["scenes"] if debug is not None and debug.exists() else None
     spans = ignore_spans(scenes_raw) if scenes_raw is not None and ignore_low_flow else []
     if spans and not len(_outside_points(ref, spans)):  # nothing left to judge: score the whole clip
         spans = []
@@ -278,14 +278,14 @@ class Run:
 
 def _read_json(path: Path) -> dict | None:
     try:
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return None
 
 
 def _write_json(path: Path, data: dict) -> None:
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1))
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
     os.replace(tmp, path)
 
 
@@ -307,7 +307,7 @@ def replay_one(clip: Clip, args: list[str], out: Path, source: Path) -> None:
         raise ValueError(f"no analysis of {clip.name} in {source} fits these settings")
     result = render(analysis, build(for_analysis(analysis.key, given, preset)))
     result.funscript.save(out)
-    out.with_suffix(".debug.json").write_text(json.dumps(debug_data(result)))
+    out.with_suffix(".debug.json").write_text(json.dumps(debug_data(result)), encoding="utf-8")
 
 
 def run_validation(
@@ -344,7 +344,8 @@ def run_validation(
     # Long clips first, so the last jobs to finish are short ones.
     order = sorted(todo_clips, key=lambda c: _duration_s(c.video), reverse=True)
     pending = [(c, cfg) for c in order for cfg in configs if not (resume and run.done(cfg, c.name))]
-    env = dict(os.environ, PYTHONPATH=os.pathsep.join(filter(None, [str(code_dir.resolve()), os.environ.get("PYTHONPATH")])))
+    # PYTHONUTF8: the log is UTF-8 whatever the console code page is (cp1252 cannot encode the notes).
+    env = dict(os.environ, PYTHONUTF8="1", PYTHONPATH=os.pathsep.join(filter(None, [str(code_dir.resolve()), os.environ.get("PYTHONPATH")])))
     counter = {"n": 0}
 
     def one(job: tuple[Clip, str]) -> None:
@@ -363,7 +364,7 @@ def run_validation(
             except Exception as e:  # noqa: BLE001 - recorded, the other jobs go on
                 failed = f"replay failed: {e}"
         else:
-            with open(out.with_suffix(".log"), "w") as log:
+            with open(out.with_suffix(".log"), "w", encoding="utf-8") as log:
                 proc = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, env=env)
             if proc.returncode != 0:
                 failed = f"generate exited with {proc.returncode}, see {out.with_suffix('.log')}"

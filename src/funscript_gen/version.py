@@ -44,7 +44,7 @@ def git_state(package_dir: Path = PACKAGE_DIR) -> dict | None:
 
 def build_info(package_dir: Path = PACKAGE_DIR) -> dict:
     try:
-        info = json.loads((package_dir / BUILD_INFO).read_text())
+        info = json.loads((package_dir / BUILD_INFO).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
     return {k: info[k] for k in ("commit", "dirty") if k in info} if isinstance(info, dict) else {}

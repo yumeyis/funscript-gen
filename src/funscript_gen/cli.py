@@ -576,7 +576,7 @@ def _write_debug(output: Path, result: PipelineResult) -> None:
     from funscript_gen.report import debug_data, plot_result
 
     path = output.with_suffix(".debug.json")
-    path.write_text(json.dumps(debug_data(result)))
+    path.write_text(json.dumps(debug_data(result)), encoding="utf-8")
     console.print(f"debug data: {path}")
     fig = plot_result(result)
     png = output.with_suffix(".debug.png")

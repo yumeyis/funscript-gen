@@ -30,10 +30,10 @@ class ResponseCache:
         if not self.enabled:
             return None
         path = self.directory / f"{key}.json"
-        return json.loads(path.read_text()) if path.exists() else None
+        return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
     def put(self, key: str, value: dict) -> None:
         if not self.enabled:
             return
         self.directory.mkdir(parents=True, exist_ok=True)
-        (self.directory / f"{key}.json").write_text(json.dumps(value, ensure_ascii=False))
+        (self.directory / f"{key}.json").write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")

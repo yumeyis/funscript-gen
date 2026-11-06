@@ -39,11 +39,11 @@ class Funscript:
         }
 
     def save(self, path: str | Path) -> None:
-        Path(path).write_text(json.dumps(self.to_dict(), ensure_ascii=False, separators=(",", ":")))
+        Path(path).write_text(json.dumps(self.to_dict(), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
     @classmethod
     def load(cls, path: str | Path) -> Funscript:
-        data = json.loads(Path(path).read_text())
+        data = json.loads(Path(path).read_text(encoding="utf-8-sig"))  # other tools may add a BOM
         actions = [Action(int(a["at"]), int(a["pos"])) for a in data.get("actions", [])]
         return cls(
             actions=actions,

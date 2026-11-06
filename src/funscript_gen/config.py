@@ -47,7 +47,7 @@ BACKENDS = ("openai", "ollama")
 def save_env(settings: Settings, path: str | Path = ENV_FILE) -> None:
     """Write the AI settings into .env, keeping every other line (comments, unrelated variables)."""
     path = Path(path)
-    lines = path.read_text().splitlines() if path.exists() else []
+    lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
     pending = {var: str(getattr(settings, field)) for field, var in ENV_KEYS.items()}
     out = []
     for line in lines:
@@ -57,7 +57,7 @@ def save_env(settings: Settings, path: str | Path = ENV_FILE) -> None:
         else:
             out.append(line)
     out += [f"{var}={value}" for var, value in pending.items()]
-    path.write_text("\n".join(out) + "\n")
+    path.write_text("\n".join(out) + "\n", encoding="utf-8")
     path.chmod(0o600)  # holds the API key
 
 

@@ -68,14 +68,14 @@ class OutputStore:
 
     def _settings(self) -> dict:
         try:
-            data = json.loads(self.config.read_text())
+            data = json.loads(self.config.read_text(encoding="utf-8"))
         except (FileNotFoundError, json.JSONDecodeError, OSError, UnicodeDecodeError):
             return {}
         return data if isinstance(data, dict) else {}
 
     def _update(self, **values) -> None:
         tmp = self.config.with_name(self.config.name + ".tmp")
-        tmp.write_text(json.dumps(self._settings() | values))
+        tmp.write_text(json.dumps(self._settings() | values), encoding="utf-8")
         os.replace(tmp, self.config)
 
     @property
