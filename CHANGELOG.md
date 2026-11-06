@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-06 — Docker 與 Windows 版的說明也改以英文版為主（commit: `Make the English Docker and Windows readmes the default`）
+- 目的：和專案 README 一致：沒有後綴的是英文版，繁體中文版加 `.zh`。
+- 修改：`docker/README.md`（英文）／`docker/README.zh.md`；`packaging/windows/README.txt`（英文）／`README.zh.txt`，`build.ps1` 放進 zip 的檔名跟著改；更新語言切換與 README、DEVELOPMENT、compose 檔中的連結。
+- 驗證：`uv run pytest` 通過；GitHub Actions 的 Windows 建置結果見 PLAN。
+
 ## 2026-11-06 — README 改以英文版為主（commit: `Make the English README the default`）
 - 目的：GitHub 首頁顯示英文說明。
 - 修改：`README.en.md` → `README.md`（英文），原 `README.md` → `README.zh.md`（繁體中文）；更新兩份的語言切換連結、`docker/README*.md`、ARCHITECTURE、DEVELOPMENT 的連結；v1.0.0 Release 說明的連結。`pyproject.toml` 的 `readme` 因此變成英文版。

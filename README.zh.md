@@ -102,7 +102,7 @@ CLI 與 Web UI 的設定項目完全相同。
 
 它會依序：確認 [uv](https://docs.astral.sh/uv/)（沒有的話可自動安裝）→ 安裝 Python 3.12 與固定版本的套件 → 建立 `.env` → 測試 AI API 連線。也可以手動安裝：`uv sync`。
 
-> **用 Docker**：不想在主機上安裝 Python 時，可以用 [docker/](docker/README.md)（[English](docker/README.en.md)）中的設定建置映像檔，`docker compose up -d --build` 就啟動 Web UI；另有一個連同 Ollama（Qwen3-VL）一起啟動的版本（需要 NVIDIA 顯示卡）。容器中只用 CPU 計算光流與部位框，詳見 [docker/README.md](docker/README.md)。
+> **用 Docker**：不想在主機上安裝 Python 時，可以用 [docker/](docker/README.zh.md)（[English](docker/README.md)）中的設定建置映像檔，`docker compose up -d --build` 就啟動 Web UI；另有一個連同 Ollama（Qwen3-VL）一起啟動的版本（需要 NVIDIA 顯示卡）。容器中只用 CPU 計算光流與部位框，詳見 [docker/README.zh.md](docker/README.zh.md)。
 
 > **骨架模式**是選配（`uv sync --extra pose`，CPU 版 PyTorch）；裝了之後執行 `uv sync` 時也要加 `--extra pose`，否則會被移除（`uv run` 不會移除）。要在 NVIDIA GPU 上執行骨架偵測，刪除 `pyproject.toml` 的 `[tool.uv.sources]` 與 `[[tool.uv.index]]` 兩段後重新執行 `uv sync --extra pose`。第一次使用時會下載約 6 MB 的模型。
 

@@ -1,5 +1,5 @@
 # funscript-gen only; the AI backend (vLLM, Ollama, ...) runs elsewhere and is set in the web UI's 設定 tab.
-# Usage (from this folder): docker compose up -d --build   → http://127.0.0.1:7860   (see README.md)
+# Usage (from this folder): docker compose up -d --build   → http://127.0.0.1:7860   (see README.md / README.zh.md)
 services:
   funscript-gen:
     build:

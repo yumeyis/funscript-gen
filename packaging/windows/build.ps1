@@ -66,7 +66,7 @@ Run $csc /nologo /codepage:65001 /optimize+ /target:exe "/out:$(Join-Path $stage
 Run $csc /nologo /codepage:65001 /optimize+ /target:winexe /define:GUI /reference:System.Windows.Forms.dll `
     "/out:$(Join-Path $stage 'FunscriptGen.exe')" $source
 Copy-Item (Join-Path $PSScriptRoot "README.txt") (Join-Path $stage "README.txt")
-Copy-Item (Join-Path $PSScriptRoot "README.en.txt") (Join-Path $stage "README.en.txt")
+Copy-Item (Join-Path $PSScriptRoot "README.zh.txt") (Join-Path $stage "README.zh.txt")
 Copy-Item (Join-Path $repo "LICENSE") (Join-Path $stage "LICENSE.txt")
 Copy-Item (Join-Path $repo "THIRD_PARTY_NOTICES.md") (Join-Path $stage "THIRD_PARTY_NOTICES.md")
 

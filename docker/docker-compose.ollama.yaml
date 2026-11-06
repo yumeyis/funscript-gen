@@ -1,5 +1,5 @@
 # funscript-gen + Ollama (qwen3-vl) on the same machine; Ollama needs an NVIDIA GPU (NVIDIA Container Toolkit).
-# Usage (from this folder): docker compose -f docker-compose.ollama.yaml up -d --build   (see README.md)
+# Usage (from this folder): docker compose -f docker-compose.ollama.yaml up -d --build   (see README.md / README.zh.md)
 services:
   funscript-gen:
     build:

@@ -102,7 +102,7 @@ Requires Linux. Run `set-env.sh` once to finish the installation (it can be run 
 
 It goes through: checking [uv](https://docs.astral.sh/uv/) (it can be installed automatically) → installing Python 3.12 and the pinned packages → creating `.env` → testing the AI API connection. It can also be installed by hand with `uv sync`.
 
-> **With Docker**: when you do not want to install Python on the host, build an image from the files in [docker/](docker/README.en.md); `docker compose up -d --build` starts the web UI, and there is also a version that starts Ollama (Qwen3-VL) along with it (needs an NVIDIA graphics card). Inside the container optical flow and part detection run on the CPU only; see [docker/README.en.md](docker/README.en.md).
+> **With Docker**: when you do not want to install Python on the host, build an image from the files in [docker/](docker/README.md); `docker compose up -d --build` starts the web UI, and there is also a version that starts Ollama (Qwen3-VL) along with it (needs an NVIDIA graphics card). Inside the container optical flow and part detection run on the CPU only; see [docker/README.md](docker/README.md).
 
 > **The skeleton mode** is optional (`uv sync --extra pose`, CPU PyTorch); once it is installed, `uv sync` also needs `--extra pose`, otherwise it is removed (`uv run` does not remove it). To run skeleton detection on an NVIDIA GPU, delete the two sections `[tool.uv.sources]` and `[[tool.uv.index]]` of `pyproject.toml` and run `uv sync --extra pose` again. The first use downloads a model of about 6 MB.
 

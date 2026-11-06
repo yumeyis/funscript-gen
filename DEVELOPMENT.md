@@ -62,7 +62,7 @@ uv run python scripts/detect_viewer.py --port 7862 --share-lan   # 區網內的�
 | `build.ps1` | `uv python install` 取得 python-build-standalone（可在任何資料夾執行）→ 依 `uv export --frozen --extra gui` 的版本與雜湊安裝套件 → 安裝專案的 wheel → 用 Windows 內建的 .NET Framework `csc.exe` 編譯兩個啟動程式 → 打包成 zip 與 `.sha256` |
 | `launcher.cs` | 同一份原始碼編兩次：`funscript-gen.exe`（主控台，`python.exe -m funscript_gen.cli`，等它結束並傳回結束碼）與 `FunscriptGen.exe`（`/target:winexe`，`pythonw.exe -m funscript_gen.cli app`）。以 `-I -X utf8` 執行（忽略 `PYTHON*` 環境變數與使用者的 site-packages），設定 `FUNSCRIPT_GEN_HOME`、`TEMP`、`TMP` 指向 `data\`、`FUNSCRIPT_GEN_LANG_DIR` 指向 `lang\`；自己的錯誤訊息依系統語言用中文或英文 |
 | `smoke-test.ps1`、`smoke_clip.py` | 建置後的檢查：CLI 用合成影片產生腳本、pywebview 的 WinForms／WebView2 後端可以載入、`FunscriptGen.exe --ui none` 回應頁面，以及使用者目錄（`USERPROFILE`、`.cache`、`APPDATA`、`LOCALAPPDATA`）沒有多出任何項目；`lang list` 要找得到 `lang\` 的語言包 |
-| `README.txt`、`README.en.txt` | 放進 zip 的使用說明（繁體中文與英文）；`build.ps1` 另外把根目錄的 `LICENSE`（存為 `LICENSE.txt`）與 `THIRD_PARTY_NOTICES.md` 放進 zip |
+| `README.txt`、`README.zh.txt` | 放進 zip 的使用說明（英文與繁體中文）；`build.ps1` 另外把根目錄的 `LICENSE`（存為 `LICENSE.txt`）與 `THIRD_PARTY_NOTICES.md` 放進 zip |
 | `lang\`（build.ps1 從 `src/funscript_gen/lang/` 複製） | 放在 exe 旁的語言包，使用者在這裡加入翻譯 |
 
 ```powershell
@@ -291,7 +291,7 @@ CONTRIBUTING.md、SECURITY.md  貢獻說明（含貢獻的授權）與安全性�
   remote_validate.ps1  在第二台測試主機上以 CPU 使用率上限執行驗證
   其他                  部位框（anime_det_dump、censor_*）、小行程（small_strokes）、鏡頭移動（camera_motion）等的一次性評估
 tests/                  單元測試
-packaging/windows/      Windows 免安裝版的建置腳本、啟動程式原始碼、冒煙測試、zip 內的說明（README.txt、README.en.txt）
+packaging/windows/      Windows 免安裝版的建置腳本、啟動程式原始碼、冒煙測試、zip 內的說明（README.txt 英文、README.zh.txt 繁體中文）
 .github/workflows/      GitHub Actions：windows.yml（建置 Windows 免安裝版、草稿 Release）
 docker/                 Dockerfile、docker-compose.yaml（只有 funscript-gen）、docker-compose.ollama.yaml（加上 Ollama）、entrypoint.sh、使用說明
 docs/archive/           歸檔的開發紀錄（PLAN-archive.md）
