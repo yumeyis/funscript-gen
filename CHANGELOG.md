@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-07 — Farneback 視窗大小實驗（commit: `Record the Farneback window size experiment`）
+- 目的：確認低相關鏡頭是否因光流參數。
+- 修改：只更新 PLAN.md（程式未改）。
+- 驗證：winsize 31／13 的 `F1u` 0.842 → 0.836／0.838，持平，不採用。
+
 ## 2026-11-06 — 素材資料夾改名為 valid（commit: `Rename the vaild clips folder to valid`）
 - 目的：資料夾名稱是拼錯字。
 - 修改：`vaild/` 改為 `valid/`，同步更新 `.gitignore`、`validation.toml`、`validate.py` 預設值、`scripts/` 路徑與 DEVELOPMENT.md；testhost 也一併改名。
