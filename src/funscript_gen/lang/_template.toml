@@ -1,0 +1,1474 @@
+# funscript-gen language pack template (語言包範本)
+#
+# To add a language:
+#  1. Copy this file to lang/<code>.toml in the program's folder (e.g. lang/ja.toml, lang/zh-CN.toml).
+#  2. Fill in `code` (the same as the file name) and `name` (the language's own name, shown in the language list).
+#  3. Write each text after its key. The comment lines above a key show the zh-TW and en texts. A key left empty uses
+#     the zh-TW text.
+#  4. Keep {placeholders} as they are (they may move within the sentence). Keep Markdown (**bold**, `code`), HTML
+#     (<p>, <b>) and <k>key</k> (a key cap) markers, and "\n" (a line break).
+#  5. Check the file: funscript-gen lang check lang/<code>.toml
+#  6. Pick the language in the web UI's Settings tab, or run with --lang <code>.
+#
+# 加入新語言：複製本檔為 lang/<code>.toml，填寫 code 與 name，翻譯每個 key 的內容（註解是 zh-TW 與 en 的對照；
+# 留空的 key 會使用 zh-TW 的文字），{名稱} 與標記要保留，最後用 `funscript-gen lang check` 檢查。
+
+[meta]
+code = ""
+name = ""
+
+[texts]
+
+# --- device ---
+# zh-TW: 光流
+# en: optical flow
+"device.step.flow" = ""
+# zh-TW: 部位框偵測
+# en: part detection
+"device.step.part" = ""
+# zh-TW: 骨架
+# en: skeleton mode
+"device.step.pose" = ""
+# zh-TW: 顯示卡的 OpenCL 驅動程式
+# en: the graphics card's OpenCL driver
+"device.needs.flow" = ""
+# zh-TW: GPU 版的 onnxruntime（onnxruntime-gpu 或 onnxruntime-directml）
+# en: a GPU build of onnxruntime (onnxruntime-gpu or onnxruntime-directml)
+"device.needs.part" = ""
+# zh-TW: CUDA 版的 PyTorch
+# en: PyTorch with CUDA
+"device.needs.pose" = ""
+# zh-TW: {step}設定為 GPU，但找不到可用的 GPU（需要{needs}）。請改成 Auto 或 CPU。
+# en: {step} is set to GPU, but no usable GPU was found (it needs {needs}). Set it to Auto or CPU.
+"device.no_gpu" = ""
+
+# --- report ---
+# zh-TW: ⇅ 已反轉
+# en: ⇅ flipped
+"report.flipped" = ""
+# zh-TW: 節奏濾波 {tempo} Hz
+# en: rhythm filter {tempo} Hz
+"report.tempo_filter" = ""
+# zh-TW: 反轉（點擊切換）
+# en: Flip (click)
+"report.col.flip_click" = ""
+# zh-TW: #
+# en: #
+"report.col.num" = ""
+# zh-TW: 開始 (秒)
+# en: Start (s)
+"report.col.start_s" = ""
+# zh-TW: 結束 (秒)
+# en: End (s)
+"report.col.end_s" = ""
+# zh-TW: 模式
+# en: Mode
+"report.col.mode" = ""
+# zh-TW: 方向
+# en: Axis
+"report.col.axis" = ""
+# zh-TW: 區域
+# en: Region
+"report.col.roi" = ""
+# zh-TW: 部位
+# en: Body parts
+"report.col.body_parts" = ""
+# zh-TW: 動作點
+# en: Actions
+"report.col.actions" = ""
+# zh-TW: 備註
+# en: Note
+"report.col.note" = ""
+
+# --- outputs ---
+# zh-TW: 保留天數不能是負數
+# en: The retention days cannot be negative
+"outputs.negative_days" = ""
+
+# --- app ---
+# zh-TW: funscript-gen 無法啟動：{e}
+# en: funscript-gen could not start: {e}
+"app.start_failed" = ""
+# zh-TW: funscript-gen 在瀏覽器中開啟：{url}\n關閉這個視窗（或按 Ctrl+C）即結束程式。
+# en: funscript-gen is open in the browser: {url}\nClose this window (or press Ctrl+C) to quit.
+"app.in_browser" = ""
+# zh-TW: \n\n詳細記錄：{log}
+# en: \n\nDetails: {log}
+"app.log_hint" = ""
+
+# --- opt ---
+# zh-TW: 使用 AI 判斷每個鏡頭的區域、方向與部位
+# en: Use the AI to decide each scene's region, axis and body parts
+"opt.use_ai.label" = ""
+# zh-TW: 一般（兩人之間的動作）
+# en: General (the motion between the two people)
+"opt.focus.choice.general" = ""
+# zh-TW: Hybrid（逐幀選擇：看得清楚用目標區域，看不清楚或被遮擋用一般區域）
+# en: Hybrid (chosen per frame: the target region when it is clearly visible, the general region when it is unclear or occluded)
+"opt.focus.choice.hybrid" = ""
+# zh-TW: 分析目標
+# en: Analysis target
+"opt.focus.label" = ""
+# zh-TW: Hybrid 會同時做一般分析與目標區域分析（AI 框出目標部位與接觸部位、可能標出主動部位的方向），AI 時間約為兩倍；固定使用光流。
+# en: Hybrid does the general analysis and a target-region analysis together (the AI boxes the target part and the contact part, and may mark the direction of the active part), which takes about twice the AI time; it always uses optical flow.
+"opt.focus.info" = ""
+# zh-TW: AI 從候選區域中再選一次分析區域
+# en: Let the AI pick the analysis region from candidates once more
+"opt.region_pick.label" = ""
+# zh-TW: 一般模式：把 AI 的區域、兩個人、兩人合併、整個畫面與 3×3 格子裁切給 AI 選，選到的區域節奏不比原本的弱才換（每個鏡頭多一次 AI 呼叫）。
+# en: General mode: the AI's region, each of the two people, both together, the whole picture and a 3×3 grid of crops are offered to the AI to choose from; the chosen region replaces the original one only if its rhythm is not weaker (one more AI call per scene).
+"opt.region_pick.info" = ""
+# zh-TW: 手和口都可能時跟著移動較大的
+# en: Follow the one that moves more when it may be the hand or the mouth
+"opt.contact_pick.label" = ""
+# zh-TW: Hybrid：AI 判斷的接觸部位機率前兩名是手和口時，讓 AI 分別框出手和口，改用移動較大的區域（這些鏡頭多 1–2 次 AI 呼叫；需要 vLLM，Ollama 不提供機率）。
+# en: Hybrid: when the AI's two most likely contact parts are the hand and the mouth, the AI boxes each of them and the region that moves more is used (1–2 more AI calls in those scenes; needs vLLM, Ollama gives no probabilities).
+"opt.contact_pick.info" = ""
+# zh-TW: 手和口：第二名的最低機率
+# en: Hand and mouth: the minimum probability of the second
+"opt.contact_min_prob.label" = ""
+# zh-TW: 第二名（手或口）的機率低於這個值時，視為 AI 確定只有一個部位，不比較移動量。0 = 只要前兩名是手和口就比較。
+# en: When the second (hand or mouth) is less likely than this, the AI is taken to be sure of one part and the motion is not compared. 0 = compare whenever the top two are the hand and the mouth.
+"opt.contact_min_prob.info" = ""
+# zh-TW: 行程範圍辨識
+# en: Stroke range check
+"opt.stroke_range.label" = ""
+# zh-TW: 每個鏡頭讓 AI 判斷能否完整看到主動部位與它的前端（每個鏡頭多一次 AI 呼叫）；看不到前端代表行程到不了頂端，該鏡頭超過最大值的位置會截到最大值；看得到前端但主動部位不完整時，低於最小值的位置會提高到最小值。
+# en: For each scene the AI judges whether the whole active part and its tip can be seen (one more AI call per scene). If the tip is not seen the stroke cannot reach the top, so positions above the maximum are clipped to it; if the tip is seen but the active part is not whole, positions below the minimum are raised to it.
+"opt.stroke_range.info" = ""
+# zh-TW: 看不到前端時的最大值
+# en: Maximum when the tip is not seen
+"opt.range_cap.label" = ""
+# zh-TW: 看得到前端但主動部位不完整時的最小值
+# en: Minimum when the tip is seen but the active part is not whole
+"opt.range_floor.label" = ""
+# zh-TW: 沒有人的鏡頭停在最高點
+# en: Hold at the top in scenes with nobody
+"opt.rest_empty.label" = ""
+# zh-TW: AI 判斷畫面中沒有人的鏡頭（片頭、片尾、黑畫面）不分析動作，停在輸出範圍的最高點，和人工腳本靜止時的習慣一致。一般模式與 Hybrid 有效；手動指定分析區域時不執行。
+# en: Scenes in which the AI sees nobody (intros, endings, black frames) are not analysed and hold at the top of the output range, as hand-made scripts do when nothing moves. Works in general mode and Hybrid; not applied when the analysis region is set by hand.
+"opt.rest_empty.info" = ""
+# zh-TW: 自動（光流）
+# en: Automatic (optical flow)
+"opt.mode.choice.auto" = ""
+# zh-TW: 光流（特寫、動畫、第一人稱）
+# en: Optical flow (close-ups, animation, first-person)
+"opt.mode.choice.flow" = ""
+# zh-TW: 骨架（兩人全身入鏡；需要另外安裝 uv sync --extra pose）
+# en: Skeleton (both people fully in frame; needs uv sync --extra pose)
+"opt.mode.choice.pose" = ""
+# zh-TW: 計算方式
+# en: Method
+"opt.mode.label" = ""
+# zh-TW: 垂直
+# en: Vertical
+"opt.axis.choice.vertical" = ""
+# zh-TW: 水平
+# en: Horizontal
+"opt.axis.choice.horizontal" = ""
+# zh-TW: 深度（靠近／遠離鏡頭）
+# en: Depth (toward / away from the camera)
+"opt.axis.choice.depth" = ""
+# zh-TW: 距離 / 自動主軸
+# en: Distance / automatic main axis
+"opt.axis.choice.distance" = ""
+# zh-TW: 自動
+# en: Automatic
+"opt.axis.choice.auto" = ""
+# zh-TW: 動作方向
+# en: Motion axis
+"opt.axis.label" = ""
+# zh-TW: 分析區域（覆寫 AI）
+# en: Analysis region (overrides the AI)
+"opt.roi.label" = ""
+# zh-TW: 留空 = AI 決定；例：0.3,0.4,0.7,0.8（x1,y1,x2,y2，0–1）
+# en: Empty = the AI decides; e.g. 0.3,0.4,0.7,0.8 (x1,y1,x2,y2, 0–1)
+"opt.roi.placeholder" = ""
+# zh-TW: A 的部位（骨架模式）
+# en: Body part of A (skeleton mode)
+"opt.ref_a.label" = ""
+# zh-TW: B 的部位（骨架模式）
+# en: Body part of B (skeleton mode)
+"opt.ref_b.label" = ""
+# zh-TW: 範圍下限
+# en: Range lower limit
+"opt.range_low.label" = ""
+# zh-TW: 範圍上限
+# en: Range upper limit
+"opt.range_high.label" = ""
+# zh-TW: 保留幅度（小動作 → 短行程）
+# en: Keep the size (small motion → short stroke)
+"opt.amplitude.choice.preserve" = ""
+# zh-TW: 填滿行程（每下都走滿）
+# en: Fill the range (every stroke full length)
+"opt.amplitude.choice.fill" = ""
+# zh-TW: 幅度模式
+# en: Stroke size mode
+"opt.amplitude.label" = ""
+# zh-TW: 行程倍率（保留幅度模式；小於 1 讓整體動作變小）
+# en: Stroke multiplier (keep-size mode; below 1 makes all motion smaller)
+"opt.gain.label" = ""
+# zh-TW: 上下反轉
+# en: Flip upside down
+"opt.invert.label" = ""
+# zh-TW: 長鏡頭分段方向一致
+# en: Same direction across the chunks of a long shot
+"opt.chunk_align.label" = ""
+# zh-TW: 長鏡頭會切成 20 秒一段分析；以方向判斷最明確的一段為準，動作型態相同的其他段跟著對齊，避免某一段高低相反。
+# en: A long shot is analysed in 20 s chunks; the chunk whose direction is clearest decides, and other chunks with the same motion pattern are aligned to it, so one chunk is not upside down.
+"opt.chunk_align.info" = ""
+# zh-TW: 依行程快慢判斷方向
+# en: Decide the direction from stroke speed
+"opt.asym_sign.label" = ""
+# zh-TW: 人工腳本多半是往下（推進）快、往上慢。鏡頭的動作明顯往上比往下快時，判定為高低相反並反轉該鏡頭；AI 給了主動部位方向的鏡頭不處理，不需要額外的 AI 呼叫。關閉時只在鏡頭表的備註提示「可能高低相反」。驗證素材上反轉的鏡頭都在 B02、B03、D02，人工腳本有明顯動作的鏡頭都改對，舊 8 段不變。
+# en: Hand-made scripts mostly fall fast (the push in) and rise slowly. When a scene's strokes clearly rise faster than they fall it is judged upside down and flipped; scenes for which the AI gave the direction of the active part are left alone, and no extra AI call is needed. When off, the scene table's note only says “possibly upside down”. On the validation clips the scenes it flips are in B02, B03 and D02, and every scene with clear motion in the hand-made script came out right; the old 8 clips are unchanged.
+"opt.asym_sign.info" = ""
+# zh-TW: 翻轉門檻（往上與往下最高速度比的對數；0.5 ≈ 快 1.65 倍，越小越容易反轉）
+# en: Flip threshold (log of the rise/fall peak speed ratio; 0.5 ≈ 1.65× faster; lower flips more easily)
+"opt.asym_threshold.label" = ""
+# zh-TW: 以聲音確認
+# en: Confirm with the sound
+"opt.asym_audio.label" = ""
+# zh-TW: 撞擊聲通常在推進到底前一刻。聲音起點落在動作低點的鏡頭（看起來方向正確）維持原來的門檻；其他有聲音的鏡頭（起點在高點，或只有音樂、沒有明顯的撞擊聲）改用較低的門檻。口部接觸鏡頭的聲音常在頂端，所以聲音不會單獨決定反轉。
+# en: The impact sound usually comes just before a push in bottoms out. Scenes whose sound onsets fall at the lows (the direction looks right) keep the usual threshold; other scenes with sound (onsets at the highs, or only music and no clear impacts) use a lower one. In mouth-contact scenes the sound is often at the top, so the sound alone never decides a flip.
+"opt.asym_audio.info" = ""
+# zh-TW: 聲音沒有反對時的翻轉門檻
+# en: Flip threshold when the sound does not object
+"opt.asym_audio_threshold.label" = ""
+# zh-TW: 依聲音提示可能高低相反
+# en: Point out possibly upside-down scenes from the sound
+"opt.sound_hint.label" = ""
+# zh-TW: 聲音起點落在動作高點、但沒有被反轉的鏡頭，列為「可能高低相反」並在預覽中標示。在調整門檻的素材上多半說對，在沒有用來調整的 13 段新素材上標出的 14 個鏡頭全部方向正確，所以預設關閉。
+# en: Scenes whose sound onsets fall at the highs but were not flipped are listed as “possibly upside down” and marked in the preview. It was mostly right on the clips the threshold was tuned on, and all 14 scenes it marked on 13 new clips that were not used for tuning had the right direction, so it is off by default.
+"opt.sound_hint.info" = ""
+# zh-TW: 依部位框判斷方向
+# en: Decide the direction from the part boxes
+"opt.part_sign.label" = ""
+# zh-TW: 以動漫專用的偵測模型找出主動部位與對象部位的框：兩者分開＝退回＝高。距離的變化和動作相反的鏡頭反轉，反轉的鏡頭不再做快慢判斷。只處理有主動部位框的鏡頭；口部接觸與手部接觸鏡頭沒有對象部位框，不受影響。第一次使用會下載約 43 MB 的模型；在 CPU 上很慢（3 分鐘的影片約多 1 分多鐘，急著要結果時可以關閉），安裝 GPU 版 onnxruntime 後會自動使用 GPU；偵測結果會快取，同一支影片再產生時不必重新偵測。
+# en: A detection model made for anime finds the boxes of the active part and the counterpart: apart = pulled back = high. A scene whose distance moves against the output is flipped, and flipped scenes get no speed check. Only scenes with an active-part box are handled; mouth-contact and hand-contact scenes have no counterpart box and are not affected. The first use downloads a model of about 43 MB; on the CPU it is slow (about 1 minute more for a 3-minute video; turn it off when in a hurry), and it uses the GPU automatically once a GPU build of onnxruntime is installed. Detections are cached, so generating the same video again does not detect again.
+"opt.part_sign.info" = ""
+# zh-TW: 翻轉門檻（距離和動作的相關低於負的這個值才反轉，越小越容易反轉）
+# en: Flip threshold (flip only when the distance's correlation with the motion is below minus this; lower flips more easily)
+"opt.part_sign_threshold.label" = ""
+# zh-TW: 最大速度（單位／秒）
+# en: Maximum speed (units / s)
+"opt.max_speed.label" = ""
+# zh-TW: 幅度縮小門檻（Hz，0 = 關閉）
+# en: Shrink threshold (Hz, 0 = off)
+"opt.freq_limit.label" = ""
+# zh-TW: 幅度縮小最高頻率（Hz）
+# en: Highest frequency for shrinking (Hz)
+"opt.freq_max.label" = ""
+# zh-TW: 最高頻率時的行程比例
+# en: Stroke ratio at the highest frequency
+"opt.freq_min_scale.label" = ""
+# zh-TW: 最小動作幅度（佔局部範圍的比例，越大越忽略小動作）
+# en: Minimum stroke size (fraction of the local range; larger ignores small motion)
+"opt.min_prominence.label" = ""
+# zh-TW: 節奏濾波（光流）
+# en: Rhythm filter (optical flow)
+"opt.rhythm_filter.label" = ""
+# zh-TW: 鏡頭的動作節奏明顯時，濾掉節奏以外的晃動與漂移，找回被蓋住的動作點。
+# en: When a scene's motion has a clear rhythm, wobble and drift outside it are filtered out, bringing back actions that were hidden.
+"opt.rhythm_filter.info" = ""
+# zh-TW: 保留轉折處的停頓
+# en: Keep the rests at turning points
+"opt.dwell.label" = ""
+# zh-TW: 動作在頂端或底端停留時，輸出停頓的開始與結束兩個點，而不是只有一個轉折點。
+# en: When the motion rests at the top or bottom, output the start and the end of the rest instead of a single turning point.
+"opt.dwell.info" = ""
+# zh-TW: 停頓判定範圍（佔行程的比例，越大越容易判為停頓）
+# en: Rest range (fraction of the stroke; larger counts more as rests)
+"opt.dwell_tol.label" = ""
+# zh-TW: 最短停頓（毫秒）
+# en: Shortest rest (ms)
+"opt.dwell_min_ms.label" = ""
+# zh-TW: 停頓時保持原位
+# en: Hold the position during pauses
+"opt.hold.label" = ""
+# zh-TW: 兩個動作點相隔太久時，停在原位置，到下一個點前才移動；關閉時慢慢移到下一個位置。開啟會把很慢的行程變成停住再快速移動。
+# en: When two actions are far apart in time, stay at the position and move only just before the next one; when off, move slowly to the next position. Turning this on makes a very slow stroke a hold followed by a quick move.
+"opt.hold.info" = ""
+# zh-TW: 停頓門檻（動作點相隔超過幾毫秒）
+# en: Pause threshold (ms between actions)
+"opt.hold_after_ms.label" = ""
+# zh-TW: 長行程補點
+# en: Add points on long strokes
+"opt.curve.label" = ""
+# zh-TW: 峰與谷間隔較長時，在中間加點，讓輸出跟著動作的快慢變化，而不是一條直線。
+# en: When a peak and a valley are far apart in time, points are added between them so the output follows the changing speed of the motion instead of a straight line.
+"opt.curve.info" = ""
+# zh-TW: 補點門檻（峰谷間隔超過幾毫秒）
+# en: Point threshold (ms between peak and valley)
+"opt.curve_after_ms.label" = ""
+# zh-TW: 補點精細度（偏離直線多少才加點，越小點越多）
+# en: Point detail (how far from the straight line before a point is added; lower gives more points)
+"opt.curve_tol.label" = ""
+# zh-TW: 鏡頭切換處銜接
+# en: Bridge scene cuts
+"opt.bridge.label" = ""
+# zh-TW: 鏡頭切換處下一個動作點接不上前一個鏡頭的節奏（間隔太長，或兩邊都停在高點／低點）時，在空檔中複製一次前一個鏡頭的最後一個行程，而不是慢慢移過去或停住。
+# en: At a cut where the next action does not continue the previous scene's rhythm (the gap is too long, or both sides rest at a high or low point), the previous scene's last stroke is copied once into the gap instead of moving slowly or holding.
+"opt.bridge.info" = ""
+# zh-TW: 慢動作保留高低（實驗性）
+# en: Keep the height of slow motion (experimental)
+"opt.scene_center.label" = ""
+# zh-TW: 沒有明顯節奏的鏡頭，以整個鏡頭的範圍決定位置，而不是 4 秒內的範圍，讓慢速的大動作保留高低。
+# en: In scenes without a clear tempo, strokes are placed by the whole scene's range instead of a 4-second window's, so slow large strokes keep their height.
+"opt.scene_center.info" = ""
+# zh-TW: 整體
+# en: Overall
+"opt.compute.label" = ""
+# zh-TW: Auto：有可用的 GPU 就用，沒有就用 CPU；GPU：找不到可用的 GPU 時提醒並停止；CPU：一律用 CPU。下面的步驟選 Auto 時依照這個設定。AI 在 AI 主機上執行，不受影響。
+# en: Auto: a GPU when one is usable, otherwise the CPU; GPU: warn and stop when no usable GPU is found; CPU: always the CPU. The steps below follow this when they are set to Auto. The AI runs on the AI host and is not affected.
+"opt.compute.info" = ""
+# zh-TW: 光流
+# en: Optical flow
+"opt.flow_compute.label" = ""
+# zh-TW: GPU 用 OpenCL（顯示卡驅動程式內建），比 CPU 快，數值和 CPU 有極小的差異。
+# en: The GPU uses OpenCL (built into the graphics driver) and is faster than the CPU; the numbers differ very slightly from the CPU's.
+"opt.flow_compute.info" = ""
+# zh-TW: 部位框偵測
+# en: Part detection
+"opt.part_compute.label" = ""
+# zh-TW: GPU 需要安裝 GPU 版的 onnxruntime（CUDA 或 DirectML）。
+# en: The GPU needs a GPU build of onnxruntime (CUDA or DirectML).
+"opt.part_compute.info" = ""
+# zh-TW: 骨架
+# en: Skeleton
+"opt.pose_compute.label" = ""
+# zh-TW: 只在計算方式為「骨架」時使用；GPU 需要 CUDA 版的 PyTorch。
+# en: Only used when the method is “Skeleton”; the GPU needs PyTorch with CUDA.
+"opt.pose_compute.info" = ""
+# zh-TW: 分析幀率
+# en: Analysis frame rate
+"opt.fps.label" = ""
+# zh-TW: 分析解析度（長邊像素）
+# en: Analysis resolution (longest side, pixels)
+"opt.max_side.label" = ""
+# zh-TW: 光流計算寬度（像素）
+# en: Optical flow width (pixels)
+"opt.flow_width.label" = ""
+# zh-TW: 越小越快：320 約可省一半的光流時間，驗證素材的分數幾乎相同（F1 略升、相關係數略降）。
+# en: Smaller is faster: 320 saves about half of the optical flow time and the scores on the validation clips are almost the same (F1 slightly up, correlation slightly down).
+"opt.flow_width.info" = ""
+# zh-TW: 同時計算光流的工作數
+# en: Optical flow jobs at the same time
+"opt.flow_workers.label" = ""
+# zh-TW: 影片切成每段最多 5 秒平行計算光流，輸出不變；越多越快，但會占用更多 CPU。
+# en: The video is cut into pieces of up to 5 s whose optical flow is computed in parallel; the output does not change. More is faster but uses more CPU.
+"opt.flow_workers.info" = ""
+# zh-TW: 鏡頭切換靈敏度（越小越容易切分）
+# en: Scene cut sensitivity (lower cuts more easily)
+"opt.scene_threshold.label" = ""
+# zh-TW: 啟用參考腳本
+# en: Use a reference script
+"opt.use_reference.label" = ""
+# zh-TW: 開啟後可上傳人工製作的腳本，用來評分並在訊號圖與預覽中疊加比較（產生與預覽分頁都適用）。
+# en: When on, a hand-made script can be uploaded to score the result and to overlay it on the signal plot and in the preview (in both the Generate and Preview tabs).
+"opt.use_reference.info" = ""
+
+# --- group ---
+# zh-TW: AI 分析
+# en: AI analysis
+"group.ai" = ""
+# zh-TW: 動作偵測
+# en: Motion detection
+"group.motion" = ""
+# zh-TW: 輸出
+# en: Output
+"group.output" = ""
+# zh-TW: 運算裝置（GPU／CPU）
+# en: Compute device (GPU / CPU)
+"group.device" = ""
+# zh-TW: 進階
+# en: Advanced
+"group.advanced" = ""
+
+# --- choice ---
+# zh-TW: AI 決定
+# en: AI decides
+"choice.ai_decides" = ""
+# zh-TW: Auto
+# en: Auto
+"choice.auto" = ""
+# zh-TW: GPU
+# en: GPU
+"choice.gpu" = ""
+# zh-TW: CPU
+# en: CPU
+"choice.cpu" = ""
+
+# --- preset ---
+# zh-TW: 預設
+# en: Default
+"preset.default" = ""
+# zh-TW: 使用者的 Web UI 設定（Hybrid、保留停頓、長行程補點、高頻縮小 2→3 Hz）
+# en: The author's web UI settings (Hybrid, keep rests, add points on long strokes, shorten fast strokes 2→3 Hz)
+"preset.user" = ""
+
+# --- options ---
+# zh-TW: 沒有這個設定組：{preset}
+# en: No such preset: {preset}
+"options.unknown_preset" = ""
+# zh-TW: 沒有這些設定：{names}
+# en: No such options: {names}
+"options.unknown_options" = ""
+# zh-TW: ROI 格式應為 x1,y1,x2,y2，0–1 之間，且 x1<x2、y1<y2
+# en: The region must be x1,y1,x2,y2, each between 0 and 1, with x1<x2 and y1<y2
+"options.roi_format" = ""
+# zh-TW: 鏡頭編號應以逗號分隔，例如 0,3
+# en: Scene numbers must be separated by commas, e.g. 0,3
+"options.scenes_format" = ""
+# zh-TW: {name}必須是開或關
+# en: {name} must be on or off
+"options.must_be_bool" = ""
+# zh-TW: {name}只能是 {shown}
+# en: {name} must be one of: {shown}
+"options.must_be_one_of" = ""
+# zh-TW: {name}必須是數字
+# en: {name} must be a number
+"options.must_be_number" = ""
+# zh-TW: {name}必須大於 {lo}
+# en: {name} must be above {lo}
+"options.must_be_above" = ""
+# zh-TW: {name}必須在 {lo}–{hi} 之間
+# en: {name} must be between {lo} and {hi}
+"options.must_be_between" = ""
+# zh-TW: {name}必須是文字
+# en: {name} must be text
+"options.must_be_text" = ""
+# zh-TW: 輸出範圍的下限必須小於上限
+# en: The output range's lower limit must be below its upper limit
+"options.range_low_high" = ""
+# zh-TW: 看不到前端時的最大值不能低於範圍下限
+# en: The maximum for scenes where the head is not seen cannot be below the range's lower limit
+"options.range_cap_low" = ""
+# zh-TW: 主動部位不完整時的最小值不能高於範圍上限
+# en: The minimum for scenes where the active part is not whole cannot be above the range's upper limit
+"options.range_floor_high" = ""
+# zh-TW: 幅度縮小的最高頻率必須大於門檻
+# en: The highest frequency for shortening strokes must be above the threshold
+"options.freq_max_limit" = ""
+# zh-TW: {name}和分析時不同，要重新分析影片
+# en: {name} differs from the analysis; the video has to be analysed again
+"options.differs_from_analysis" = ""
+
+# --- sep ---
+# zh-TW: ；
+# en: ; 
+"sep.note" = ""
+# zh-TW: 、
+# en: , 
+"sep.list" = ""
+
+# --- pipe ---
+# zh-TW: 區域選擇失敗：{e}
+# en: Region choice failed: {e}
+"pipe.pick_failed" = ""
+# zh-TW: 接觸部位機率取得失敗：{e}
+# en: Could not get the contact part probabilities: {e}
+"pipe.contact_probs_failed" = ""
+# zh-TW: 接觸部位機率 {first} {p_first}、{second} {p_second}
+# en: Contact part probabilities: {first} {p_first}, {second} {p_second}
+"pipe.contact_probs" = ""
+# zh-TW: 手和口的框取得失敗：{e}
+# en: Could not get the boxes of the hand and the mouth: {e}
+"pipe.contact_boxes_failed" = ""
+# zh-TW: 行程範圍辨識失敗，不限制：{error}
+# en: Stroke range check failed, no limit: {error}
+"pipe.range_failed" = ""
+# zh-TW: 繼續
+# en: Skipped
+"pipe.skipped" = ""
+# zh-TW: 看不到前端，最大值 {cap}
+# en: tip not seen, maximum {cap}
+"pipe.range_no_glans" = ""
+# zh-TW: 看得到前端但主動部位不完整，最小值 {floor}
+# en: tip seen but the active part is not whole, minimum {floor}
+"pipe.range_partial" = ""
+# zh-TW: 完整（主動部位與前端都看得到）
+# en: whole (active part and tip both seen)
+"pipe.range_whole" = ""
+# zh-TW: 行程範圍：{what}
+# en: Stroke range: {what}
+"pipe.range" = ""
+# zh-TW: 看不到目標，改用一般模式
+# en: Target not seen, using the general mode
+"pipe.target_missing" = ""
+# zh-TW: 接觸部位：{contact_part}
+# en: Contact part: {contact_part}
+"pipe.contact_part" = ""
+# zh-TW: 混合：目標區域 {used}/{total} 幀
+# en: Mix: target region in {used}/{total} frames
+"pipe.hybrid_mix" = ""
+# zh-TW: AI 判斷畫面中沒有人，不分析動作，停在最高點
+# en: The AI sees nobody; the motion is not analysed and the script holds at the top
+"pipe.nobody" = ""
+# zh-TW: 改用移動較大的 {part}＋主動部位區域（{what}）
+# en: Following the one that moves more: {part} + active-part region ({what})
+"pipe.contact_switch" = ""
+# zh-TW: 區域改用 {pick_name}（週期性 {old} → {new}）
+# en: Region changed to {pick_name} (periodicity {old} → {new})
+"pipe.pick_used" = ""
+# zh-TW: 兩個區域都沒有節奏
+# en: neither region has a rhythm
+"pipe.pick_no_rhythm" = ""
+# zh-TW: 週期性較低（{new} < {old}）
+# en: periodicity is lower ({new} < {old})
+"pipe.pick_lower" = ""
+# zh-TW: AI 建議 {pick_name}，{why}，沿用原區域
+# en: The AI suggested {pick_name}, but {why}; keeping the original region
+"pipe.pick_kept" = ""
+# zh-TW: 方向依同鏡頭 {start}s 段翻轉（相似度 {sim}）
+# en: Direction flipped like the segment of the same shot at {start}s (similarity {sim})
+"pipe.flip_by_shot" = ""
+# zh-TW: 聲音起點在高點（{audio}），可能高低相反，請確認
+# en: Sound onsets fall at the highs ({audio}); possibly upside down, please check
+"pipe.sound_doubt" = ""
+# zh-TW: 同鏡頭 {n} 段合計 
+# en: {n} segments of the same shot combined, 
+"pipe.asym_group" = ""
+# zh-TW: ，聲音起點在高點 {audio}
+# en: , sound onsets at the highs {audio}
+"pipe.asym_sound" = ""
+# zh-TW: 往上比往下快（{what}不對稱 {asym}{sound}），
+# en: Rises faster than falls ({what}asymmetry {asym}{sound}); 
+"pipe.asym_note" = ""
+# zh-TW: 方向翻轉
+# en: direction flipped
+"pipe.direction_flipped" = ""
+# zh-TW: 可能高低相反
+# en: possibly upside down
+"pipe.possibly_inverted" = ""
+# zh-TW: 部位偵測無法使用：{error}
+# en: Part detection is not available: {error}
+"pipe.part_unavailable" = ""
+# zh-TW: 主動部位與對象部位的距離和動作一致（{part_sign}）
+# en: Active part–counterpart distance agrees with the motion ({part_sign})
+"pipe.part_agrees" = ""
+# zh-TW: 主動部位與對象部位的距離和動作相反（{part_sign}），方向翻轉
+# en: Active part–counterpart distance moves against the motion ({part_sign}); direction flipped
+"pipe.part_disagrees" = ""
+# zh-TW: 手動反轉
+# en: Flipped by hand
+"pipe.manual_flip" = ""
+
+# --- preview ---
+# zh-TW: 目前位置；編輯時選取動作點後，在這裡按住拖曳設定它的位置
+# en: Current position; while editing, select an action and drag here to set its position
+"preview.bar_title" = ""
+# zh-TW: 瀏覽器無法播放這個影片格式（建議使用 H.264 編碼的 MP4）。
+# en: The browser cannot play this video format (H.264 MP4 is recommended).
+"preview.err" = ""
+# zh-TW: 點擊跳轉；滾輪縮放時間範圍
+# en: Click to jump; scroll to zoom the time range
+"preview.timeline_title" = ""
+# zh-TW: 整支影片的動作速度；點擊跳轉
+# en: Motion speed of the whole video; click to jump
+"preview.overview_title" = ""
+# zh-TW: 時間
+# en: Time
+"preview.time" = ""
+# zh-TW: 鏡頭
+# en: Scene
+"preview.scene" = ""
+# zh-TW: 跳到上一個或下一個鏡頭的開頭
+# en: Jump to the start of the previous or next scene
+"preview.scenenav_title" = ""
+# zh-TW: 上一個鏡頭
+# en: Previous scene
+"preview.prev_scene" = ""
+# zh-TW: 下一個鏡頭
+# en: Next scene
+"preview.next_scene" = ""
+# zh-TW: （<k>PageUp</k><k>PageDown</k>）
+# en: (<k>PageUp</k><k>PageDown</k>)
+"preview.scene_keys" = ""
+# zh-TW: 跳到下一個可能高低相反、還沒反轉的鏡頭（底色標示）並播放
+# en: Jump to the next scene that may be upside down and is not flipped yet (shaded) and play it
+"preview.nextcheck_title" = ""
+# zh-TW: 下一個待確認（<k>N</k>）
+# en: Next to check (<k>N</k>)
+"preview.nextcheck" = ""
+# zh-TW: 在時間軸上編輯動作點，勾選後下方會列出操作按鍵；按播放器下方的「儲存編輯」寫入輸出檔
+# en: Edit the actions on the timeline; the keys are listed below once it is on. Press “Save edits” under the player to write the output file
+"preview.edit_title" = ""
+# zh-TW: 編輯（<k>E</k>）
+# en: Edit (<k>E</k>)
+"preview.edit" = ""
+# zh-TW: 把目前鏡頭（編輯時選取了多個點則只改這些點）的每一下行程以各自的中點為準放大或縮小（會開啟編輯；Ctrl+Z 復原）
+# en: Enlarge or shrink every stroke of the current scene (only the selected points if several are selected) around its own midpoint (turns editing on; Ctrl+Z undoes)
+"preview.scale_title" = ""
+# zh-TW: 幅度
+# en: Size
+"preview.scale" = ""
+# zh-TW: （<k>-</k><k>+</k>）
+# en: (<k>-</k><k>+</k>)
+"preview.scale_keys" = ""
+# zh-TW: 把目前鏡頭（編輯時選取了多個點則只改這些點）每個波峰（頂點）或波谷（底點）的動作點設成指定的位置，中間的點依比例跟著移動（會開啟編輯；Ctrl+Z 復原）
+# en: Set the actions at every peak (top) or valley (bottom) of the current scene (only the selected points if several are selected) to the given position; the points between move in proportion (turns editing on; Ctrl+Z undoes)
+"preview.peaks_title" = ""
+# zh-TW: 頂點
+# en: Top
+"preview.top" = ""
+# zh-TW: 設定
+# en: Set
+"preview.set" = ""
+# zh-TW: 底點
+# en: Bottom
+"preview.bottom" = ""
+# zh-TW: 播放速度
+# en: Playback speed
+"preview.rate" = ""
+# zh-TW: （<k>[</k><k>]</k>）
+# en: (<k>[</k><k>]</k>)
+"preview.rate_keys" = ""
+# zh-TW: 在影片上畫出這個鏡頭分析動作的區域：實線是目前用的，虛線是混合模式的另一個區域
+# en: Draw the region in which this scene's motion was analysed over the video: solid is the one in use, dashed is the hybrid mode's other region
+"preview.roi_title" = ""
+# zh-TW: 分析區域（<k>R</k>）
+# en: Analysis region (<k>R</k>)
+"preview.roi" = ""
+# zh-TW: 位置
+# en: Position
+"preview.position" = ""
+# zh-TW: 速度
+# en: Speed
+"preview.speed" = ""
+# zh-TW: 單位/秒
+# en: units/s
+"preview.speed_unit" = ""
+# zh-TW: 動作點
+# en: Actions
+"preview.actions" = ""
+# zh-TW: 視窗
+# en: Window
+"preview.window" = ""
+# zh-TW: 秒
+# en: s
+"preview.seconds" = ""
+# zh-TW: <k>空白</k> 播放/暫停　<k>←</k><k>→</k> 上/下一個動作點　<k>Shift</k>+<k>←</k><k>→</k> ±5 秒　<k>,</k><k>.</k> 逐幀　右鍵拖曳時間軸 捲動
+# en: <k>Space</k> play/pause  <k>←</k><k>→</k> previous/next action  <k>Shift</k>+<k>←</k><k>→</k> ±5 s  <k>,</k><k>.</k> frame by frame  right-drag the timeline to scroll
+"preview.keys" = ""
+# zh-TW: 編輯
+# en: Editing
+"preview.help.edit" = ""
+# zh-TW: 選取：點動作點，或 <k>←</k><k>→</k> 跳到上/下一個點；在空白處拖曳框選多個點，<k>Shift</k>+點選或框選加選
+# en: Select: click an action, or <k>←</k><k>→</k> to go to the previous/next one; drag on empty space to select several, <k>Shift</k>+click or drag to add to the selection
+"preview.help.select" = ""
+# zh-TW: 移動：拖曳（左右改時間、上下改位置；選取的點一起移動）
+# en: Move: drag (left/right changes the time, up/down the position; selected points move together)
+"preview.help.move" = ""
+# zh-TW: 新增：<k>A</k> 或 <k>Insert</k>（在播放位置），或雙擊時間軸空白處
+# en: Add: <k>A</k> or <k>Insert</k> (at the playback position), or double-click empty space on the timeline
+"preview.help.add" = ""
+# zh-TW: 刪除：<k>Delete</k> 或 <k>Backspace</k>
+# en: Delete: <k>Delete</k> or <k>Backspace</k>
+"preview.help.delete" = ""
+# zh-TW: 位置：<k>↑</k><k>↓</k> ±5，<k>Shift</k>+<k>↑</k><k>↓</k> ±1，或在右邊的位置條上按住拖曳（多個點時一起移動）
+# en: Position: <k>↑</k><k>↓</k> ±5, <k>Shift</k>+<k>↑</k><k>↓</k> ±1, or drag on the position bar on the right (several points move together)
+"preview.help.position" = ""
+# zh-TW: 幅度：<k>-</k> 縮小、<k>+</k> 放大
+# en: Size: <k>-</k> shrink, <k>+</k> enlarge
+"preview.help.size" = ""
+# zh-TW: 頂點／底點：在上方輸入位置後按「設定」或 <k>Enter</k>
+# en: Top/bottom: enter a position above, then press “Set” or <k>Enter</k>
+"preview.help.peaks" = ""
+# zh-TW: 幅度與頂點／底點改目前鏡頭；選取了多個點時只改選取的點
+# en: Size and top/bottom change the current scene; with several points selected, only those change
+"preview.help.scope" = ""
+# zh-TW: 復原：<k>Ctrl</k>+<k>Z</k>　取消選取：<k>Esc</k>　結束編輯：<k>E</k>
+# en: Undo: <k>Ctrl</k>+<k>Z</k>  Deselect: <k>Esc</k>  Finish editing: <k>E</k>
+"preview.help.undo" = ""
+# zh-TW: 改完按播放器下方的「儲存編輯」
+# en: When done, press “Save edits” under the player
+"preview.help.save" = ""
+# zh-TW: 已選 {n} 個點
+# en: {n} points selected
+"preview.js.selected" = ""
+# zh-TW: 分析區域
+# en: Analysis region
+"preview.js.region" = ""
+# zh-TW: 一般區域
+# en: General region
+"preview.js.region_general" = ""
+# zh-TW: 目標區域
+# en: Target region
+"preview.js.region_genital" = ""
+# zh-TW: ：
+# en: : 
+"preview.js.colon" = ""
+# zh-TW: （整個畫面）
+# en:  (whole frame)
+"preview.js.whole_frame" = ""
+# zh-TW: （參考 {n}）
+# en:  (reference {n})
+"preview.js.reference" = ""
+# zh-TW: （已反轉）
+# en:  (flipped)
+"preview.js.flipped" = ""
+# zh-TW: 　待確認：可能高低相反
+# en:   To check: possibly upside down
+"preview.js.check" = ""
+# zh-TW: 　未儲存的修改
+# en:   Unsaved changes
+"preview.js.unsaved" = ""
+
+# --- web ---
+# zh-TW: 自動判斷（依模型名稱）
+# en: Automatic (by the model's name)
+"web.bbox.auto" = ""
+# zh-TW: 0–1000 相對座標（Qwen3-VL 等）
+# en: Relative 0–1000 coordinates (Qwen3-VL etc.)
+"web.bbox.rel1000" = ""
+# zh-TW: 像素座標（Qwen2.5-VL）
+# en: Pixel coordinates (Qwen2.5-VL)
+"web.bbox.abs" = ""
+# zh-TW: OpenAI 相容（vLLM、LM Studio、llama.cpp 等）
+# en: OpenAI-compatible (vLLM, LM Studio, llama.cpp, etc.)
+"web.backend.openai" = ""
+# zh-TW: 已設定
+# en: set
+"web.key_set" = ""
+# zh-TW: 未設定
+# en: not set
+"web.key_unset" = ""
+# zh-TW: Ollama　
+# en: Ollama: 
+"web.ollama_prefix" = ""
+# zh-TW: {backend}端點：`{url}`　模型：`{model}`　金鑰：{key}（在「設定」分頁修改）
+# en: {backend}Endpoint: `{url}`  Model: `{model}`  Key: {key} (change it in the Settings tab)
+"web.ai_status" = ""
+# zh-TW: 檔名（點擊下載）
+# en: File (click to download)
+"web.out.col_file" = ""
+# zh-TW: 資料夾
+# en: Folder
+"web.out.col_folder" = ""
+# zh-TW: 大小
+# en: Size
+"web.out.col_size" = ""
+# zh-TW: 修改時間
+# en: Modified
+"web.out.col_modified" = ""
+# zh-TW: 影片 ({types})
+# en: Videos ({types})
+"web.file_types.video" = ""
+# zh-TW: 所有檔案 (*.*)
+# en: All files (*.*)
+"web.file_types.all" = ""
+# zh-TW: #
+# en: #
+"web.pcol.num" = ""
+# zh-TW: 開始 (秒)
+# en: Start (s)
+"web.pcol.start_s" = ""
+# zh-TW: 結束 (秒)
+# en: End (s)
+"web.pcol.end_s" = ""
+# zh-TW: 長度 (秒)
+# en: Length (s)
+"web.pcol.length_s" = ""
+# zh-TW: 切換強度
+# en: Cut strength
+"web.pcol.cut_strength" = ""
+# zh-TW: 動作點
+# en: Actions
+"web.pcol.actions" = ""
+# zh-TW: 反轉（點擊切換）
+# en: Flip (click)
+"web.pcol.flip_click" = ""
+# zh-TW: 備註
+# en: Note
+"web.pcol.note" = ""
+# zh-TW: 已反轉鏡頭 {k}（{start}–{end} 秒）；目前反轉的鏡頭：{flips}
+# en: Scene {k} flipped ({start}–{end} s); scenes flipped now: {flips}
+"web.flipped_scene" = ""
+# zh-TW: 已還原鏡頭 {k}（{start}–{end} 秒）；目前反轉的鏡頭：{flips}
+# en: Scene {k} restored ({start}–{end} s); scenes flipped now: {flips}
+"web.unflipped_scene" = ""
+# zh-TW: 無
+# en: none
+"web.none" = ""
+# zh-TW: 已反轉鏡頭 {k}（{start}–{end} 秒），輸出檔已更新
+# en: Scene {k} flipped ({start}–{end} s); the output file is updated
+"web.flipped_scene_job" = ""
+# zh-TW: 已還原鏡頭 {k}（{start}–{end} 秒），輸出檔已更新
+# en: Scene {k} restored ({start}–{end} s); the output file is updated
+"web.unflipped_scene_job" = ""
+# zh-TW: #
+# en: #
+"web.batch.col_num" = ""
+# zh-TW: 影片
+# en: Video
+"web.batch.col_video" = ""
+# zh-TW: 狀態
+# en: Status
+"web.batch.col_status" = ""
+# zh-TW: 鏡頭
+# en: Scenes
+"web.batch.col_scenes" = ""
+# zh-TW: 動作點
+# en: Actions
+"web.batch.col_actions" = ""
+# zh-TW: 可能高低相反的鏡頭
+# en: Scenes possibly upside down
+"web.batch.col_inverted" = ""
+# zh-TW: 耗時（秒）
+# en: Time (s)
+"web.batch.col_seconds" = ""
+# zh-TW: 錯誤
+# en: Error
+"web.batch.col_error" = ""
+# zh-TW: 等待中
+# en: Waiting
+"web.batch.status.pending" = ""
+# zh-TW: 完成
+# en: Done
+"web.batch.status.done" = ""
+# zh-TW: 失敗
+# en: Failed
+"web.batch.status.failed" = ""
+# zh-TW: 已取消
+# en: Cancelled
+"web.batch.status.cancelled" = ""
+# zh-TW: 略過
+# en: Skipped
+"web.batch.status.skipped" = ""
+# zh-TW: {status} {n} 部
+# en: {status}: {n}
+"web.batch.count" = ""
+# zh-TW: 共 {total} 部：{done}。輸出在 `{folder}/`（「輸出」分頁也看得到）。要檢查、反轉或編輯某一部時，在下面選它再按「在產生分頁開啟」。
+# en: {total} videos: {done}. The output is in `{folder}/` (also visible in the Output tab). To check, flip or edit one, select it below and press “Open in the Generate tab”.
+"web.batch.summary" = ""
+# zh-TW: 端點網址必須以 http:// 或 https:// 開頭
+# en: The endpoint URL must start with http:// or https://
+"web.err.url_scheme" = ""
+# zh-TW: 主機
+# en: host
+"web.host" = ""
+# zh-TW: 不自動刪除
+# en: No automatic deletion
+"web.out.no_auto_delete" = ""
+# zh-TW: <p>目前沒有輸出。</p>
+# en: <p>No outputs yet.</p>
+"web.out.empty" = ""
+# zh-TW: 請設定大於 0 的保留天數；要全部刪除請到「輸出」分頁按「全部清除」
+# en: Set a retention of more than 0 days; to delete everything, press “Clear all” in the Output tab
+"web.err.days_positive" = ""
+# zh-TW: 這個伺服器不接受本機路徑，請上傳影片
+# en: This server does not take paths on this computer; please upload the video
+"web.err.no_local_paths" = ""
+# zh-TW: ⚠️ 設定的模型不在清單中
+# en: ⚠️ The configured model is not in the list
+"web.conn.model_missing" = ""
+# zh-TW: 請先上傳影片
+# en: Please upload a video first
+"web.err.need_video" = ""
+# zh-TW: 請上傳要預覽的 funscript
+# en: Please upload the funscript to preview
+"web.err.need_script" = ""
+# zh-TW: 載入預覽後即可調整鏡頭切換靈敏度
+# en: Adjust the scene cut sensitivity after loading a preview
+"web.pv.load_first_hint" = ""
+# zh-TW: 不切分鏡頭預覽
+# en: Preview without scene cuts
+"web.pv.load_whole" = ""
+# zh-TW: 取消載入
+# en: Cancel loading
+"web.pv.cancel_load" = ""
+# zh-TW: 已要求取消載入（{time}）。
+# en: Cancel requested ({time}).
+"web.pv.cancel_requested" = ""
+# zh-TW: 已取消載入預覽。
+# en: Preview loading cancelled.
+"web.pv.cancelled" = ""
+# zh-TW: 未切分鏡頭的預覽沒有鏡頭可重新切分；請用「載入預覽」。
+# en: A preview without scene cuts has no scenes to re-split; use Load preview.
+"web.pv.no_scenes_hint" = ""
+# zh-TW: 已先儲存未儲存的編輯。
+# en: Unsaved edits were saved first.
+"web.pv.saved_first" = ""
+# zh-TW: 請先載入預覽
+# en: Please load a preview first
+"web.err.load_preview_first" = ""
+# zh-TW: 沒有未儲存的編輯
+# en: No unsaved edits
+"web.msg.no_edits" = ""
+# zh-TW: 讀不到播放位置，請先點一下播放器
+# en: Cannot read the playback position; click the player once first
+"web.err.no_position" = ""
+# zh-TW: 已在預覽中手動編輯動作點（輸出檔的 metadata 標記 `hand_edited`；CLI 無法重現這些修改）
+# en: Actions were edited by hand in the preview (the output file's metadata is marked `hand_edited`; the CLI cannot reproduce these changes)
+"web.run.hand_edited" = ""
+# zh-TW: 請先產生 funscript
+# en: Please generate a funscript first
+"web.err.generate_first" = ""
+# zh-TW: 切分鏡頭
+# en: Splitting scenes
+"web.step.scenes" = ""
+# zh-TW: AI 分析鏡頭
+# en: AI scene analysis
+"web.step.ai" = ""
+# zh-TW: 計算動作訊號
+# en: Computing motion signals
+"web.step.signal" = ""
+# zh-TW: 偵測部位框
+# en: Detecting part boxes
+"web.step.parts" = ""
+# zh-TW: （沿用上次的分析，只重新計算輸出；影片或分析設定改變時才會重新分析）
+# en:  (the last analysis was reused and only the output was made again; the video is analysed again when it or the analysis settings change)
+"web.run.reused" = ""
+# zh-TW: 已取消
+# en: Cancelled
+"web.err.cancelled" = ""
+# zh-TW: 沿用上次的分析，重新計算輸出
+# en: Reusing the last analysis, making the output again
+"web.progress.reuse" = ""
+# zh-TW: 請先選擇影片（可以一次選多個）
+# en: Please choose videos first (several at once are fine)
+"web.err.need_videos" = ""
+# zh-TW: 請先在清單中選擇一部已完成的影片
+# en: Please select a finished video in the list first
+"web.err.pick_job" = ""
+# zh-TW: 長鏡頭分段（同一個鏡頭超過 20 秒，每 20 秒分一段）
+# en: Chunk of a long shot (a shot over 20 s is split every 20 s)
+"web.pv.note_chunk" = ""
+# zh-TW: 切換強度接近門檻：靈敏度調高一點這裡就不會切開
+# en: Cut strength is close to the threshold: with a slightly higher sensitivity this would not be cut here
+"web.pv.note_cut" = ""
+# zh-TW: 偵測鏡頭
+# en: Detecting scenes
+"web.progress.detect_scenes" = ""
+# zh-TW: 位置：`{folder}`　目前 **{runs}** 次產生的輸出，共 {size}　{rule}
+# en: Location: `{folder}`  {runs} runs of output now, {size} in total  {rule}
+"web.out.status" = ""
+# zh-TW: 自動刪除超過 **{days}** 天的輸出
+# en: Outputs older than **{days}** days are deleted automatically
+"web.out.auto_delete" = ""
+# zh-TW: 🗑️ 已刪除 {runs} 個輸出（{size}，{time}）
+# en: 🗑️ Deleted {runs} outputs ({size}, {time})
+"web.out.deleted" = ""
+# zh-TW: 已開啟 `{folder}`
+# en: Opened `{folder}`
+"web.out.opened" = ""
+# zh-TW: {mark} `{url}`（{ms} ms）— 模型：{models}
+# en: {mark} `{url}` ({ms} ms) — models: {models}
+"web.conn.result" = ""
+# zh-TW: 已要求取消（{time}），會在下一次更新進度時停止（AI 分析中則在正在進行的呼叫完成後停止）。
+# en: Cancel requested ({time}); it stops at the next progress update (while the AI is analysing, after the call in progress finishes).
+"web.cancel_requested" = ""
+# zh-TW: ✅ 取得 {n} 個模型
+# en: ✅ Got {n} models
+"web.models_fetched" = ""
+# zh-TW: ✅ 已儲存到 `.env` 並立即套用（{time}）
+# en: ✅ Saved to `.env` and applied at once ({time})
+"web.saved_env" = ""
+# zh-TW: ，並刪除了 {runs} 個過期的輸出（{size}）
+# en: , and deleted {runs} expired outputs ({size})
+"web.out.expired_note" = ""
+# zh-TW: ✅ 已儲存（{time}）{note}
+# en: ✅ Saved ({time}){note}
+"web.saved" = ""
+# zh-TW: 同時存到影片旁邊：`{target}`
+# en: Also saved beside the video: `{target}`
+"web.beside_copy" = ""
+# zh-TW: ✅ 之後從本機選擇的影片，腳本也會存到影片旁邊（{time}）
+# en: ✅ From now on the script of a video chosen on this computer is also saved beside the video ({time})
+"web.beside_on" = ""
+# zh-TW: ✅ 之後的腳本只存在輸出目錄（{time}）
+# en: ✅ From now on scripts are saved only in the output folder ({time})
+"web.beside_off" = ""
+# zh-TW: 以靈敏度 {threshold} 偵測到 **{scenes}** 個鏡頭：{cuts} 個切換、{continued} 個長鏡頭分段。
+# en: At sensitivity {threshold} **{scenes}** scenes were found: {cuts} cuts, {continued} chunks of long shots.
+"web.pv.summary" = ""
+# zh-TW: 靈敏度 {lo} 時 {n_lo} 個、{hi} 時 {n_hi} 個（調整後不必重新載入）。
+# en: At sensitivity {lo} there would be {n_lo}, at {hi} {n_hi} (no need to reload after adjusting).
+"web.pv.summary_steps" = ""
+# zh-TW: 已分別代入影片「{video}」與 funscript「{script}」
+# en: Put the video “{video}” and the funscript “{script}” in their boxes
+"web.pv.picked_both" = ""
+# zh-TW: 已把 funscript「{script}」放進 funscript 欄
+# en: Put the funscript “{script}” in the funscript box
+"web.pv.picked_script" = ""
+# zh-TW: 一次只能預覽一部影片，使用「{video}」
+# en: Only one video can be previewed at a time; using “{video}”
+"web.pv.picked_one" = ""
+# zh-TW: 已儲存編輯（{n} 個動作點）
+# en: Edits saved ({n} actions)
+"web.pv.saved_edits" = ""
+# zh-TW: 已儲存編輯（{n} 個動作點），輸出檔已更新
+# en: Edits saved ({n} actions); the output file is updated
+"web.saved_edits_job" = ""
+# zh-TW: 已開啟批次結果：{name}
+# en: Opened the batch result: {name}
+"web.batch.opened" = ""
+# zh-TW: 找不到影片：{video}
+# en: Video not found: {video}
+"web.err.video_not_found" = ""
+# zh-TW: 找不到：{names}
+# en: Not found: {names}
+"web.err.not_found" = ""
+# zh-TW: ⚠️ 影片旁邊已有不是 funscript-gen 產生的 `{name}`，沒有覆寫；腳本只存在輸出目錄
+# en: ⚠️ Beside the video there is already `{name}` that funscript-gen did not make; it was not overwritten, and the script is only in the output folder
+"web.beside_exists" = ""
+# zh-TW: **{n}** 個動作點，
+# en: **{n}** actions, 
+"web.run.actions" = ""
+# zh-TW: ⚠️ 鏡頭 {scenes} 可能高低相反（原因見鏡頭表的備註，預覽中以底色標示）；按預覽的「下一個待確認」逐一跳過去看，相反的話按「反轉」
+# en: ⚠️ Scenes {scenes} may be upside down (the reason is in the scene table's note, and the preview shades them); press “Next to check” in the preview to go through them, and “Flip” for those that are
+"web.run.suspects" = ""
+# zh-TW: 手動反轉的鏡頭：{list}（CLI 對應參數：`--flip-scenes {nums}`）
+# en: Scenes flipped by hand: {list} (the CLI option: `--flip-scenes {nums}`)
+"web.run.manual_flips" = ""
+# zh-TW: 與參考腳本比較：轉折點 F1 **{f1}**（P {precision} / R {recall}），相關係數 **{corr}**（時間差 {lag} ms，限 ±100 ms 內；舊算法 ±500 ms：{corr_wide}）；忽略參考腳本中小於 {wiggle} 的抖動時 F1 **{f1_clean}**
+# en: Compared with the reference script: turning point F1 **{f1}** (P {precision} / R {recall}), correlation **{corr}** (time shift {lag} ms, within ±100 ms; old method ±500 ms: {corr_wide}); ignoring wiggles smaller than {wiggle} in the reference, F1 **{f1_clean}**
+"web.run.compare" = ""
+# zh-TW: 鏡頭 {number} 沒有動作點，無法反轉
+# en: Scene {number} has no actions and cannot be flipped
+"web.err.scene_empty" = ""
+# zh-TW: ❌ 無法連線 `{url}`：{e}
+# en: ❌ Cannot connect to `{url}`: {e}
+"web.conn.failed" = ""
+# zh-TW: **{n}** 個鏡頭，耗時 {elapsed} 秒
+# en: **{n}** scenes, took {elapsed} s
+"web.run.scenes" = ""
+# zh-TW: ⚠️ {n} 個鏡頭被略過（見鏡頭分析表的備註）
+# en: ⚠️ {n} scenes were skipped (see the note in the scene table)
+"web.run.skipped" = ""
+# zh-TW: ⚠️ {n} 個鏡頭的 AI 分析失敗，已改用整個畫面分析（品質可能較差）
+# en: ⚠️ The AI analysis of {n} scenes failed; the whole picture was analysed instead (the quality may be lower)
+"web.run.ai_errors" = ""
+# zh-TW: 光流 {device}
+# en: optical flow {device}
+"web.run.dev_flow" = ""
+# zh-TW: 部位框 {device}
+# en: part boxes {device}
+"web.run.dev_parts" = ""
+# zh-TW: 處理中：已完成 {k}/{n} 部
+# en: Processing: {k} of {n} done
+"web.batch.progress_done" = ""
+# zh-TW: 處理中：{k}/{n} 部
+# en: Processing: video {k} of {n}
+"web.batch.progress" = ""
+# zh-TW: {k}/{n} {name}：{label}
+# en: {k}/{n} {name}: {label}
+"web.batch.item_progress" = ""
+# zh-TW: 處理失敗：{e}
+# en: Processing failed: {e}
+"web.err.failed" = ""
+# zh-TW: 無法取得模型清單：{e}
+# en: Cannot get the model list: {e}
+"web.err.models_failed" = ""
+# zh-TW: 編輯的動作點無法讀取：{e}
+# en: The edited actions cannot be read: {e}
+"web.err.edits_unreadable" = ""
+# zh-TW: funscript 無法讀取：{e}
+# en: The funscript cannot be read: {e}
+"web.err.script_unreadable" = ""
+# zh-TW: 無法讀取影片：{e}
+# en: Cannot read the video: {e}
+"web.err.video_unreadable" = ""
+# zh-TW: ⚠️ 參考腳本無法讀取：{e}
+# en: ⚠️ The reference script cannot be read: {e}
+"web.run.ref_unreadable" = ""
+# zh-TW: 運算裝置：{list}
+# en: Compute device: {list}
+"web.run.devices" = ""
+# zh-TW: 請先上傳影片或選擇本機的影片
+# en: Please upload a video or choose one on this computer first
+"web.err.need_video_local" = ""
+# zh-TW: 產生
+# en: Generate
+"web.tab.gen" = ""
+# zh-TW: 產生 funscript
+# en: Generate funscript
+"web.gen.run" = ""
+# zh-TW: 取消
+# en: Cancel
+"web.cancel" = ""
+# zh-TW: 影片
+# en: Video
+"web.gen.video" = ""
+# zh-TW: 或指定本機的影片
+# en: Or a video on this computer
+"web.gen.local_video" = ""
+# zh-TW: 例如 D:\Videos\clip.mp4
+# en: e.g. D:\Videos\clip.mp4
+"web.gen.local_placeholder" = ""
+# zh-TW: 直接讀取原檔，不必上傳；填了就不用上面上傳的影片。「設定」分頁可以選擇同時把腳本存到影片旁邊。
+# en: The original file is read as it is, with no upload; when this is filled in, the uploaded video above is not used. The Settings tab can also save the script beside the video.
+"web.gen.local_info" = ""
+# zh-TW: 選擇…
+# en: Choose…
+"web.pick" = ""
+# zh-TW: 參考腳本（選填，用來評分）
+# en: Reference script (optional, for scoring)
+"web.gen.reference" = ""
+# zh-TW: 設定組
+# en: Preset
+"web.gen.preset" = ""
+# zh-TW: 按「套用」把下面的設定都改成這組的值，之後仍可個別調整。
+# en: Press “Apply” to set everything below to this preset's values; each can still be adjusted afterwards.
+"web.gen.preset_info" = ""
+# zh-TW: 套用
+# en: Apply
+"web.gen.apply" = ""
+# zh-TW: 測試連線
+# en: Test connection
+"web.test_connection" = ""
+# zh-TW: 按「產生」時會記住這些設定，下次開啟頁面自動套用。
+# en: The settings are remembered when you press Generate and applied when the page is opened again.
+"web.gen.remember" = ""
+# zh-TW: 還原預設設定
+# en: Restore default settings
+"web.gen.reset" = ""
+# zh-TW: ### 預覽\n播放影片時同步顯示腳本；灰線是參考腳本、虛線是鏡頭切換。點一下播放器後可用鍵盤操作。
+# en: ### Preview\nThe script is shown in step with the video; the grey line is the reference script, dashed lines are scene cuts. Click the player once to use the keyboard.
+"web.gen.preview_title" = ""
+# zh-TW: 反轉
+# en: Flip
+"web.flip" = ""
+# zh-TW: 儲存編輯
+# en: Save edits
+"web.save_edits" = ""
+# zh-TW: 「反轉」把目前播放位置所在鏡頭的動作上下反轉，再按一次還原；輸出檔會立即更新。勾選播放器的「編輯」可以直接修改動作點、放大或縮小鏡頭的幅度，或把鏡頭的頂點、底點設成指定位置（播放器下方會列出按鍵），改完按「儲存編輯」。
+# en: “Flip” flips the motion of the scene at the current playback position upside down; press again to restore it, and the output file is updated at once. Tick “Edit” in the player to change actions directly, enlarge or shrink a scene's strokes, or set a scene's tops and bottoms to given positions (the keys are listed under the player); press “Save edits” when done.
+"web.gen.flip_help" = ""
+# zh-TW: 輸出 funscript
+# en: Output funscript
+"web.output_funscript" = ""
+# zh-TW: 訊號與輸出
+# en: Signal and output
+"web.gen.plot" = ""
+# zh-TW: 鏡頭分析結果（點「反轉」欄可把該鏡頭的動作上下反轉，再點一次還原；輸出檔會立即更新）
+# en: Scene analysis (click the “Flip” column to flip a scene's motion upside down, click again to restore it; the output file is updated at once)
+"web.gen.scenes" = ""
+# zh-TW: 批次
+# en: Batch
+"web.tab.batch" = ""
+# zh-TW: 一次選多部影片，依序用「產生」分頁目前的設定產生腳本，全部放在同一個輸出資料夾。某一部失敗時會記下原因、繼續下一部；按「取消」會在目前這部的下一次進度更新時停止，已完成的腳本保留。
+# en: Choose several videos at once; scripts are made one after another with the Generate tab's current settings and all go into the same output folder. When one fails the reason is noted and the next one runs; “Cancel” stops at the current video's next progress update, and finished scripts are kept.
+"web.batch.intro" = ""
+# zh-TW: 開始批次產生
+# en: Start batch
+"web.batch.run" = ""
+# zh-TW: 影片（可以一次選多個）
+# en: Videos (several at once are fine)
+"web.batch.videos" = ""
+# zh-TW: 或指定本機的影片或資料夾（一行一個；資料夾會處理其中所有影片）
+# en: Or videos or folders on this computer (one per line; every video in a folder is processed)
+"web.batch.local" = ""
+# zh-TW: 選擇影片…
+# en: Choose videos…
+"web.batch.pick_videos" = ""
+# zh-TW: 選擇資料夾…
+# en: Choose folder…
+"web.batch.pick_folder" = ""
+# zh-TW: 結果
+# en: Result
+"web.batch.result" = ""
+# zh-TW: 已完成的影片
+# en: Finished videos
+"web.batch.done_videos" = ""
+# zh-TW: 在「產生」分頁開啟後可以預覽、反轉鏡頭、編輯動作點，輸出檔會一併更新。
+# en: After opening it in the Generate tab you can preview it, flip scenes and edit actions; the output file is updated too.
+"web.batch.done_info" = ""
+# zh-TW: 在產生分頁開啟
+# en: Open in the Generate tab
+"web.batch.open" = ""
+# zh-TW: 預覽
+# en: Preview
+"web.tab.preview" = ""
+# zh-TW: 載入任意影片與 funscript，邊看影片邊檢查腳本的動作。
+# en: Load any video and funscript, and check the script's motion while watching the video.
+"web.pv.intro" = ""
+# zh-TW: 影片（可同時選取影片與 funscript）
+# en: Video (a video and its funscript can be picked together)
+"web.pv.video" = ""
+# zh-TW: 參考腳本（選填，以灰線疊加）
+# en: Reference script (optional, overlaid as a grey line)
+"web.pv.reference" = ""
+# zh-TW: 載入預覽
+# en: Load preview
+"web.pv.load" = ""
+# zh-TW: 重新切分鏡頭
+# en: Split scenes again
+"web.pv.rescene" = ""
+# zh-TW: 載入時會自動切分鏡頭，結果列在下方的鏡頭表；切得太碎或漏切時調整靈敏度（越小越容易切開），放開滑桿或按「重新切分鏡頭」立即重算，不必重新載入。「反轉」把目前播放位置所在鏡頭的動作上下反轉（在腳本自己的最低到最高位置之間），再按一次還原。勾選播放器的「編輯」可以直接修改動作點、放大或縮小鏡頭的幅度，或把鏡頭的頂點、底點設成指定位置（播放器下方會列出按鍵），改完按「儲存編輯」。
+# en: Scenes are split automatically when loading and listed in the table below; if they are cut too finely or missed, adjust the sensitivity (lower cuts more easily), and release the slider or press “Split scenes again” to recompute at once, with no reload. “Flip” flips the motion of the scene at the current playback position upside down (between the script's own lowest and highest positions); press again to restore it. Tick “Edit” in the player to change actions directly, enlarge or shrink a scene's strokes, or set a scene's tops and bottoms to given positions (the keys are listed under the player); press “Save edits” when done.
+"web.pv.help" = ""
+# zh-TW: 修改後的 funscript
+# en: Modified funscript
+"web.pv.out" = ""
+# zh-TW: 鏡頭（點「反轉」欄可把該鏡頭的動作上下反轉，再點一次還原；切換強度越大表示切換越明顯）
+# en: Scenes (click the “Flip” column to flip a scene's motion upside down, click again to restore it; the higher the cut strength, the clearer the cut)
+"web.pv.scenes" = ""
+# zh-TW: 輸出
+# en: Output
+"web.tab.output" = ""
+# zh-TW: 之前產生、還沒刪除的腳本。點擊檔名即可下載。自動刪除的天數在「設定」分頁調整。
+# en: Scripts made before that are not deleted yet. Click a file name to download it. The number of days after which they are deleted is set in the Settings tab.
+"web.out.intro" = ""
+# zh-TW: 重新整理
+# en: Refresh
+"web.out.refresh" = ""
+# zh-TW: 開啟輸出資料夾
+# en: Open the output folder
+"web.out.open" = ""
+# zh-TW: 全部清除
+# en: Clear all
+"web.out.clear" = ""
+# zh-TW: **確定要刪除全部輸出嗎？**刪除後無法復原。
+# en: **Delete all outputs?** This cannot be undone.
+"web.out.confirm_text" = ""
+# zh-TW: 確定全部清除
+# en: Yes, clear all
+"web.out.confirm" = ""
+# zh-TW: 設定
+# en: Settings
+"web.tab.settings" = ""
+# zh-TW: 任何 OpenAI 相容的端點（vLLM、LM Studio、llama.cpp 等），或 Ollama。按「儲存設定」後寫入專案目錄的 `.env`，並立即套用到之後的工作。
+# en: Any OpenAI-compatible endpoint (vLLM, LM Studio, llama.cpp, etc.), or Ollama. After you press “Save settings” they are written to `.env` in the project folder and applied to later jobs at once.
+"web.set.intro" = ""
+# zh-TW: 後端
+# en: Backend
+"web.set.backend" = ""
+# zh-TW: Ollama 選「Ollama」才能設定上下文長度（它的 /v1 端點用預設值，圖片多時會被截斷）。
+# en: Choose “Ollama” to set the context length (its /v1 endpoint uses the default, and many images get truncated).
+"web.set.backend_info" = ""
+# zh-TW: 端點網址
+# en: Endpoint URL
+"web.set.url" = ""
+# zh-TW: API 金鑰
+# en: API key
+"web.set.key" = ""
+# zh-TW: 基於安全考量，已儲存的金鑰不會顯示在頁面上。
+# en: For safety, a saved key is never shown on the page.
+"web.set.key_info" = ""
+# zh-TW: 模型
+# en: Model
+"web.set.model" = ""
+# zh-TW: 按「取得模型清單」從伺服器載入可用的模型，也可以直接輸入名稱。
+# en: Press “Get model list” to load the available models from the server, or type a name.
+"web.set.model_info" = ""
+# zh-TW: 取得模型清單
+# en: Get model list
+"web.set.fetch" = ""
+# zh-TW: 座標格式
+# en: Coordinate format
+"web.set.bbox" = ""
+# zh-TW: 模型回傳框座標的格式；不確定時選自動判斷。
+# en: The format of the box coordinates the model returns; choose automatic when unsure.
+"web.set.bbox_info" = ""
+# zh-TW: 同時請求數
+# en: Concurrent requests
+"web.set.concurrency" = ""
+# zh-TW: 同時送給伺服器的請求數；vLLM 會合併計算，越多 AI 分析越快（16 個鏡頭：4 → 64 秒、8 → 29 秒、16 → 15 秒），但伺服器負擔越大。Ollama 一次只算幾個（OLLAMA_NUM_PARALLEL），其餘排隊。
+# en: How many requests are sent to the server at once; vLLM batches them, so more is faster (16 scenes: 4 → 64 s, 8 → 29 s, 16 → 15 s) but loads the server more. Ollama computes only a few at a time (OLLAMA_NUM_PARALLEL) and queues the rest.
+"web.set.concurrency_info" = ""
+# zh-TW: 上下文長度（Ollama）
+# en: Context length (Ollama)
+"web.set.num_ctx" = ""
+# zh-TW: 每個請求的 token 上限；一次最多送 8 張圖（每張約 1040），16384 足夠。越大越占顯示卡記憶體。
+# en: The token limit of each request; at most 8 images are sent at once (about 1040 each), so 16384 is enough. A larger value uses more graphics memory.
+"web.set.num_ctx_info" = ""
+# zh-TW: 在這台電腦上一鍵啟動 Ollama、下載模型，並自動把上面的設定指向它（端點 `http://127.0.0.1:11434`，儲存到 `.env`）。
+# en: Start Ollama on this computer, download the model and point the settings above at it (endpoint `http://127.0.0.1:11434`, saved to `.env`) in one click.
+"web.ollama.intro" = ""
+# zh-TW: Ollama 的執行方式
+# en: How to run Ollama
+"web.ollama.mode" = ""
+# zh-TW: Docker（建立容器 funscript-gen-ollama，模型存在 Docker volume）
+# en: Docker (creates the container funscript-gen-ollama; models live in a Docker volume)
+"web.ollama.mode_docker" = ""
+# zh-TW: 使用已安裝的 Ollama（ollama serve）
+# en: The installed Ollama (ollama serve)
+"web.ollama.mode_native" = ""
+# zh-TW: 　⚠️ 未偵測到
+# en:   ⚠️ not found
+"web.ollama.not_found" = ""
+# zh-TW: 要執行的模型
+# en: Model to run
+"web.ollama.model" = ""
+# zh-TW: 8B 約 6 GB（需約 8.5 GB 可用的顯示卡記憶體），4B 約 3 GB（8 GB 顯示卡用），2B 準確度更低。也可以輸入其他模型名稱。
+# en: 8B is about 6 GB (needs about 8.5 GB of free GPU memory), 4B about 3 GB (for 8 GB GPUs), 2B is less accurate. Any other model name works too.
+"web.ollama.model_info" = ""
+# zh-TW: 執行並自動設定
+# en: Run and configure
+"web.ollama.run" = ""
+# zh-TW: ✅ Ollama 已就緒，設定已儲存並套用：`{url}`，模型 `{model}`。
+# en: ✅ Ollama is ready; settings saved and applied: `{url}`, model `{model}`.
+"web.ollama.done" = ""
+# zh-TW: 容器 {name} 已在執行。
+# en: Container {name} is already running.
+"web.ollama.p.reuse_container" = ""
+# zh-TW: 啟動既有的容器 {name}…
+# en: Starting the existing container {name}…
+"web.ollama.p.start_container" = ""
+# zh-TW: 建立容器 {name}（映像檔 {image}，第一次需要下載，約 2 GB）…
+# en: Creating container {name} (image {image}, about 2 GB to download the first time)…
+"web.ollama.p.create_container" = ""
+# zh-TW: ⚠️ 無法使用 GPU（需要 NVIDIA 驅動程式與 NVIDIA Container Toolkit），改用只有 CPU 的容器，AI 分析會非常慢。
+# en: ⚠️ The GPU is not usable (needs an NVIDIA driver and the NVIDIA Container Toolkit); using a CPU-only container, so AI analysis will be very slow.
+"web.ollama.p.no_gpu" = ""
+# zh-TW: {url} 的 Ollama 已在執行，直接使用。
+# en: Ollama at {url} is already running; using it.
+"web.ollama.p.reuse_server" = ""
+# zh-TW: 啟動 ollama serve…
+# en: Starting ollama serve…
+"web.ollama.p.start_native" = ""
+# zh-TW: 等待 {url} 回應…
+# en: Waiting for {url} to answer…
+"web.ollama.p.wait_server" = ""
+# zh-TW: 模型 {model} 已下載。
+# en: Model {model} is already downloaded.
+"web.ollama.p.model_present" = ""
+# zh-TW: 下載 {model}：{pct}%（{done} / {total} GB）
+# en: Downloading {model}: {pct}% ({done} / {total} GB)
+"web.ollama.p.pulling" = ""
+# zh-TW: 模型 {model} 下載完成。
+# en: Model {model} downloaded.
+"web.ollama.p.pulled" = ""
+# zh-TW: 找不到可用的 Docker（沒有安裝，或 Docker 服務沒有執行）。
+# en: No usable Docker found (not installed, or the Docker service is not running).
+"web.ollama.err.no_docker" = ""
+# zh-TW: 找不到 ollama 指令，請先安裝 Ollama 或改用 Docker。
+# en: The ollama command was not found; install Ollama or use Docker.
+"web.ollama.err.no_native" = ""
+# zh-TW: {url} 已有其他 Ollama 在執行，不是這裡建立的容器。請改選「使用已安裝的 Ollama」，或先停止它。
+# en: Another Ollama is already running at {url}, not a container made here. Choose "The installed Ollama" or stop it first.
+"web.ollama.err.port_busy" = ""
+# zh-TW: Docker 執行失敗：{e}
+# en: Docker failed: {e}
+"web.ollama.err.docker_failed" = ""
+# zh-TW: 無法啟動 ollama：{e}
+# en: Could not start ollama: {e}
+"web.ollama.err.start_failed" = ""
+# zh-TW: {s} 秒內 {url} 沒有回應。
+# en: {url} did not answer within {s} s.
+"web.ollama.err.no_server" = ""
+# zh-TW: 下載模型 {model} 失敗：{e}
+# en: Downloading model {model} failed: {e}
+"web.ollama.err.pull_failed" = ""
+# zh-TW: 未知的執行方式：{mode}
+# en: Unknown way to run: {mode}
+"web.ollama.err.mode" = ""
+# zh-TW: 確認狀態
+# en: Check status
+"web.ollama.check" = ""
+# zh-TW: 清除自動安裝的 Ollama
+# en: Remove the auto-installed Ollama
+"web.ollama.clear" = ""
+# zh-TW: 會停止並刪除 Docker 容器 funscript-gen-ollama、它的模型 volume（已下載的模型要重新下載）與映像檔。已安裝的 Ollama 不受影響。確定要清除嗎？
+# en: Stops and deletes the Docker container funscript-gen-ollama, its model volume (downloaded models must be downloaded again) and the image. An installed Ollama is not affected. Remove them?
+"web.ollama.clear_confirm" = ""
+# zh-TW: 確定清除
+# en: Remove
+"web.ollama.clear_yes" = ""
+# zh-TW: 容器
+# en: container
+"web.ollama.what_container" = ""
+# zh-TW: 模型 volume
+# en: model volume
+"web.ollama.what_volume" = ""
+# zh-TW: 映像檔
+# en: image
+"web.ollama.what_image" = ""
+# zh-TW: 已刪除容器。
+# en: Container removed.
+"web.ollama.p.removed_container" = ""
+# zh-TW: 已刪除模型 volume。
+# en: Model volume removed.
+"web.ollama.p.removed_volume" = ""
+# zh-TW: 已刪除映像檔。
+# en: Image removed.
+"web.ollama.p.removed_image" = ""
+# zh-TW: ⚠️ 無法刪除{what}：{e}
+# en: ⚠️ Could not remove the {what}: {e}
+"web.ollama.p.remove_failed" = ""
+# zh-TW: 沒有可清除的項目（沒有這個程式建立的容器、volume 或映像檔）。
+# en: Nothing to remove (no container, volume or image made by this program).
+"web.ollama.p.nothing_to_remove" = ""
+# zh-TW: ✅ {url} 的 Ollama 正在執行；已下載的模型：{models}
+# en: ✅ Ollama at {url} is running; downloaded models: {models}
+"web.ollama.s.server_up" = ""
+# zh-TW: ⚪ {url} 沒有 Ollama 在執行。
+# en: ⚪ No Ollama is running at {url}.
+"web.ollama.s.server_down" = ""
+# zh-TW: （無）
+# en: (none)
+"web.ollama.s.no_models" = ""
+# zh-TW: Docker：無法使用（沒有安裝，或服務沒有執行）。
+# en: Docker: not usable (not installed, or the service is not running).
+"web.ollama.s.no_docker" = ""
+# zh-TW: Docker 容器 {name}：執行中。
+# en: Docker container {name}: running.
+"web.ollama.s.container_running" = ""
+# zh-TW: Docker 容器 {name}：已建立，已停止。
+# en: Docker container {name}: created, stopped.
+"web.ollama.s.container_stopped" = ""
+# zh-TW: Docker 容器 {name}：不存在。
+# en: Docker container {name}: does not exist.
+"web.ollama.s.container_none" = ""
+# zh-TW: 模型 volume {name}：存在。
+# en: Model volume {name}: exists.
+"web.ollama.s.volume" = ""
+# zh-TW: 已安裝的 Ollama：偵測到 ollama 指令。
+# en: Installed Ollama: the ollama command was found.
+"web.ollama.s.native_yes" = ""
+# zh-TW: 已安裝的 Ollama：沒有偵測到 ollama 指令。
+# en: Installed Ollama: the ollama command was not found.
+"web.ollama.s.native_no" = ""
+# zh-TW: 目前執行中的 Ollama 是本程式啟動的，程式結束時會關閉。
+# en: The running Ollama was started by this program and will be stopped when it ends.
+"web.ollama.s.ours" = ""
+# zh-TW: 請選擇或輸入要執行的模型。
+# en: Choose or enter the model to run.
+"web.ollama.err.no_model" = ""
+# zh-TW: 儲存設定
+# en: Save settings
+"web.set.save" = ""
+# zh-TW: 變更後立即記住，套用到「產生」與「批次」。
+# en: Changes are remembered at once and apply to Generate and Batch.
+"web.set.compute_note" = ""
+# zh-TW: 輸出檔案
+# en: Output files
+"web.set.files" = ""
+# zh-TW: 每次產生的腳本存在輸出目錄的 `<時間>/` 資料夾，可以在「輸出」分頁瀏覽、下載或全部清除。設定保留天數後，伺服器啟動時、每小時、以及每次產生完成後，會刪除超過天數的資料夾；只會刪除以時間命名的輸出資料夾，不會動到其他檔案。上傳的影片存在 Gradio 暫存目錄，不在這裡管理。
+# en: Each run's scripts are kept in a `<time>/` folder of the output folder, which you can browse, download from or clear in the Output tab. When a number of days is set, folders older than that are deleted when the server starts, every hour and after each run; only folders named by time are deleted, nothing else is touched. Uploaded videos are kept in Gradio's temporary folder, which is not managed here.
+"web.set.files_intro" = ""
+# zh-TW: 保留天數
+# en: Retention days
+"web.set.days" = ""
+# zh-TW: 0 = 不自動刪除。
+# en: 0 = never delete automatically.
+"web.set.days_info" = ""
+# zh-TW: 同時把腳本存到影片旁邊
+# en: Also save the script beside the video
+"web.set.beside" = ""
+# zh-TW: 只對從本機選擇的影片有效（上傳的影片沒有原始位置），存成和影片同名的 .funscript，輸出目錄中仍保留一份。影片旁已有不是 funscript-gen 產生的同名腳本時不會覆寫。變更後立即記住。
+# en: Only for videos chosen on this computer (an uploaded video has no original location). Saved as a .funscript with the video's name; a copy stays in the output folder. A script of the same name that funscript-gen did not make is never overwritten. Changes are remembered at once.
+"web.set.beside_info" = ""
+# zh-TW: 儲存自動刪除設定
+# en: Save automatic deletion
+"web.set.save_retention" = ""
+# zh-TW: 立即刪除過期的輸出
+# en: Delete expired outputs now
+"web.set.delete_expired" = ""
+# zh-TW: 已套用設定組「{preset}」（{time}）
+# en: Applied the preset “{preset}” ({time})
+"web.gen.preset_applied" = ""
+# zh-TW: 已還原預設設定（{time}）
+# en: Default settings restored ({time})
+"web.gen.reset_done" = ""
+# zh-TW: 已設定，留空則沿用
+# en: Set; leave empty to keep it
+"web.key_keep" = ""
+# zh-TW: 語言包是程式資料夾的 lang 資料夾（或目前資料夾的 lang）中的 .toml 檔；放入新檔後重新整理頁面即可選擇，範本是 _template.toml。
+# en: Language packs are the .toml files in the program's lang folder (or lang in the current folder); put a new file there and reload the page to choose it. The template is _template.toml.
+"web.set.lang_info" = ""
+# zh-TW: 語言 / Language
+# en: 語言 / Language
+"web.set.language" = ""

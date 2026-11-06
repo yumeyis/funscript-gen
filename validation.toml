@@ -1,0 +1,44 @@
+# Validation set for `funscript-gen validate`: clips in clips_dir with a hand-made script of the same name
+# (NAME.mp4 + NAME.funscript, or NAME-<tag>.mp4 + NAME-<tag>.funscript). The clips are called by aliases here; their
+# real names are in the private deidentify.local.toml ([clips]). The videos are private and never committed.
+clips_dir = "vaild"
+# What `validate` runs when --clips is not given.
+default_clips = ["dev", "test"]
+# Clips scored without their scenes of very weak flow and no part boxes (the 3D series, whose scripts follow the music
+# there); see validate.ignore_spans.
+ignore_low_flow = ["G01", "G02", "G03", "G04", "G05", "G06", "G07"]
+
+[groups]
+# The direction rules and thresholds (--asym-sign, --part-sign, ...) were tuned on the first 13 clips.
+dev = ["A02", "B01", "C01", "D01", "A04", "E01", "A03", "A01",
+       "B02", "B03", "F01", "E02", "D02",
+       # moved from holdout 2026-11-01 to work on clips cut into many short scenes
+       "G03", "G04", "G06"]
+# Added 2026-10-30; no rule was tuned on them (the --scene-center and camera-motion checks did look at them).
+test = ["B04", "H01", "H02", "I01", "G01", "J01", "A05", "A06", "A07", "K01", "D03", "L01"]
+# Added 2026-11-01 and held out: run only to confirm a change at the end (`--clips holdout`), never to choose rules,
+# thresholds or settings. Not in default_clips, so everyday runs do not show their scores.
+# G03, G04, G06 were moved to dev after the first look.
+holdout = ["A08", "C02", "C03", "D04", "D05", "G02", "G05", "G07", "M01", "N01"]
+
+# Notes on single clips, for reading their scores.
+[notes]
+F01 = "the script was guessed from the sound; the motion on screen is tiny, so it says little about picture changes"
+
+# Named sets of generate options; `validate NAME -c CONFIG` runs them.
+[configs]
+default = []
+# The settings the user generates with in the web UI.
+user = ["--focus", "hybrid", "--dwell", "--curve", "--freq-limit", "2", "--freq-max", "3"]
+# Without the direction checks (on by default since 2026-10-31).
+default-nosign = ["--no-asym-sign", "--no-part-sign"]
+user-nosign = ["--focus", "hybrid", "--dwell", "--curve", "--freq-limit", "2", "--freq-max", "3", "--no-asym-sign", "--no-part-sign"]
+# Each half of the user's settings alone: Hybrid with the default output, and the general mode with the user's output.
+hybrid = ["--focus", "hybrid"]
+user-cmp05 = ["--focus", "hybrid", "--dwell", "--curve", "--freq-limit", "2", "--freq-max", "3", "--contact-min-prob", "0.05"]
+user-cmp0 = ["--focus", "hybrid", "--dwell", "--curve", "--freq-limit", "2", "--freq-max", "3", "--contact-min-prob", "0"]
+user-noct = ["--focus", "hybrid", "--dwell", "--curve", "--freq-limit", "2", "--freq-max", "3", "--no-contact-pick"]
+user-general = ["--dwell", "--curve", "--freq-limit", "2", "--freq-max", "3"]
+# Without the AI (whole picture, no rest scenes or stroke range): how much the vLLM adds.
+noai = ["--no-ai"]
+noai-user = ["--no-ai", "--dwell", "--curve", "--freq-limit", "2", "--freq-max", "3"]

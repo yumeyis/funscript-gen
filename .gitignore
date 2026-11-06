@@ -1,0 +1,29 @@
+.env
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+*.pt
+out/
+vaild/
+test*.mp4
+start-webui.local.sh
+.webui-auth.json
+.webui-auth.json.tmp
+web.sh
+.webui-cleanup.json
+.webui-cleanup.json.tmp
+.webui-last.json
+.webui-last.json.tmp
+.claude/
+# Real names behind the aliases in committed files (private)
+deidentify.local.toml
+# docker/: the containers' data, videos, models and compose variables
+docker/data/
+docker/videos/
+docker/ollama/
+docker/.env
+# packaging/windows/build.ps1 output
+dist/
+CLAUDE.md
+AGENTS.md

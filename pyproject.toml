@@ -1,0 +1,82 @@
+[project]
+name = "funscript-gen"
+dynamic = ["version"]  # from src/funscript_gen/__init__.py (see DEVELOPMENT.md, versions and releases)
+description = "Generate funscripts from video by analysing relative motion between people."
+readme = "README.md"
+license = { file = "LICENSE" }  # PolyForm Noncommercial 1.0.0 (source-available, no commercial use)
+authors = [{ name = "yumeyis" }]
+classifiers = [
+    "License :: Other/Proprietary License",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Video",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "av>=12",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "opencv-python>=4.9",
+    "matplotlib>=3.8",
+    "pillow>=10",
+    "typer>=0.12",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "openai>=1.40",
+    "gradio>=6.30.0",
+    # The part detector: on Windows the DirectML build, which runs on any DirectX 12 GPU (and on the CPU without one).
+    "onnxruntime>=1.20; sys_platform != 'win32'",
+    "onnxruntime-directml>=1.20; sys_platform == 'win32'",
+    "huggingface-hub>=0.24",
+]
+
+[project.optional-dependencies]
+# Skeleton mode (--mode pose) only: YOLO11-pose on PyTorch, about 0.8 GB. The default mode (optical flow) and every
+# validation clip (anime) do without it. Install with `uv sync --extra pose` (or ./set-env.sh --pose).
+pose = [
+    "ultralytics>=8.3",
+    "lap>=0.5.12",
+    "torch>=2.2",
+    "torchvision>=0.17",
+]
+
+# The desktop app's window (funscript-gen app; without it the app opens in the browser): on Windows it uses the
+# system's WebView2. The Windows portable build includes it. Install with `uv sync --extra gui`.
+gui = [
+    "pywebview>=5",
+]
+
+[project.scripts]
+funscript-gen = "funscript_gen.cli:app"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.urls]
+Homepage = "https://github.com/yumeyis/funscript-gen"
+Issues = "https://github.com/yumeyis/funscript-gen/issues"
+Releases = "https://github.com/yumeyis/funscript-gen/releases"
+Changelog = "https://github.com/yumeyis/funscript-gen/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/funscript_gen/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/funscript_gen"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+# The pose extra's torch: CPU-only wheels (this dev machine has no GPU). Remove on a CUDA host.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

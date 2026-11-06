@@ -1,0 +1,23 @@
+# funscript-gen only; the AI backend (vLLM, Ollama, ...) runs elsewhere and is set in the web UI's 設定 tab.
+# Usage (from this folder): docker compose up -d --build   → http://127.0.0.1:7860   (see README.md)
+services:
+  funscript-gen:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        WITH_POSE: ${WITH_POSE:-0}
+    image: funscript-gen:latest
+    user: "${UID:-1000}:${GID:-1000}"             # owner of the files written to data/ and videos/
+    ports:
+      # The web UI has no login: only this machine by default. WEBUI_BIND=0.0.0.0 opens it to the LAN.
+      - "${WEBUI_BIND:-127.0.0.1}:${WEBUI_PORT:-7860}:7860"
+    volumes:
+      - ./data:/data                              # .env, remembered settings, out/webui, caches
+      - ${VIDEOS_DIR:-./videos}:/videos           # videos for the CLI (generate / batch)
+    environment:
+      FUNSCRIPT_GEN_LANG: ${FUNSCRIPT_GEN_LANG:-}   # zh-TW | en | a pack in data/lang; empty = the language chosen in the web UI
+      INIT_VLLM_BASE_URL: ${INIT_VLLM_BASE_URL:-}   # only used to create data/.env on the first start
+      INIT_VLLM_API_KEY: ${INIT_VLLM_API_KEY:-}
+      INIT_VLLM_MODEL: ${INIT_VLLM_MODEL:-}
+    restart: unless-stopped

@@ -1,0 +1,58 @@
+# funscript-gen + Ollama (qwen3-vl) on the same machine; Ollama needs an NVIDIA GPU (NVIDIA Container Toolkit).
+# Usage (from this folder): docker compose -f docker-compose.ollama.yaml up -d --build   (see README.md)
+services:
+  funscript-gen:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        WITH_POSE: ${WITH_POSE:-0}
+    image: funscript-gen:latest
+    user: "${UID:-1000}:${GID:-1000}"             # owner of the files written to data/ and videos/
+    ports:
+      - "${WEBUI_BIND:-127.0.0.1}:${WEBUI_PORT:-7860}:7860"
+    volumes:
+      - ./data:/data
+      - ${VIDEOS_DIR:-./videos}:/videos
+    environment:
+      FUNSCRIPT_GEN_LANG: ${FUNSCRIPT_GEN_LANG:-}   # zh-TW | en | a pack in data/lang; empty = the language chosen in the web UI
+      # Written into data/.env on the first start only; afterwards change it in the 設定 tab.
+      INIT_VLLM_BACKEND: ollama
+      INIT_VLLM_BASE_URL: http://ollama:11434
+      INIT_VLLM_MODEL: ${OLLAMA_MODEL:-qwen3-vl:8b-instruct}
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:${OLLAMA_VERSION:-0.40.13}
+    volumes:
+      - ./ollama:/root/.ollama                    # downloaded models
+    environment:
+      OLLAMA_KEEP_ALIVE: 30m
+    # Not published: only funscript-gen reaches it (http://ollama:11434 on the compose network).
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  # Downloads the model once (about 6 GB for 8B) before funscript-gen starts; already downloaded = done in a second.
+  ollama-pull:
+    image: ollama/ollama:${OLLAMA_VERSION:-0.40.13}
+    entrypoint: ["ollama", "pull", "${OLLAMA_MODEL:-qwen3-vl:8b-instruct}"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"

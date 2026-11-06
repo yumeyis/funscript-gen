@@ -1,0 +1,11 @@
+# Only what the image needs; keeps videos, outputs, secrets and the local venv out of the build context.
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+!.env.example
+!src/
+!docker/entrypoint.sh
+**/__pycache__

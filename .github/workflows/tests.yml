@@ -1,0 +1,26 @@
+# Unit tests on Linux and Windows for every push and pull request.
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.19"  # the same uv as docker/Dockerfile
+      - run: uv sync --frozen
+      - run: uv run pytest -q
