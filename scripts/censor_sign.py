@@ -81,7 +81,7 @@ def main() -> None:
         clip = os.path.basename(path)[:-5]
         data = json.load(open(path))
         fps = data["fps"]
-        ref = Funscript.load(glob.glob(f"vaild/{clip}*.funscript")[0])
+        ref = Funscript.load(glob.glob(f"valid/{clip}*.funscript")[0])
         pred = Funscript.load(f"{OUT}/{clip}.funscript")
         for sc in json.load(open(f"{OUT}/{clip}.debug.json"))["scenes"]:
             rows = [r for r in data["frames"] if sc["start_ms"] <= r["t"] < sc["end_ms"]]

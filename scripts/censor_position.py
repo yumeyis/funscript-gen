@@ -112,7 +112,7 @@ def main():
     tot = {v[0]: [] for v in variants}
     print(f"{'clip':7}" + "".join(f"{v[0]:>20}" for v in variants))
     for clip in CLIPS:
-        ref = Funscript.load(glob.glob(f"vaild/{clip}*.funscript")[0])
+        ref = Funscript.load(glob.glob(f"valid/{clip}*.funscript")[0])
         pred = Funscript.load(f"{OUT}/{clip}.funscript")
         scenes = json.load(open(f"{OUT}/{clip}.debug.json"))["scenes"]
         path = f"{CEN}/{clip}.json"

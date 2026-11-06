@@ -215,6 +215,9 @@
 
 ## 開發紀錄（最近）
 
+- [x] **素材資料夾 `vaild/` 改名為 `valid/`（2026-11-06）**
+  - 原本的拼法是拼錯字。改了 `.gitignore`、`validation.toml` 的 `clips_dir`、`validate.py` 的預設值、`scripts/` 中七支腳本的路徑、DEVELOPMENT.md 與 CLAUDE.md；歷史紀錄（CHANGELOG、PLAN-archive）中的舊名稱不動。testhost 的 `vaild\` 與 `repo\vaild` 目錄連結也已改名並重建。未改演算法，未跑素材驗證；`uv run pytest` 319 通過、2 略過。
+
 - [x] **部位框模型的 INT8 量化（2026-11-06，離線實驗，未改主程式；使用者決定暫不使用）**
   - 動機：部位框在 CPU 上沒有快取時是最大的瓶頸（待解決的問題 9）。`censor_detect_v1.0_s`（MIT 授權，可發布衍生檔）用 onnxruntime 的量化工具（`onnx` 1.23.2 裝在暫存資料夾，未加入相依）產生，校正用 dev 素材的 64 幀。
   - 動態量化（`quantize_dynamic`）比 FP32 慢（72.8 對 63.0 ms／幀，ConvInteger 在 CPU 上沒有加速）。靜態 QDQ 全部量化時完全偵測不到（輸出把 0–640 的座標和 0–1 的分數接在同一個張量，共用一個量化範圍，分數被壓成 0）；偵測頭（`/model.22/` 中 Conv 以外的運算）保留 FP32 後正常。

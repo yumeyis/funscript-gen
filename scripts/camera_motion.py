@@ -68,7 +68,7 @@ def main():
         run = run_old if clip in OLD else run_new
         d = np.load(f"out/regions/{clip}.npz")
         t_all, f_all = d["t_ms"], d["flow"]
-        ref = Funscript.load(glob.glob(f"vaild/{clip}-*.funscript")[0]).normalized()
+        ref = Funscript.load(glob.glob(f"valid/{clip}-*.funscript")[0]).normalized()
         ra = ([a.at for a in ref.actions], [a.pos for a in ref.actions])
         for k, sc in enumerate(json.load(open(f"{run}/{clip}.debug.json"))["scenes"]):
             if sc["mode"] != "flow" or sc["rest"] or sc["skip"] or sc["end_ms"] - sc["start_ms"] < 4000:

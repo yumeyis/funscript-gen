@@ -14,7 +14,7 @@ from funscript_gen.export.funscript import Funscript
 
 OUT = sys.argv[1]
 for clip in sys.argv[2:]:
-    ref = drop_wiggles(Funscript.load(glob.glob(f"vaild/{clip}-*.funscript")[0]).normalized())
+    ref = drop_wiggles(Funscript.load(glob.glob(f"valid/{clip}-*.funscript")[0]).normalized())
     pred = Funscript.load(f"{OUT}/{clip}.funscript").normalized()
     rt, rk = _extrema(ref)
     pt, pk = _extrema(pred)

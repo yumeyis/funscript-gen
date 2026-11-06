@@ -104,7 +104,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\smoke-test
 
 ## 驗證
 
-`vaild/` 中每段影片都附有同名的人工 `.funscript`（影片不提交）。素材清單、分組與設定組寫在 `validation.toml`。專案會公開，所以提交的檔案中素材只用代號（`A01`、`B03`…，字母是來源系列、數字沿用原本的編號），第二台測試主機叫 `testhost`；代號對應的實際檔名寫在不提交的 `deidentify.local.toml`（`[clips]`），`validate` 依它找到 `vaild/` 中的檔案，沒有這個檔案時代號就是檔名。`tests/test_private_names.py` 在有對照檔時檢查會提交的檔案中沒有實際名稱。
+`valid/` 中每段影片都附有同名的人工 `.funscript`（影片不提交）。素材清單、分組與設定組寫在 `validation.toml`。專案會公開，所以提交的檔案中素材只用代號（`A01`、`B03`…，字母是來源系列、數字沿用原本的編號），第二台測試主機叫 `testhost`；代號對應的實際檔名寫在不提交的 `deidentify.local.toml`（`[clips]`），`validate` 依它找到 `valid/` 中的檔案，沒有這個檔案時代號就是檔名。`tests/test_private_names.py` 在有對照檔時檢查會提交的檔案中沒有實際名稱。
 
 分組：
 

@@ -5,7 +5,7 @@ __pycache__/
 .pytest_cache/
 *.pt
 out/
-vaild/
+valid/
 test*.mp4
 start-webui.local.sh
 .webui-auth.json

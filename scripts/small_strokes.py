@@ -99,7 +99,7 @@ def main():
     print(f"{'clip':8}" + "".join(f"{n:>19}" for n in names))
     for group, out, clips in (("old", out_old, OLD), ("new", out_new, NEW)):
         for clip in clips:
-            ref = Funscript.load(glob.glob(f"vaild/{clip}-*.funscript")[0])
+            ref = Funscript.load(glob.glob(f"valid/{clip}-*.funscript")[0])
             pred = Funscript.load(f"{out}/{clip}.funscript")
             scenes = json.load(open(f"{out}/{clip}.debug.json"))["scenes"]
             cells = []

@@ -14,7 +14,7 @@ for TH in (0.2, 0.4):
     for path in sorted(glob.glob(f"{S}/cen/*.json")):
         clip = os.path.basename(path)[:-5]
         data = json.load(open(path)); fps = data["fps"]
-        ref = Funscript.load(glob.glob(f"vaild/{clip}*.funscript")[0]); pred = Funscript.load(f"{OUT}/{clip}.funscript")
+        ref = Funscript.load(glob.glob(f"valid/{clip}*.funscript")[0]); pred = Funscript.load(f"{OUT}/{clip}.funscript")
         for sc in json.load(open(f"{OUT}/{clip}.debug.json"))["scenes"]:
             rows = [r for r in data["frames"] if sc["start_ms"] <= r["t"] < sc["end_ms"]]
             if len(rows) < 20 or edge_share(rows, data["w"], data["h"]) >= 0.8: continue

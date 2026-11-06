@@ -1,7 +1,7 @@
 # Validation set for `funscript-gen validate`: clips in clips_dir with a hand-made script of the same name
 # (NAME.mp4 + NAME.funscript, or NAME-<tag>.mp4 + NAME-<tag>.funscript). The clips are called by aliases here; their
 # real names are in the private deidentify.local.toml ([clips]). The videos are private and never committed.
-clips_dir = "vaild"
+clips_dir = "valid"
 # What `validate` runs when --clips is not given.
 default_clips = ["dev", "test"]
 # Clips scored without their scenes of very weak flow and no part boxes (the 3D series, whose scripts follow the music

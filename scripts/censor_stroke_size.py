@@ -16,7 +16,7 @@ for feat in ("dist", "area", "len"):
         if not os.path.exists(path):
             continue
         data = json.load(open(path)); w, h, fps = data["w"], data["h"], data["fps"]
-        ref = Funscript.load(glob.glob(f"vaild/{clip}*.funscript")[0]).normalized()
+        ref = Funscript.load(glob.glob(f"valid/{clip}*.funscript")[0]).normalized()
         pred = Funscript.load(f"{OUT}/{clip}.funscript").normalized()
         for sc in json.load(open(f"{OUT}/{clip}.debug.json"))["scenes"]:
             s, e = sc["start_ms"], sc["end_ms"]

@@ -87,7 +87,7 @@ def clips(manifest: dict, selection: str = "", base: Path = Path(".")) -> list[C
                 raise ValueError(f"unknown clip or group: {n} (groups: {', '.join(groups)})")
             if n not in wanted:
                 wanted.append(n)
-    directory = base / manifest.get("clips_dir", "vaild")
+    directory = base / manifest.get("clips_dir", "valid")
     files = manifest.get("clip_files", {})
     out, missing = [], []
     for n in wanted:
