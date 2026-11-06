@@ -14,7 +14,7 @@
 ## 需求
 
 - Docker 與 Docker Compose v2（`docker compose`）；只在 Linux 上實測過。
-- Ollama 版另外需要 NVIDIA 顯示卡、驅動程式與 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)。8B 模型約要 8.5 GB 可用的顯示卡記憶體（見專案 [README](../README.md#用-ollama)）。
+- Ollama 版另外需要 NVIDIA 顯示卡、驅動程式與 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)。8B 模型約要 8.5 GB 可用的顯示卡記憶體（見專案 [README](../README.zh.md#用-ollama)）。
 
 ## 一般版（只有 funscript-gen）
 

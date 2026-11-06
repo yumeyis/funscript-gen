@@ -14,7 +14,7 @@ Other files: `Dockerfile` (the image), `entrypoint.sh` (run when the container s
 ## Requirements
 
 - Docker and Docker Compose v2 (`docker compose`); tested on Linux only.
-- The Ollama version also needs an NVIDIA graphics card, its driver and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). The 8B model needs about 8.5 GB of free graphics memory (see the project [README](../README.en.md#with-ollama)).
+- The Ollama version also needs an NVIDIA graphics card, its driver and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). The 8B model needs about 8.5 GB of free graphics memory (see the project [README](../README.md#with-ollama)).
 
 ## The plain version (funscript-gen only)
 

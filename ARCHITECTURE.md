@@ -1,6 +1,6 @@
 # 系統流程圖
 
-從影片到 `.funscript` 的整個流程：有哪些元件、每一步做了什麼、哪些可以選擇，以及哪些用到 AI、GPU、CPU。功能與參數的說明在 [README.md](README.md)，設計的理由在 [PLAN.md](PLAN.md)（實驗數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)），開發與驗證在 [DEVELOPMENT.md](DEVELOPMENT.md)。
+從影片到 `.funscript` 的整個流程：有哪些元件、每一步做了什麼、哪些可以選擇，以及哪些用到 AI、GPU、CPU。功能與參數的說明在 [README.zh.md](README.zh.md)，設計的理由在 [PLAN.md](PLAN.md)（實驗數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)），開發與驗證在 [DEVELOPMENT.md](DEVELOPMENT.md)。
 
 圖用 Mermaid 繪製，GitHub 與 VS Code（Markdown Preview Mermaid Support 等擴充）會直接顯示成圖。
 

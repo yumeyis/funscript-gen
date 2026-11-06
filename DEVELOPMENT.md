@@ -1,10 +1,10 @@
 # funscript-gen 開發者指南
 
-這份文件給參與開發的人：開發環境、測試與驗證、目前的驗證結果、專案結構，以及已知問題的技術細節。使用說明在 [README.md](README.md)。
+這份文件給參與開發的人：開發環境、測試與驗證、目前的驗證結果、專案結構，以及已知問題的技術細節。使用說明在 [README.zh.md](README.zh.md)（英文版 [README.md](README.md)）。
 
 | 文件 | 內容 |
 |---|---|
-| [README.md](README.md)、[README.en.md](README.en.md) | 給使用者：功能、安裝、用法、目前的限制（繁體中文與英文；Docker、Windows 免安裝版的說明也各有英文版） |
+| [README.md](README.md)（英文）、[README.zh.md](README.zh.md)（繁體中文） | 給使用者：功能、安裝、用法、目前的限制（GitHub 首頁顯示英文版；Docker、Windows 免安裝版的說明也各有英文版） |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 系統流程圖：各步驟、可選項目、AI／GPU／CPU 的分工 |
 | [PLAN.md](PLAN.md) | 目前的架構、待解決的問題、仍有效的決策與限制、已放棄的方案、後續工作、最近的開發紀錄 |
 | [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md) | 2026-11-03 以前依時間的完整開發紀錄與實驗數字、之前的驗證紀錄 |

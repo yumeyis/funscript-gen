@@ -1,122 +1,122 @@
 # funscript-gen
 
-**繁體中文** | [English](README.en.md)
+[繁體中文](README.zh.md) | **English**
 
-分析影片中人物之間的動作，自動產生 `.funscript` 腳本。
+Analyses the motion between the people in a video and generates a `.funscript` script automatically.
 
-文件與介面以中性的詞稱呼被追蹤的部位：「主動部位」是畫面中做往復運動的主要對象，「對象部位」是它接觸的另一方，「目標部位／目標區域」是要量動作的位置。
+It works as "the AI understands the picture, the computer measures the motion":
+- A **vision-language model** (a vLLM or Ollama server you run yourself, Qwen3-VL-8B by default) decides which region of the picture each scene should look at, and whether anyone is in the picture.
+- **Local computer vision** (optical flow) measures the displacement of the motion frame by frame, decides the high/low direction and writes the funscript.
 
-運作方式是「AI 看懂畫面，電腦量測動作」：
-- **視覺語言模型**（你自己架設的 vLLM 或 Ollama，預設 Qwen3-VL-8B）判斷每個鏡頭該看畫面中的哪個區域、畫面中有沒有人。
-- **本機的電腦視覺**（光流）逐幀量出動作的位移，判斷高低方向後輸出 funscript。
+It is currently tuned and validated for **anime** videos. This document describes the features, installation, usage and current limitations; to take part in development see [DEVELOPMENT.md](DEVELOPMENT.md) (in Traditional Chinese).
 
-目前針對**動漫**影片調整與驗證。這份文件說明功能、安裝、用法與目前的限制；參與開發請看 [DEVELOPMENT.md](DEVELOPMENT.md)。
+The documents and the interface use neutral terms for the tracked parts: the “active part” is the main object that moves back and forth in the picture, the “counterpart” is what it makes contact with, and the “target part / target region” is where the motion is measured.
 
-介面（CLI 訊息、Web UI、桌面版）有繁體中文與英文兩種，也可以用語言包加入其他語言，見「[語言](#語言)」。
-
----
-
-## 功能
-
-### 分析
-
-| 功能 | 說明 |
-|---|---|
-| 鏡頭切分 | 偵測鏡頭切換，每個鏡頭各自分析；超過 20 秒的鏡頭再分段 |
-| AI 鏡頭分析 | 呼叫視覺語言模型（任何 OpenAI 相容 API，或 Ollama），決定每個鏡頭要分析的區域；相同的請求會快取，重跑不必再等 AI |
-| 候選區域再確認 | 預設開啟：把幾個候選區域裁成小圖再請 AI 選一次，選到的區域動作不比原本的弱才換。每個鏡頭多一次 AI 呼叫 |
-| 沒有人的鏡頭停在最高點 | 預設開啟：片頭、片尾、黑畫面等沒有人的鏡頭不輸出動作，停在輸出範圍的最高點 |
-| 行程範圍辨識 | 預設開啟：AI 判斷能否看到主動部位的前端與完整的主動部位，看不到前端時該鏡頭的行程截到 80（`--range-cap`）。每個鏡頭多一次 AI 呼叫；目前的模型幾乎總是回答看不到（見「已知問題」） |
-| 光流（預設） | 在分析區域內找出最主要的來回動作，並扣掉鏡頭本身的移動；不需要辨識骨架，適用於特寫、第一人稱、有遮擋的畫面與動畫 |
-| Hybrid（實驗性） | `--focus hybrid`：另外請 AI 框出目標部位，看得清楚的時候改看那個區域。AI 時間約兩倍 |
-| 骨架模式 | `--mode pose`：辨識兩人的骨架並量部位之間的距離；需要兩人全身入鏡，動漫上幾乎辨識不到。需另外安裝（`./set-env.sh --pose`） |
-
-### 高低方向
-
-畫面上的動作要先決定「往哪邊是推進」。預設是「往上動＝位置變高」，但正面視角與第一人稱常常整段相反，所以有下列修正：
-
-| 功能 | 說明 |
-|---|---|
-| 長鏡頭分段方向一致 | 預設開啟：同一個長鏡頭的各個 20 秒分段使用一致的方向 |
-| 依部位框判斷方向 | 預設開啟（`--no-part-sign` 關閉）：用動漫專用的偵測模型找出主動部位與對象部位，兩者分開＝退回＝高，和動作相反的鏡頭自動反轉。只對看得到兩者的鏡頭有效；第一次使用會下載約 43 MB 的模型；在 CPU 上會讓處理時間多約一半（可改用 GPU，見「安裝」） |
-| 依行程快慢判斷方向 | 預設開啟（`--no-asym-sign` 關閉）：推進通常快、退回慢，往上明顯比往下快的鏡頭自動反轉；也參考撞擊聲的時間點 |
-| 可能高低相反的提示 | 摘要與鏡頭表列出可能相反、但沒有自動反轉的鏡頭；預覽中以底色標示，可以用「下一個待確認」逐一檢查 |
-| 手動反轉 | 整支反轉 `--invert`；單一鏡頭在 Web UI 的鏡頭表或預覽下方按「反轉」，CLI 用 `--flip-scenes 0,3` |
-
-### 輸出
-
-| 功能 | 說明 |
-|---|---|
-| 節奏濾波 | 預設開啟：動作有明確節奏時濾掉漂移與無關的晃動 |
-| 幅度模式 | 保留幅度（預設）：以整支影片的大動作為滿行程，小動作輸出短行程；填滿行程：每下都走滿 |
-| 高頻縮小幅度 | 動作超過每秒 2 下後行程漸短，每秒 3 下以上縮成 50%，避免裝置跟不上（`--freq-limit 0` 關閉） |
-| 停頓與補點 | 預設關閉：保留停頓（`--dwell`）、在慢的長行程中補點（`--curve`）、停頓時停在原位（`--hold`） |
-| 鏡頭切換處銜接 | 預設開啟：鏡頭切換處接不上前一個鏡頭的節奏時，補上一次前一個鏡頭的動作，避免切換處停住或動作生硬（`--no-bridge` 關閉） |
-| 慢動作保留高低（實驗性） | `--scene-center`：沒有明顯節奏的鏡頭，慢速的大動作也保留高低 |
-| 輸出設定 | 輸出範圍（例如 40–90）、行程倍率、最大速度、最小動作幅度 |
-
-### 其他
-
-| 功能 | 說明 |
-|---|---|
-| Web UI | 上傳影片、調整設定、下載腳本，顯示訊號圖與鏡頭分析表；記住上次的設定，處理中可取消；在網頁上設定 AI 連線；管理產生過的檔案 |
-| 批次產生 | 一次處理多支影片（Web UI「批次」分頁、CLI `batch`），某一支失敗時繼續下一支；CLI 會略過已經有腳本的影片，中斷後重跑就接著做 |
-| 預覽播放器 | 類似 OpenFunscripter：位置條、隨播放捲動的動作時間軸（可疊加參考腳本）、速度熱度圖、鍵盤操作、放慢／加快播放；在影片上畫出每個鏡頭分析的區域；可反轉鏡頭、放大或縮小單一鏡頭的行程幅度、把鏡頭的頂點或底點設成指定位置，也可以直接編輯動作點 |
-| 設定組 | `--preset`、Web UI「設定組」：`default` 是預設值，`user` 是作者在 Web UI 用的設定（Hybrid、保留停頓、長行程補點），驗證分數最好 |
-| 快速重算 | 對同一支影片只改輸出設定時沿用上次的分析，Web UI 約一秒完成；CLI 用 `generate --save-analysis` 存下分析，再用 `render` 換設定重算 |
-| 記錄產生方式 | 輸出檔中記錄程式版本、AI 模型與全部設定，可以照著重新產生 |
-| 和人工腳本比較 | 有參考腳本時，`compare` 或 Web UI 的「參考腳本」計算轉折點的吻合程度（F1）與相關係數 |
-| 多語言 | 繁體中文與英文；其他語言用語言包加入（見「[語言](#語言)」） |
-
-CLI 與 Web UI 的設定項目完全相同。
-
-### 準確度
-
-在附人工腳本的 38 段動漫影片上，轉折點的吻合程度（F1，1 是完全一致）各組平均約 0.72–0.79。單一鏡頭的短片幾乎和人工腳本一致（0.90–0.99）；多鏡頭的長片較差，主要原因是高低方向判斷錯誤（見「已知問題」）。詳細數字見 [DEVELOPMENT.md](DEVELOPMENT.md#目前的驗證結果)。
+The interface (CLI messages, web UI, desktop app) comes in Traditional Chinese and English, and any other language can be added as a language pack; see [Language](#language).
 
 ---
 
-## 安裝
+## Features
 
-### Windows 免安裝版
+### Analysis
 
-到 [GitHub 的 Releases 頁面](https://github.com/yumeyis/funscript-gen/releases/latest)下載 `FunscriptGen-<版本>-win64.zip`，解壓縮到任何可以寫入的位置（例如桌面或 `D:\`，不要放在 `C:\Program Files`）即可使用，不必安裝 Python。需求：Windows 10／11 64 位元。
+| Feature | Description |
+|---|---|
+| Scene splitting | Detects scene cuts and analyses each scene on its own; scenes longer than 20 s are split again |
+| AI scene analysis | Calls a vision-language model (any OpenAI-compatible API, or Ollama) to decide the region to analyse in each scene; identical requests are cached, so running again does not wait for the AI |
+| Candidate region check | On by default: several candidate regions are cropped into small images and the AI picks once more; the pick replaces the original region only if its motion is not weaker. One more AI call per scene |
+| Hold at the top in scenes with nobody | On by default: intros, endings, black frames and other scenes with nobody in them output no motion and hold at the top of the output range |
+| Stroke range check | On by default: the AI judges whether the tip and the whole of the active part can be seen; when the tip is not seen the scene's strokes are clipped to 80 (`--range-cap`). One more AI call per scene; the current models almost always answer "not seen" (see "Known issues") |
+| Optical flow (default) | Finds the main back-and-forth motion inside the analysis region and subtracts the camera's own movement; needs no skeleton recognition, so it works on close-ups, first-person views, occluded views and animation |
+| Hybrid (experimental) | `--focus hybrid`: also asks the AI to box the target region, and looks at that region when it is clearly visible. About twice the AI time |
+| Skeleton mode | `--mode pose`: recognises both people's skeletons and measures distances between body parts; needs both people fully in frame, which anime almost never has. Needs a separate install (`./set-env.sh --pose`) |
 
-- **圖形介面**：雙擊 `FunscriptGen.exe`，在獨立視窗中開啟（用系統內建的 WebView2；沒有時改開預設瀏覽器）。用法和下面的 [Web UI](#web-ui) 相同，另外可以按「選擇…」直接選電腦上的影片（不必上傳），關閉視窗即結束程式。
-- **指令**：在資料夾中執行 `funscript-gen.exe`，參數和下面的 [CLI](#cli) 相同（把 `uv run funscript-gen` 換成 `funscript-gen.exe`）。
-- 資料夾中的 `lang\` 放語言包，見「[語言](#語言)」。
-- 設定、快取與圖形介面的輸出都存在資料夾中的 `data\`，不會寫到使用者目錄；刪除資料夾即解除安裝，更新時把舊版的 `data\` 複製到新版即可保留設定。
-- 有顯示卡時光流與部位框偵測自動用 GPU（OpenCL 與 DirectML）。不含骨架模式。
-- 程式沒有數位簽章，第一次執行時 Windows 可能顯示「Windows 已保護您的電腦」，按「其他資訊」→「仍要執行」。
+### High/low direction
 
-### 從原始碼安裝
+The motion in the picture first has to be assigned "which way is the push in". The default is "moving up = a higher position", but front-view and first-person shots are often upside down for a whole video, so there are these corrections:
 
-需求：Linux。執行一次 `set-env.sh` 即可完成安裝（可重複執行，已完成的步驟會略過）：
+| Feature | Description |
+|---|---|
+| Same direction across the chunks of a long shot | On by default: the 20 s chunks of one long shot use a consistent direction |
+| Direction from the part boxes | On by default (`--no-part-sign` turns it off): a detection model made for anime finds the active part and the counterpart; apart = pulled back = high, and scenes that move against that are flipped automatically. Only works for scenes where both can be seen; the first use downloads a model of about 43 MB; on the CPU it adds about half to the processing time (a GPU can be used, see "Installation") |
+| Direction from stroke speed | On by default (`--no-asym-sign` turns it off): the push in is usually fast and the pull back slow, so scenes that clearly rise faster than they fall are flipped automatically; the timing of impact sounds is also taken into account |
+| Hints for possibly upside-down scenes | The summary and the scene table list scenes that may be upside down but were not flipped automatically; the preview shades them, and "Next to check" goes through them one by one |
+| Manual flip | Flip the whole script with `--invert`; flip a single scene with "Flip" in the web UI's scene table or under the preview, or `--flip-scenes 0,3` on the CLI |
+
+### Output
+
+| Feature | Description |
+|---|---|
+| Rhythm filter | On by default: when the motion has a clear rhythm, drift and unrelated wobble are filtered out |
+| Stroke size mode | Keep the size (default): the big motions of the whole video are full strokes and small motions give short strokes; fill the range: every stroke is full length |
+| Shrinking at high frequency | Above 2 strokes per second the strokes get gradually shorter, and from 3 per second they shrink to 50% so the device can keep up (`--freq-limit 0` turns it off) |
+| Rests and extra points | Off by default: keep the rests (`--dwell`), add points on slow long strokes (`--curve`), hold the position during pauses (`--hold`) |
+| Bridging scene cuts | On by default: when the next scene does not continue the previous scene's rhythm at a cut, one repeat of the previous scene's motion is added so the cut does not stall or jerk (`--no-bridge` turns it off) |
+| Keep the height of slow motion (experimental) | `--scene-center`: in scenes without a clear rhythm, slow large strokes also keep their height |
+| Output settings | Output range (e.g. 40–90), stroke multiplier, maximum speed, minimum stroke size |
+
+### Other
+
+| Feature | Description |
+|---|---|
+| Web UI | Upload a video, adjust the settings, download the script, see the signal plot and the scene table; remembers the last settings, can cancel while running; the AI connection is set on the page; manages the files made before |
+| Batch | Process several videos at once (the web UI's Batch tab, CLI `batch`); when one fails the next one continues; the CLI skips videos that already have a script, so running it again after an interruption carries on |
+| Preview player | Like OpenFunscripter: position bar, an action timeline that scrolls with playback (the reference script can be overlaid), a speed heat map, keyboard control, slower/faster playback; draws the region analysed in each scene over the video; can flip a scene, enlarge or shrink one scene's strokes, set a scene's tops or bottoms to given positions, and edit actions directly |
+| Presets | `--preset` and the web UI's "Preset": `default` is the default values, `user` is the author's web UI settings (Hybrid, keep rests, add points on long strokes), which score best in validation |
+| Fast recompute | When only the output settings change for the same video, the last analysis is reused and the web UI finishes in about a second; on the CLI save the analysis with `generate --save-analysis` and recompute with other settings using `render` |
+| Records how it was made | The output file records the program version, the AI model and all settings, so it can be reproduced |
+| Comparison with hand-made scripts | With a reference script, `compare` or the web UI's reference script computes how well the turning points match (F1) and the correlation |
+| Languages | Traditional Chinese and English; further languages are added as language packs (see [Language](#language)) |
+
+The CLI and the web UI have exactly the same settings.
+
+### Accuracy
+
+On 38 anime videos that come with hand-made scripts, the turning-point match (F1, 1 = identical) averages about 0.72–0.79 per group. Short single-scene videos are almost the same as the hand-made script (0.90–0.99); long multi-scene videos are worse, mainly because the high/low direction is judged wrongly (see "Known issues"). For the detailed numbers see [DEVELOPMENT.md](DEVELOPMENT.md#目前的驗證結果).
+
+---
+
+## Installation
+
+### Windows portable build
+
+Download `FunscriptGen-<version>-win64.zip` from the [GitHub Releases page](https://github.com/yumeyis/funscript-gen/releases/latest) and extract it anywhere that can be written to (for example the desktop or `D:\`, not `C:\Program Files`); there is no need to install Python. Requires Windows 10 / 11, 64-bit.
+
+- **Graphical interface**: double-click `FunscriptGen.exe`; it opens in a window of its own (using the system's WebView2; when that is missing it opens the default browser). It is used like the [web UI](#web-ui) below, and in addition "Choose…" picks a video on the computer directly (no upload). Closing the window ends the program.
+- **Command line**: run `funscript-gen.exe` in the folder; the arguments are the same as the [CLI](#cli) below (replace `uv run funscript-gen` with `funscript-gen.exe`).
+- Settings, caches and the graphical interface's output are all kept in `data\` in the folder and nothing is written to the user's folders; deleting the folder uninstalls it, and when updating, copy the old version's `data\` into the new one to keep the settings.
+- The folder `lang\` beside the exe holds the language packs; see [Language](#language).
+- With a graphics card, optical flow and part detection use the GPU automatically (OpenCL and DirectML). The skeleton mode is not included.
+- The program is not digitally signed, so on the first run Windows may show "Windows protected your PC"; press "More info" → "Run anyway".
+
+### Install from source
+
+Requires Linux. Run `set-env.sh` once to finish the installation (it can be run again; finished steps are skipped):
 
 ```bash
-./set-env.sh          # 互動模式：缺少 uv 時詢問是否安裝，並詢問 AI API 的連線資訊
-./set-env.sh -y       # 非互動模式：自動安裝 uv，.env 不存在時只從範本建立
-./set-env.sh --test   # 安裝後執行單元測試
-./set-env.sh --pose   # 另外安裝骨架模式需要的 PyTorch 與 YOLO（約 0.8 GB）
+./set-env.sh          # interactive: asks whether to install uv when it is missing, and asks for the AI API connection
+./set-env.sh -y       # non-interactive: installs uv automatically, and only creates .env from the template when it is missing
+./set-env.sh --test   # runs the unit tests after installing
+./set-env.sh --pose   # also installs the PyTorch and YOLO the skeleton mode needs (about 0.8 GB)
 ```
 
-它會依序：確認 [uv](https://docs.astral.sh/uv/)（沒有的話可自動安裝）→ 安裝 Python 3.12 與固定版本的套件 → 建立 `.env` → 測試 AI API 連線。也可以手動安裝：`uv sync`。
+It goes through: checking [uv](https://docs.astral.sh/uv/) (it can be installed automatically) → installing Python 3.12 and the pinned packages → creating `.env` → testing the AI API connection. It can also be installed by hand with `uv sync`.
 
-> **用 Docker**：不想在主機上安裝 Python 時，可以用 [docker/](docker/README.md)（[English](docker/README.en.md)）中的設定建置映像檔，`docker compose up -d --build` 就啟動 Web UI；另有一個連同 Ollama（Qwen3-VL）一起啟動的版本（需要 NVIDIA 顯示卡）。容器中只用 CPU 計算光流與部位框，詳見 [docker/README.md](docker/README.md)。
+> **With Docker**: when you do not want to install Python on the host, build an image from the files in [docker/](docker/README.en.md); `docker compose up -d --build` starts the web UI, and there is also a version that starts Ollama (Qwen3-VL) along with it (needs an NVIDIA graphics card). Inside the container optical flow and part detection run on the CPU only; see [docker/README.en.md](docker/README.en.md).
 
-> **骨架模式**是選配（`uv sync --extra pose`，CPU 版 PyTorch）；裝了之後執行 `uv sync` 時也要加 `--extra pose`，否則會被移除（`uv run` 不會移除）。要在 NVIDIA GPU 上執行骨架偵測，刪除 `pyproject.toml` 的 `[tool.uv.sources]` 與 `[[tool.uv.index]]` 兩段後重新執行 `uv sync --extra pose`。第一次使用時會下載約 6 MB 的模型。
+> **The skeleton mode** is optional (`uv sync --extra pose`, CPU PyTorch); once it is installed, `uv sync` also needs `--extra pose`, otherwise it is removed (`uv run` does not remove it). To run skeleton detection on an NVIDIA GPU, delete the two sections `[tool.uv.sources]` and `[[tool.uv.index]]` of `pyproject.toml` and run `uv sync --extra pose` again. The first use downloads a model of about 6 MB.
 
-> **GPU 加速**：光流、部位框偵測與骨架三個步驟可以用 GPU，預設是 Auto（有可用的 GPU 就用，沒有就用 CPU），可以在 Web UI「設定」分頁的「運算裝置」或 CLI 的 `--compute`、`--flow-compute` 等改成一律用 GPU 或 CPU。光流用顯示卡驅動程式內建的 OpenCL，不必另外安裝；GPU 上算出的數值和 CPU 有極小的差異，所以同一支影片在有 GPU 與沒有 GPU 的電腦上產生的腳本可能略有不同，要和 CPU 的結果完全一樣時選 CPU。CLI 會印出實際使用的裝置（`optical flow ran on …`、`part check ran on …`），Web UI 寫在結果的「運算裝置」。
+> **GPU acceleration**: three steps can use the GPU, optical flow, part detection and skeletons. The default is Auto (a GPU when one is usable, otherwise the CPU); in the web UI's Settings tab under "Compute device" or with the CLI's `--compute`, `--flow-compute` etc. it can be set to always use the GPU or the CPU. Optical flow uses the OpenCL built into the graphics driver, so nothing needs installing; the numbers computed on a GPU differ very slightly from the CPU's, so the same video can give slightly different scripts on a computer with and without a GPU; choose CPU for exactly the same result as the CPU's. The CLI prints the device actually used (`optical flow ran on …`, `part check ran on …`) and the web UI writes it in the result as "Compute device".
 
-> **用 GPU 加速部位框判斷**：Windows 上自動安裝 DirectML 版（任何 GPU）；Linux 預設安裝 CPU 版，把 `pyproject.toml` 中非 Windows 的 `onnxruntime` 換成 `onnxruntime-gpu[cuda,cudnn]`（NVIDIA，另外下載約 1 GB 的 CUDA 函式庫）後重新執行 `uv sync`，程式會自動使用（約快 4 倍，結果和 CPU 相同）；CLI 會印出實際使用的裝置（`part check ran on …`）。
+> **GPU acceleration for the part check**: on Windows the DirectML build is installed automatically (any GPU); on Linux the CPU build is installed by default; replace the non-Windows `onnxruntime` in `pyproject.toml` with `onnxruntime-gpu[cuda,cudnn]` (NVIDIA, another download of about 1 GB of CUDA libraries) and run `uv sync` again, and the program uses it automatically (about 4 times faster, the same result as the CPU); the CLI prints the device actually used (`part check ran on …`).
 
-### 設定 AI 後端
+### Setting up the AI backend
 
-建議用 vLLM（速度快，可同時處理多個請求）；只有一張顯示卡、想要安裝簡單時可以用 [Ollama](#用-ollama)。
+vLLM is recommended (fast, and handles several requests at once); with only one graphics card, or for a simple installation, use [Ollama](#with-ollama).
 
-#### 用 vLLM
+#### With vLLM
 
-在另一台有 GPU 的主機上啟動 vLLM（需要 0.11 以上；下面的參數適用於兩張 16GB 顯示卡）：
+Start vLLM on another host with a GPU (version 0.11 or later; the options below are for two 16 GB graphics cards):
 
 ```bash
 vllm serve Qwen/Qwen3-VL-8B-Instruct \
@@ -124,288 +124,288 @@ vllm serve Qwen/Qwen3-VL-8B-Instruct \
   --max-model-len 16384 \
   --gpu-memory-utilization 0.90 \
   --limit-mm-per-prompt '{"image": 8, "video": 0}' \
-  --api-key <自訂金鑰> \
+  --api-key <your own key> \
   --host 0.0.0.0 --port 8000
 ```
 
-接著把 `.env.example` 複製成 `.env` 並填入連線資訊。也可以直接在 Web UI 的「設定」分頁填寫，按「儲存設定」會寫入 `.env`：
+Then copy `.env.example` to `.env` and fill in the connection details. They can also be entered directly in the web UI's Settings tab; "Save settings" writes them to `.env`:
 
 ```ini
-VLLM_BASE_URL=http://<主機>:8000/v1
-VLLM_API_KEY=<自訂金鑰>
+VLLM_BASE_URL=http://<host>:8000/v1
+VLLM_API_KEY=<your own key>
 VLLM_MODEL=Qwen/Qwen3-VL-8B-Instruct
-# VLLM_BBOX_FORMAT=rel1000   # 選填：rel1000（Qwen3-VL 等）或 abs（Qwen2.5-VL）；留空則依模型名稱判斷
-# VLLM_CONCURRENCY=8         # 選填：同時送出的請求數（預設 8；vLLM 會合併計算，16 約再快一倍）
+# VLLM_BBOX_FORMAT=rel1000   # optional: rel1000 (Qwen3-VL etc.) or abs (Qwen2.5-VL); empty = decided by the model's name
+# VLLM_CONCURRENCY=8         # optional: requests sent at once (default 8; vLLM batches them, 16 is about twice as fast again)
 ```
 
-其他 OpenAI 相容的端點也能接，例如 LM Studio、llama.cpp 的 `llama-server`，但目前只實測過 vLLM 與 Ollama。建議用 Qwen3-VL-8B；Qwen3-VL-30B-A3B 實測效果較差。外部商用 API（OpenAI、Gemini 等）多半會拒絕分析成人影像，而且要把畫面上傳到第三方，建議使用自己架設的模型。
+Other OpenAI-compatible endpoints also work, for example LM Studio and llama.cpp's `llama-server`, but only vLLM and Ollama have been tested. Qwen3-VL-8B is recommended; Qwen3-VL-30B-A3B did worse in tests. External commercial APIs (OpenAI, Gemini, etc.) mostly refuse to analyse adult images, and they need the pictures uploaded to a third party, so a model you run yourself is recommended.
 
-#### 用 Ollama
+#### With Ollama
 
-需要支援 Qwen3-VL 的 Ollama（實測 0.40.13）。在有 GPU 的主機上下載模型；Ollama 預設只接受本機連線，要從別台電腦使用時，啟動前設定環境變數 `OLLAMA_HOST=0.0.0.0`：
+Needs an Ollama that supports Qwen3-VL (0.40.13 was tested). Download the model on the host with the GPU; Ollama accepts only local connections by default, so to use it from another computer set the environment variable `OLLAMA_HOST=0.0.0.0` before starting it:
 
 ```bash
 ollama pull qwen3-vl:8b-instruct
 ```
 
-`.env`（或 Web UI「設定」分頁的「後端」選「Ollama」）：
+`.env` (or choose "Ollama" for "Backend" in the web UI's Settings tab):
 
 ```ini
 VLLM_BACKEND=ollama
-VLLM_BASE_URL=http://<主機>:11434
+VLLM_BASE_URL=http://<host>:11434
 VLLM_MODEL=qwen3-vl:8b-instruct
-# VLLM_NUM_CTX=16384         # 選填：每個請求的上下文長度
+# VLLM_NUM_CTX=16384         # optional: the context length of each request
 ```
 
-- **一鍵執行**：Web UI「設定」分頁的「後端」選「Ollama」後，會出現「一鍵執行」區：選擇用 Docker（自動建立容器）或已安裝的 Ollama、選擇模型，按「執行並自動設定」就會啟動 Ollama、下載模型，並把端點與模型存進設定（原本的 API 金鑰保留）。本程式啟動的 Ollama 會在程式結束時一併關閉。「確認狀態」顯示目前的執行情形；「清除自動安裝的 Ollama」會刪除 Docker 容器、模型 volume 與映像檔（已安裝的 Ollama 不受影響）。Docker 模式的 GPU 需要 NVIDIA Container Toolkit，沒有時會退回 CPU（非常慢）。此功能尚未在所有環境實測。
-- 請用「Ollama」後端，不要把 Ollama 的 `/v1` 當成 OpenAI 相容端點：`/v1` 用 Ollama 預設的上下文長度，一次送 4 張圖就會被拒絕，而且圖片前面的說明文字會錯位。
-- 顯示卡記憶體：8B 模型約 5.9 GB，加上上下文約要 8.5 GB 可用的記憶體。放不下時 Ollama 會把一部分放到 CPU，一個請求要好幾分鐘；8 GB 的顯示卡請改用 `qwen3-vl:4b-instruct`（約 3.2 GB，準確度較低）。
-- Ollama 一次只處理一個請求（伺服器的 `OLLAMA_NUM_PARALLEL` 可以調高，但每個都要一份上下文的記憶體），AI 分析比 vLLM 慢。
+- **One-click run**: after choosing "Ollama" for "Backend" in the web UI's Settings tab, a "one-click run" section appears: choose Docker (a container is created for you) or the installed Ollama, choose the model, and "Run and configure" starts Ollama, downloads the model and saves the endpoint and model into the settings (the saved API key is kept). The Ollama it started is stopped when the program ends. "Check status" shows what is running; "Remove the auto-installed Ollama" deletes the Docker container, model volume and image (an installed Ollama is not affected). The GPU in Docker mode needs the NVIDIA Container Toolkit; without it a CPU-only container is used (very slow). This has not been tested in every environment.
+- Use the "Ollama" backend, and do not treat Ollama's `/v1` as an OpenAI-compatible endpoint: `/v1` uses Ollama's default context length, so sending 4 images at once is refused, and the description text before the images goes out of place.
+- Graphics memory: the 8B model takes about 5.9 GB, and with the context about 8.5 GB of memory is needed. When it does not fit, Ollama puts part of it on the CPU and a request takes minutes; on an 8 GB graphics card use `qwen3-vl:4b-instruct` instead (about 3.2 GB, less accurate).
+- Ollama handles only one request at a time (the server's `OLLAMA_NUM_PARALLEL` can be raised, but each one needs memory for a context), so the AI analysis is slower than with vLLM.
 
 ---
 
-## 使用方式
+## Usage
 
 ### Web UI
 
 ```bash
-./start-webui.sh                           # 預設只限本機：http://127.0.0.1:7860
-WEBUI_PORT=7861 ./start-webui.sh           # 用環境變數臨時覆寫設定
+./start-webui.sh                           # local only by default: http://127.0.0.1:7860
+WEBUI_PORT=7861 ./start-webui.sh           # override a setting temporarily with an environment variable
 ```
 
-伺服器設定在 `start-webui.sh` 開頭的「設定」區塊：
+The server settings are in the "settings" block at the top of `start-webui.sh`:
 
-| 設定 | 預設 | 說明 |
+| Setting | Default | Description |
 |---|---|---|
-| `WEBUI_HOST` | `127.0.0.1` | 監聽位址；`0.0.0.0` 開放區網其他電腦連線 |
-| `WEBUI_PORT` | `7860` | 連接埠 |
-| `WEBUI_OUTPUT_DIR` | `out/webui` | 產生的 funscript 存放位置 |
+| `WEBUI_HOST` | `127.0.0.1` | Address to listen on; `0.0.0.0` lets other computers on the LAN connect |
+| `WEBUI_PORT` | `7860` | Port |
+| `WEBUI_OUTPUT_DIR` | `out/webui` | Where the generated funscripts are kept |
 
-- 優先順序：環境變數 > `start-webui.local.sh` > 腳本中的預設值。只屬於這台電腦的設定可以寫在 `start-webui.local.sh`（已列在 `.gitignore`），例如 `WEBUI_HOST=0.0.0.0`。
-- Web UI 設計給**單人使用，沒有登入**。開放區網（非 `127.0.0.1`）時腳本會顯示警告：能連到這台電腦的人都能使用，並能修改 AI 端點與金鑰。
-- 連接埠被占用時，腳本會指出是哪個程式占用。AI API 的設定請用 `.env` 或 Web UI 的「設定」分頁。
-- 也可以直接執行 `uv run funscript-gen webui --host … --port … --output-dir …`。
-- **桌面模式**：`uv run funscript-gen app` 只在本機開啟（自動挑空閒的連接埠，`--ui browser` 改用瀏覽器），可以直接指定電腦上的影片路徑，並可選擇把腳本存到影片旁邊（見下面第 2 步）。獨立視窗需要選配套件 `uv sync --extra gui`（pywebview），沒有時改開瀏覽器。Windows 免安裝版的 `FunscriptGen.exe` 就是這個模式。
+- Order of precedence: environment variable > `start-webui.local.sh` > the default in the script. Settings that belong to this computer only can go in `start-webui.local.sh` (listed in `.gitignore`), for example `WEBUI_HOST=0.0.0.0`.
+- The web UI is designed for **one user and has no login**. When it is opened to the LAN (not `127.0.0.1`) the script shows a warning: anyone who can reach this computer can use it, and can change the AI endpoint and key.
+- When the port is taken the script says which program holds it. The AI API settings go in `.env` or the web UI's Settings tab.
+- It can also be run directly: `uv run funscript-gen webui --host … --port … --output-dir …`.
+- **Desktop mode**: `uv run funscript-gen app` opens on this computer only (it picks a free port by itself; `--ui browser` uses the browser instead), takes the path of a video on the computer directly, and can save the script beside the video (see step 2 below). A window of its own needs the optional package `uv sync --extra gui` (pywebview); without it the browser opens. The Windows portable build's `FunscriptGen.exe` is this mode.
 
-使用步驟：
+Steps:
 
-1. 第一次使用時，到「設定」分頁確認 AI API（「設定」分頁的 AI API、運算裝置、輸出檔案都可以收合）：填入端點網址與金鑰，按「取得模型清單」選擇模型，再按「儲存設定」。
-2. 在「產生」分頁上傳影片。桌面模式（`funscript-gen app`、Windows 版的 `FunscriptGen.exe`）也可以在「或指定本機的影片」填入路徑或按「選擇…」，直接讀取原檔；「批次」分頁同樣可以填入多支影片或資料夾。從本機選擇的影片，可以在「設定」分頁的「輸出檔案」勾選「同時把腳本存到影片旁邊」，存成和影片同名的 `.funscript`（輸出目錄中仍保留一份；影片旁已有不是 funscript-gen 產生的同名腳本時不會覆寫）。
-3. 調整設定。可以先在「設定組」選一組再按「套用」，之後仍可個別調整。標示「AI 決定」的項目留空即可。要用人工腳本評分時，到「進階」開啟「啟用參考腳本」，之後會出現上傳欄位。用 GPU 或 CPU 計算在「設定」分頁的「運算裝置」設定（Auto／GPU／CPU，可以整體或個別步驟設定，預設都是 Auto；變更後立即記住，「設定組」與「還原預設設定」不會改動它）。
-4. 按左欄最上方的「產生 funscript」（處理中可按旁邊的「取消」），完成後下載腳本，並查看訊號圖與鏡頭分析表。之後對同一支影片只改輸出設定再按「產生」時，沿用上次的分析，約一秒完成；改了分析設定（AI、分析目標、光流寬度、幀率、鏡頭切換靈敏度、部位框等）或 AI 端點時才重新分析。按下時會記住「產生」分頁的設定（存在 `.webui-last.json`），下次開啟頁面自動套用；「還原預設設定」回到預設值。
-5. 右側的**預覽播放器**會載入影片與剛產生的腳本，邊播放邊檢查；啟用參考腳本時以灰線疊加。資訊列的「鏡頭」是目前播放位置的鏡頭編號（與鏡頭表的 `#` 相同）。影片上的框是這個鏡頭分析動作的區域（勾選「分析區域」或按 `R` 切換顯示）：實線是目前用的區域，混合模式的另一個區域是虛線；資訊列寫出目前用的是哪一個，沒有框時是整個畫面。輸出的動作和畫面對不上時，先看框是不是框在動作的位置。
-6. **高低相反時**：在預覽播放到那個鏡頭時按播放器下方的「反轉」，或在鏡頭分析表點該鏡頭的「反轉」欄（`⇅`）。該鏡頭立即上下反轉，輸出檔同步更新，再按一次還原；摘要會列出對應的 CLI 參數（`--flip-scenes …`）。摘要中的「可能高低相反」列出值得先檢查的鏡頭，預覽的時間軸以黃色底色標示；按資訊列的「下一個待確認」（或 `N`）跳到下一個並播放，相反的話按「反轉」。
-7. **修改個別動作點**：勾選播放器的「編輯」（或按 `E`），播放器下方會列出編輯用的按鍵：在時間軸上拖曳動作點（左右改時間、上下改位置）、在空白處按住左鍵拖曳框選多個點（`Shift` 加選），選取的點可以一起拖曳、`↑` `↓` 調整或刪除、`A` 在播放位置新增（或雙擊空白處）、`Delete` 刪除、`↑` `↓` 調整位置（或在右邊的位置條上按住拖曳，影片會跳到該點）、`Ctrl+Z` 復原，改完按播放器下方的「儲存編輯」寫入輸出檔。某個鏡頭的行程太小或太大時，播放到那個鏡頭按 `+` 放大、`-` 縮小（資訊列的「幅度」按鈕也可以；每次 ×1.25 或 ×0.8，每一下以各自的中點為準，忽高忽低的動作不會被推到頂端或底端）。要讓鏡頭的每一下都到同樣的高度時，在資訊列的「頂點」或「底點」輸入位置（0–100）後按「設定」或 `Enter`：鏡頭中每個波峰（或波谷）的動作點都改成這個位置，中間的點依比例跟著移動（播放器會記住輸入的數值）。編輯時框選了多個點的話，幅度與頂點／底點只改選取的點。按「反轉」（播放器下方或鏡頭表）時會一併保留還沒儲存的編輯；編輯過的輸出檔在 metadata 標記 `hand_edited`（CLI 無法重現這些修改）。
-8. **一次處理多支影片**：到「批次」分頁一次選多支影片，按「開始批次產生」，會依序用「產生」分頁目前的設定處理，全部放在同一個 `out/webui/<時間>/` 資料夾。結果表列出每支的狀態、鏡頭數、動作點數與可能高低相反的鏡頭；某一支失敗時記下原因、繼續下一支，按「取消」會停在目前這支（已完成的保留）。要檢查、反轉或編輯某一支時，在「已完成的影片」選它再按「在產生分頁開啟」，就和在「產生」分頁做出來的一樣可以預覽、反轉與編輯，在那裡只改輸出設定再按「產生」也會沿用它的分析。
-9. 「輸出」分頁可以重新下載之前產生的腳本，或全部清除。
-10. **「預覽」分頁**可以載入任意影片與 funscript（例如別的工具或別人做的腳本）單獨預覽、編輯並反轉鏡頭。影片欄可以在選檔視窗中同時選取影片與 funscript（例如按住 Ctrl 點兩個檔案），會分別放進兩個欄位；也可以像原本一樣分別上傳。載入時會自動切分鏡頭，結果列在下方的鏡頭表（起訖時間、切換強度、動作點數），點「反轉」欄可以反轉該鏡頭。切得太碎或漏切時調整這個分頁的「鏡頭切換靈敏度」（越小越容易切開；開啟頁面時沿用「產生」分頁的設定），放開滑桿或按「重新切分鏡頭」立即重算，不必重新載入；訊息會列出靈敏度往兩邊調時的鏡頭數，鏡頭表也會標出切換強度接近門檻的地方。重新切分時之前的反轉仍保留在腳本中，還沒儲存的編輯會先儲存。載入需要時間時可按「取消載入」中止；只想看整支影片、不需要切分鏡頭時按「不切分鏡頭預覽」（整支影片視為一個鏡頭，免去偵測鏡頭的時間）。載入中的進度每 1% 更新一次。
+1. On first use, check the AI API in the Settings tab (the AI API, Compute device and Output files sections of the Settings tab can be collapsed): enter the endpoint URL and key, press "Get model list" to choose the model, then "Save settings".
+2. Upload a video in the Generate tab. In desktop mode (`funscript-gen app`, the Windows build's `FunscriptGen.exe`) a path can also be entered under "Or a video on this computer", or press "Choose…", to read the original file directly; the Batch tab likewise takes several videos or folders. For videos chosen on this computer, tick "Also save the script beside the video" under "Output files" in the Settings tab and the script is saved as a `.funscript` with the video's name (a copy stays in the output folder; a script of the same name beside the video that funscript-gen did not make is never overwritten).
+3. Adjust the settings. First choose one under "Preset" and press "Apply"; each can still be adjusted afterwards. Leave the items marked "AI decides" empty. To score against a hand-made script, turn on "Use a reference script" under "Advanced", and an upload box appears. Whether the GPU or the CPU computes is set under "Compute device (GPU / CPU)" in the Settings tab (Auto / GPU / CPU, for everything or per step, Auto by default; changes are remembered at once, and neither the presets nor "Restore default settings" touch them).
+4. Press "Generate funscript" at the top of the left column ("Cancel" next to it stops a run in progress), then download the script and look at the signal plot and the scene analysis table. Pressing Generate again for the same video after changing only the output settings reuses the last analysis and takes about a second; the video is analysed again only when an analysis setting (the AI, the analysis target, the optical flow width, the frame rate, the scene cut sensitivity, part boxes, etc.) or the AI endpoint changes. The Generate tab's settings are remembered when you press it (kept in `.webui-last.json`) and applied when the page is opened again; "Restore default settings" goes back to the defaults.
+5. The **preview player** on the right loads the video and the script just made, to check while playing; with a reference script it is overlaid as a grey line. "Scene" in the info bar is the number of the scene at the current playback position (the same as `#` in the scene table). The box on the video is the region in which this scene's motion was analysed (tick "Analysis region" or press `R` to show or hide it): the solid one is the region in use, and the hybrid mode's other region is dashed; the info bar says which one is in use, and without a box it is the whole picture. When the output does not match the picture, first look at whether the box is where the motion is.
+6. **When it is upside down**: when the preview plays that scene, press "Flip" under the player, or click that scene's "Flip" column (`⇅`) in the scene analysis table. The scene is flipped at once and the output file is updated too; press again to restore it, and the summary lists the matching CLI option (`--flip-scenes …`). "Possibly upside down" in the summary lists the scenes worth checking first, which the preview's timeline shades yellow; press "Next to check" in the info bar (or `N`) to jump to the next one and play it, and press "Flip" if it is upside down.
+7. **Editing single actions**: tick "Edit" in the player (or press `E`), and the keys for editing are listed under the player: drag actions on the timeline (left/right changes the time, up/down the position), drag on empty space with the left button held to select several (`Shift` adds to the selection); selected points can be dragged together, adjusted with `↑` `↓` or deleted, `A` adds one at the playback position (or double-click empty space), `Delete` deletes, `↑` `↓` change the position (or hold and drag on the position bar on the right, and the video jumps to that action), `Ctrl+Z` undoes, and when done press "Save edits" under the player to write the output file. When a scene's strokes are too small or too large, play to that scene and press `+` to enlarge or `-` to shrink (the "Size" button in the info bar works too; each press is ×1.25 or ×0.8, every stroke around its own midpoint, so motion that goes up and down is not pushed to the top or bottom). To make every stroke of a scene reach the same height, enter a position (0–100) under "Top" or "Bottom" in the info bar and press "Set" or `Enter`: the action at every peak (or valley) of the scene is set to that position and the points between move in proportion (the player remembers the number entered). With several points selected while editing, size and top/bottom change only the selected points. Pressing "Flip" (under the player or in the scene table) keeps edits that are not saved yet; an edited output file is marked `hand_edited` in its metadata (the CLI cannot reproduce these changes).
+8. **Several videos at once**: in the Batch tab choose several videos and press "Start batch"; they are processed one after another with the Generate tab's current settings, all into the same `out/webui/<time>/` folder. The result table lists each video's status, number of scenes, number of actions and the scenes that may be upside down; when one fails the reason is noted and the next one continues, and "Cancel" stops at the current one (finished ones are kept). To check, flip or edit one, select it under "Finished videos" and press "Open in the Generate tab"; it can then be previewed, flipped and edited just like one made in the Generate tab, and pressing Generate there after changing only the output settings reuses its analysis too.
+9. The Output tab can download the scripts made before again, or clear them all.
+10. **The Preview tab** loads any video and funscript (for example a script from another tool or another person) to preview, edit and flip scenes on its own. In the video box the file dialog can pick a video and a funscript together (for example hold Ctrl and click two files) and they go into the two boxes; they can also be uploaded separately as before. Scenes are split automatically when loading and listed in the scene table below (start and end time, cut strength, number of actions); click the "Flip" column to flip a scene. When scenes are cut too finely or missed, adjust this tab's "Scene cut sensitivity" (lower cuts more easily; when the page opens it follows the Generate tab's setting), and release the slider or press "Split scenes again" to recompute at once, with no reload; the message lists the number of scenes when the sensitivity goes either way, and the scene table also marks where the cut strength is close to the threshold. When scenes are split again, earlier flips stay in the script, and edits that are not saved yet are saved first. A load that takes long can be stopped with "Cancel loading"; "Preview without scene cuts" skips scene detection and treats the whole video as one scene. Progress while loading updates once per percent.
 
-輸出的腳本存在 `out/webui/<時間>/`（Windows 免安裝版是 `data\out\<時間>\`），檔名與影片相同（只有檔名不允許的字元換成底線），方便播放器自動配對。「設定」分頁的「保留天數」可以自動刪除過期的輸出（只刪除以時間命名的資料夾）；CLI 也可以清理：
+The generated scripts are kept in `out/webui/<time>/` (`data\out\<time>\` in the Windows portable build), named like the video (only characters a file name does not allow are replaced with underscores), so players can pair them automatically. "Retention days" in the Settings tab deletes expired outputs automatically (only folders named by time are deleted); the CLI can also clean up:
 
 ```bash
-uv run funscript-gen clean-webui                       # 依 Web UI 設定的保留天數刪除
-uv run funscript-gen clean-webui --older-than-days 7   # 刪除超過 7 天的
-uv run funscript-gen clean-webui --all                 # 全部刪除
+uv run funscript-gen clean-webui                       # delete by the retention days set in the web UI
+uv run funscript-gen clean-webui --older-than-days 7   # delete those older than 7 days
+uv run funscript-gen clean-webui --all                 # delete everything
 ```
 
-預覽播放器的操作：
+Preview player controls:
 
-| 操作 | 功能 |
+| Control | Function |
 |---|---|
-| 點擊時間軸 / 熱度圖 | 跳到該時間 |
-| 在時間軸上滾動滑鼠滾輪 | 縮放顯示的時間範圍（2–120 秒） |
-| 在時間軸上按住右鍵拖曳 | 捲動時間軸（往右拖看前面、往左拖看後面；放開後恢復原本的播放狀態） |
-| `空白鍵` | 播放／暫停 |
-| `←` `→` | 跳到上一個／下一個動作點 |
-| `Shift` + `←` `→` | 往前／往後 5 秒 |
-| `,` `.` | 往前／往後一幀 |
-| `[` `]` | 放慢／加快播放（0.25–2 倍，下次開啟播放器沿用） |
-| `PageUp` `PageDown` | 跳到上一個／下一個鏡頭的開頭（資訊列的「上一個鏡頭」「下一個鏡頭」按鈕也可以） |
-| `N` | 跳到下一個待確認（可能高低相反）的鏡頭並播放 |
-| `E` | 編輯模式開／關（時間軸加上外框，下方列出編輯的按鍵）；編輯時：拖曳動作點移動、在空白處拖曳框選多個點（`Shift`+點選或框選加選，選取的點一起移動、調整或刪除）、`A` 或 `Insert` 在播放位置新增（或雙擊空白處）、`Delete` 或 `Backspace` 刪除選取的點、`↑` `↓` 位置 ±5（加 `Shift` ±1；也可以在右邊的位置條上按住拖曳）、`Ctrl+Z` 復原、`Esc` 取消選取，`←` `→` 跳到並選取上一個／下一個動作點 |
-| `-` `+` | 縮小／放大目前鏡頭（選取了多個點時是選取的點）的行程幅度（每次 ×0.8／×1.25，每一下以各自的中點為準；會開啟編輯模式，要按「儲存編輯」） |
-| 「頂點」「底點」＋「設定」或 `Enter` | 把目前鏡頭（選取了多個點時是選取的點）每個波峰／波谷的動作點設成輸入的位置，中間的點依比例移動（會開啟編輯模式，要按「儲存編輯」） |
-| `R` | 顯示／隱藏分析區域（「產生」分頁的預覽；「預覽」分頁載入的腳本沒有分析資料，不顯示） |
+| Click the timeline / heat map | Jump to that time |
+| Scroll the mouse wheel over the timeline | Zoom the time range shown (2–120 s) |
+| Hold the right button and drag on the timeline | Scroll the timeline (drag right to see earlier, left to see later; the playing state returns when released) |
+| `Space` | Play / pause |
+| `←` `→` | Jump to the previous / next action |
+| `Shift` + `←` `→` | 5 seconds back / forward |
+| `,` `.` | One frame back / forward |
+| `[` `]` | Slower / faster playback (0.25–2×, kept the next time the player opens) |
+| `PageUp` `PageDown` | Jump to the start of the previous / next scene (the "Previous scene" "Next scene" buttons in the info bar work too) |
+| `N` | Jump to the next scene to check (possibly upside down) and play it |
+| `E` | Editing on / off (the timeline gets a frame and the keys for editing are listed below); while editing: drag an action to move it, drag on empty space to select several (`Shift`+click or drag adds to the selection; selected points move, adjust or delete together), `A` or `Insert` adds one at the playback position (or double-click empty space), `Delete` or `Backspace` deletes the selected points, `↑` `↓` change the position ±5 (with `Shift` ±1; or hold and drag on the position bar on the right), `Ctrl+Z` undoes, `Esc` deselects, `←` `→` jump to and select the previous / next action |
+| `-` `+` | Shrink / enlarge the strokes of the current scene (the selected points when several are selected) (×0.8 / ×1.25 each time, every stroke around its own midpoint; turns editing on, and "Save edits" must be pressed) |
+| "Top" "Bottom" + "Set" or `Enter` | Set the action at every peak / valley of the current scene (the selected points when several are selected) to the position entered, and the points between move in proportion (turns editing on, and "Save edits" must be pressed) |
+| `R` | Show / hide the analysis region (in the Generate tab's preview; a script loaded in the Preview tab has no analysis data and shows none) |
 
-鍵盤操作需要先點一下播放器。熱度圖的顏色代表速度：藍色慢、紅色快。
+The keyboard needs the player to be clicked once first. The colours of the heat map stand for speed: blue is slow, red is fast.
 
 ### CLI
 
 ```bash
-# 產生腳本（預設輸出 <影片>.funscript）
+# Generate a script (output <video>.funscript by default)
 uv run funscript-gen generate video.mp4
 
-# 設定組：user = 作者在 Web UI 用的設定（驗證分數最好）；後面的參數會覆寫設定組
+# Presets: user = the author's web UI settings (best validation scores); the arguments after it override the preset
 uv run funscript-gen generate video.mp4 --preset user
 uv run funscript-gen generate video.mp4 --preset user --no-curve
 
-# 輸出 40–90 範圍，並另外存一份除錯資料與訊號圖
+# Output range 40–90, and also save debug data and a signal plot
 uv run funscript-gen generate video.mp4 --range-low 40 --range-high 90 --debug
 
-# 保留轉折處的停頓，並在較慢的長行程中補點
+# Keep the rests at turning points, and add points on slower long strokes
 uv run funscript-gen generate video.mp4 --dwell --curve
 
-# 關閉部位框與行程快慢的方向判斷（較快，部位偵測在 CPU 上會多約一半時間）
+# Turn off the direction checks from part boxes and stroke speed (faster; the part detection adds about half the time on the CPU)
 uv run funscript-gen generate video.mp4 --no-part-sign --no-asym-sign
 
-# 存下分析，之後換輸出設定重算（不必重新解碼與呼叫 AI；改分析設定會被拒絕）
+# Save the analysis, then recompute with other output settings (no decoding or AI calls again; changing an analysis setting is refused)
 uv run funscript-gen generate video.mp4 --save-analysis video.analysis.pkl
 uv run funscript-gen render video.analysis.pkl -o video-40-90.funscript --range-low 40 --range-high 90
 
-# 較快：光流在 320 寬的畫面上計算（約快 2 倍，見「已知問題」的速度）
+# Faster: optical flow on a 320-wide picture (about twice as fast, see the speed under "Known issues")
 uv run funscript-gen generate video.mp4 --flow-width 320
 
-# 手動覆寫 AI 的判斷
+# Override the AI's decisions by hand
 uv run funscript-gen generate video.mp4 --mode flow --axis vertical --roi 0.3,0.4,0.7,0.8
 
-# 一次處理多支影片或整個資料夾（-r 連子資料夾）：腳本寫在各影片旁邊，已經有腳本的影片略過
+# Several videos or a whole folder (-r includes subfolders): scripts are written beside each video, and videos that already have one are skipped
 uv run funscript-gen batch ~/videos --preset user
-uv run funscript-gen batch a.mp4 b.mkv ~/videos -r -o ~/scripts --overwrite   # 全部寫到 ~/scripts，已有的也重做
+uv run funscript-gen batch a.mp4 b.mkv ~/videos -r -o ~/scripts --overwrite   # all written to ~/scripts, those that exist are redone
 
-# 與人工腳本比較
+# Compare with a hand-made script
 uv run funscript-gen compare reference.funscript video.funscript
 
-# 抽幾張畫面送給 AI，看它的判斷（會輸出標註了區域的圖片 out/ai-check.jpg）
+# Send a few frames to the AI and see what it decides (writes an image with the regions marked, out/ai-check.jpg)
 uv run funscript-gen ai-check video.mp4 --at 60
 
-# 影片資訊
+# Video information
 uv run funscript-gen info video.mp4
 
-# 訊息的語言（見「語言」）與語言包
+# The language of the messages (see "Language"), and the language packs
 uv run funscript-gen --lang en generate video.mp4
 uv run funscript-gen lang list
 ```
 
-`uv run funscript-gen <指令> --help` 可以看到所有參數與預設值。`batch` 的設定參數和 `generate` 相同（`--flip-scenes` 除外：鏡頭編號每支影片不同，要反轉時對那一支另外 `generate`）；影片依副檔名找（mp4、mkv、webm、mov、avi 等），中斷（`Ctrl+C`）後重跑同一個指令會接著處理還沒有腳本的影片，有失敗的影片時結束碼是 1。
+`uv run funscript-gen <command> --help` shows all arguments and their defaults. The settings of `batch` are the same as `generate`'s (except `--flip-scenes`: the scene numbers differ for each video, so to flip, run `generate` for that one separately); videos are found by extension (mp4, mkv, webm, mov, avi, etc.); after an interruption (`Ctrl+C`), running the same command again carries on with the videos that have no script yet, and with a failed video the exit code is 1.
 
-#### 主要參數
+#### Main arguments
 
-| 參數 | 預設 | 說明 |
+| Argument | Default | Description |
 |---|---|---|
-| `--preset` | 無 | 從設定組開始（`default`、`user`），其他參數覆寫設定組的值 |
-| `--save-analysis` | 無 | 另外把分析存成檔案，給 `render` 換輸出設定重算 |
-| `--ai/--no-ai` | 開啟 | 是否使用 AI 分析每個鏡頭（關閉時分析整個畫面） |
-| `--mode` | `auto` | `auto`（等同光流）/ `flow` / `pose`（骨架，需要 `uv sync --extra pose`） |
-| `--focus` | `general` | `general`（兩人之間的動作）/ `hybrid`（另外做目標部位分析，逐幀選擇，實驗性） |
-| `--region-pick/--no-region-pick` | 開啟 | 請 AI 從候選區域中再選一次分析區域（一般模式；指定 `--roi` 時不執行） |
-| `--contact-pick/--no-contact-pick` | 開啟 | Hybrid：AI 認為接觸部位最可能是手和口時，跟著移動較大的那個（需要 vLLM；Ollama 上不執行）；`--contact-min-prob`（0.1）是第二名的最低機率，低於它不比較 |
-| `--stroke-range/--no-stroke-range` | 開啟 | 行程範圍辨識；`--range-cap`（80）、`--range-floor`（20）是它的上下限 |
-| `--rest-empty/--no-rest-empty` | 開啟 | AI 判斷沒有人的鏡頭停在最高點 |
-| `--axis` / `--roi` | AI 決定 | 動作方向（`vertical` 等）／ 分析區域 `x1,y1,x2,y2`（0–1） |
-| `--ref-a` / `--ref-b` | AI 決定 | 骨架模式使用的部位：`head` `shoulder` `wrist` `hip` `knee` `ankle` `torso` |
-| `--chunk-align/--no-chunk-align` | 開啟 | 長鏡頭的 20 秒分段使用一致的行程方向 |
-| `--part-sign/--no-part-sign` | 開啟 | 依部位框判斷方向；`--part-sign-threshold`（0.2）調小更容易反轉 |
-| `--asym-sign/--no-asym-sign` | 開啟 | 依行程快慢判斷方向；`--asym-threshold`（0.5）、`--asym-audio`（開啟）、`--asym-audio-threshold`（0.2） |
-| `--sound-hint` | 關閉 | 聲音起點落在動作高點、沒有被反轉的鏡頭列為「可能高低相反」（在新素材上多半誤報） |
-| `--invert` | 關閉 | 在輸出範圍內上下反轉 |
-| `--flip-scenes` | 無 | 只反轉這些鏡頭，例如 `0,3`（編號見產生後列出的鏡頭、Web UI 鏡頭表） |
-| `--range-low` / `--range-high` | 0 / 100 | 輸出位置的範圍 |
-| `--amplitude` / `--gain` | `preserve` / 1.0 | 幅度模式（`preserve`／`fill`）與保留幅度模式的行程倍率 |
-| `--rhythm-filter/--no-rhythm-filter` | 開啟 | 節奏濾波（只作用於光流） |
-| `--max-speed` | 500 | 最大速度（位置單位／秒）；預設以伺服馬達普通的 OSR2 為準，伺服馬達較好時可以調到 600 |
-| `--freq-limit` / `--freq-max` / `--freq-min-scale` | 2.0 / 3.0 / 0.5 | 高頻縮小幅度：開始縮小的頻率、縮到最小的頻率（Hz）與最小的行程比例；`--freq-limit 0` 關閉 |
-| `--min-prominence` | 0.15 | 最小動作幅度（佔局部範圍的比例）；調大會忽略小動作 |
-| `--dwell` / `--dwell-tol` / `--dwell-min-ms` | 關閉 / 0.05 / 200 | 保留轉折處的停頓 |
-| `--hold` / `--hold-after-ms` | 關閉 / 1000 | 停頓保持（間隔也用在高頻縮小幅度判斷停頓） |
-| `--curve` / `--curve-after-ms` / `--curve-tol` | 關閉 / 600 / 5 | 長行程補點 |
-| `--bridge/--no-bridge` | 開啟 | 鏡頭切換處接不上節奏時複製一次前一個行程 |
-| `--scene-center/--no-scene-center` | 關閉 | 實驗性：沒有明顯節奏的鏡頭以整個鏡頭的範圍決定位置 |
-| `--fps` / `--scene-threshold` | 30 / 30 | 分析幀率；鏡頭切換靈敏度（越小越容易切分） |
-| `--flow-width` | 480 | 光流計算的畫面寬度（160–480）；直式影片比這窄時不放大 |
-| `--flow-workers` / `--ai-workers` | CPU 核心數的一半 / `.env` 的 8 | 同時計算光流的工作數（每段最多 5 秒，輸出不變）／ 同時送出的 AI 請求數 |
-| `--compute` | `auto` | 用 GPU 或 CPU 計算：`auto`（有可用的 GPU 就用，沒有就用 CPU）／ `gpu`（找不到可用的 GPU 時提示原因並停止）／ `cpu` |
-| `--flow-compute` / `--part-compute` / `--pose-compute` | `auto` | 個別設定光流、部位框偵測、骨架用 GPU 或 CPU；`auto` 依照 `--compute` |
-| `--debug` | 關閉 | 另外輸出 `.debug.json` 與 `.debug.png` |
+| `--preset` | none | Start from a preset (`default`, `user`); the other arguments override the preset's values |
+| `--save-analysis` | none | Also save the analysis to a file, for `render` to recompute with other output settings |
+| `--ai/--no-ai` | on | Whether the AI analyses each scene (when off, the whole picture is analysed) |
+| `--mode` | `auto` | `auto` (the same as flow) / `flow` / `pose` (skeletons, needs `uv sync --extra pose`) |
+| `--focus` | `general` | `general` (the motion between the two people) / `hybrid` (also a target-region analysis, chosen per frame, experimental) |
+| `--region-pick/--no-region-pick` | on | Let the AI pick the analysis region from candidates once more (general mode; not done when `--roi` is given) |
+| `--contact-pick/--no-contact-pick` | on | Hybrid: when the AI thinks the contact part is most likely the hand and the mouth, follow the one that moves more (needs vLLM; not done on Ollama); `--contact-min-prob` (0.1) is the second one's minimum probability, below which they are not compared |
+| `--stroke-range/--no-stroke-range` | on | Stroke range check; `--range-cap` (80) and `--range-floor` (20) are its limits |
+| `--rest-empty/--no-rest-empty` | on | Scenes in which the AI sees nobody hold at the top |
+| `--axis` / `--roi` | AI decides | Motion axis (`vertical` etc.) / analysis region `x1,y1,x2,y2` (0–1) |
+| `--ref-a` / `--ref-b` | AI decides | The body parts the skeleton mode uses: `head` `shoulder` `wrist` `hip` `knee` `ankle` `torso` |
+| `--chunk-align/--no-chunk-align` | on | The 20 s chunks of a long shot use a consistent stroke direction |
+| `--part-sign/--no-part-sign` | on | Direction from the part boxes; a smaller `--part-sign-threshold` (0.2) flips more easily |
+| `--asym-sign/--no-asym-sign` | on | Direction from stroke speed; `--asym-threshold` (0.5), `--asym-audio` (on), `--asym-audio-threshold` (0.2) |
+| `--sound-hint` | off | Scenes whose sound onsets fall at the highs but were not flipped are listed as "possibly upside down" (mostly false alarms on new videos) |
+| `--invert` | off | Flip upside down within the output range |
+| `--flip-scenes` | none | Flip only these scenes, e.g. `0,3` (the numbers are in the scenes listed after generating, and the web UI's scene table) |
+| `--range-low` / `--range-high` | 0 / 100 | The range of the output positions |
+| `--amplitude` / `--gain` | `preserve` / 1.0 | Stroke size mode (`preserve` / `fill`) and the stroke multiplier of the keep-size mode |
+| `--rhythm-filter/--no-rhythm-filter` | on | Rhythm filter (optical flow only) |
+| `--max-speed` | 500 | Maximum speed (position units / s); the default is for an ordinary-servo OSR2, and with better servos it can be raised to 600 |
+| `--freq-limit` / `--freq-max` / `--freq-min-scale` | 2.0 / 3.0 / 0.5 | Shrinking at high frequency: the frequency where shrinking starts, the frequency where it is smallest (Hz) and the smallest stroke ratio; `--freq-limit 0` turns it off |
+| `--min-prominence` | 0.15 | Minimum stroke size (fraction of the local range); larger ignores small motion |
+| `--dwell` / `--dwell-tol` / `--dwell-min-ms` | off / 0.05 / 200 | Keep the rests at turning points |
+| `--hold` / `--hold-after-ms` | off / 1000 | Hold during pauses (the gap is also used to tell pauses in the high-frequency shrinking) |
+| `--curve` / `--curve-after-ms` / `--curve-tol` | off / 600 / 5 | Add points on long strokes |
+| `--bridge/--no-bridge` | on | Copy one stroke of the previous scene when the rhythm does not continue at a cut |
+| `--scene-center/--no-scene-center` | off | Experimental: scenes without a clear rhythm are placed by the whole scene's range |
+| `--fps` / `--scene-threshold` | 30 / 30 | Analysis frame rate; scene cut sensitivity (lower cuts more easily) |
+| `--flow-width` | 480 | The picture width of the optical flow computation (160–480); a portrait video narrower than this is not enlarged |
+| `--flow-workers` / `--ai-workers` | half the CPU cores / 8 from `.env` | Optical flow jobs at the same time (each up to 5 s, the output does not change) / AI requests sent at once |
+| `--compute` | `auto` | Compute on the GPU or the CPU: `auto` (a GPU when one is usable, otherwise the CPU) / `gpu` (when no usable GPU is found, say why and stop) / `cpu` |
+| `--flow-compute` / `--part-compute` / `--pose-compute` | `auto` | GPU or CPU for optical flow, part detection and skeletons separately; `auto` follows `--compute` |
+| `--debug` | off | Also write `.debug.json` and `.debug.png` |
 
-快取：AI 的回答存在 `~/.cache/funscript-gen/ai/`，部位框存在 `~/.cache/funscript-gen/parts/`，都可以直接刪除（下次會重新計算）。
+Caches: the AI's answers are kept in `~/.cache/funscript-gen/ai/` and the part boxes in `~/.cache/funscript-gen/parts/`; both can simply be deleted (they are computed again next time).
 
-### 語言
+### Language
 
-CLI 的訊息、Web UI、桌面版與預覽播放器有繁體中文（`zh-TW`）與英文（`en`）兩種。所有文字都放在**語言包**中：`lang` 資料夾裡以語言代碼命名的 `.toml` 檔。
+The CLI messages, the web UI, the desktop app and the preview player come in Traditional Chinese (`zh-TW`) and English (`en`). Every text lives in a **language pack**, a `.toml` file named after the language code in the `lang` folder:
 
-- **選擇語言**：Web UI（與桌面版）的「設定」分頁最上方的「語言 / Language」清單，選了立即生效（不必重新整理頁面）並會記住；CLI 用 `--lang en`（例如 `funscript-gen --lang en generate video.mp4`）或環境變數 `FUNSCRIPT_GEN_LANG`。都沒有指定時依系統的語言（沒有對應的語言包就用英文）。
-- **語言包的位置**：程式資料夾的 `lang/`（Windows 免安裝版是 `FunscriptGen.exe` 旁的 `lang\`；Docker 是資料夾中的 `lang/`），加上程式內建的語言包；`lang/` 中代碼相同的檔案會取代內建的。`funscript-gen lang list` 列出找到的語言包。
-- **新增語言**：把 `lang/_template.toml` 複製成 `lang/<代碼>.toml`（例如 `ja.toml`），填寫 `code` 與 `name`（該語言自己的名稱，顯示在清單中），再在每個 key 後面寫譯文。每個 key 上方的註解列出繁體中文與英文的原文；留空的文字會使用繁體中文。`{名稱}` 形式的參數與 Markdown、`<k>…</k>` 標記要保留，寫完用 `funscript-gen lang check lang/<代碼>.toml` 檢查，在 Web UI 重新整理頁面後清單中就會出現。
-- 分析備註（例如鏡頭表中的「區域選擇失敗」）以分析當下使用的語言寫成，之後不會跟著改變。
+- **Choosing the language**: in the web UI (and the desktop app) the "語言 / Language" list at the top of the Settings tab; it takes effect at once, without a reload, and is remembered. On the CLI use `--lang en` (e.g. `funscript-gen --lang en generate video.mp4`) or the environment variable `FUNSCRIPT_GEN_LANG`. When nothing is chosen the system's language is used (English when there is no pack for it).
+- **Where the packs are**: `lang/` in the program's folder (the Windows portable build: `lang\` beside `FunscriptGen.exe`; with Docker: `lang/` in the data folder), plus the packs built into the program. A file with the same code in `lang/` replaces the built-in pack. `funscript-gen lang list` lists the packs found.
+- **Adding a language**: copy `lang/_template.toml` to `lang/<code>.toml` (for example `ja.toml`), fill in `code` and `name` (the language's own name, shown in the list) and write each text after its key. The comment lines above each key show the Traditional Chinese and English texts. A text left empty falls back to Traditional Chinese. Keep the `{placeholders}` and the Markdown / `<k>…</k>` markers, then check the file with `funscript-gen lang check lang/<code>.toml`. Press reload in the web UI and the new language is in the list.
+- The text of an analysis note (for example "Region choice failed" in the scene table) is written in the language in use when the video is analysed; it does not change afterwards.
 
 ---
 
-## 已知問題與限制
+## Known issues and limitations
 
-**高低方向**
-- **正面視角與第一人稱的影片常常整段高低相反**：這類畫面往上是推進，第一人稱的上方視角同樣往上卻是退回，光流分不出兩者。預設開啟的部位框與快慢判斷能修正一部分，剩下的請用「可能高低相反」的提示與預覽檢查，整支相反用 `--invert`，個別鏡頭按「反轉」。
-- **剪接很碎的影片方向常錯**：每個鏡頭只有一兩秒時（例如部分 3D 動畫）沒有足夠的資訊判斷方向，等於用猜的。
-- **部位框判斷只對看得到主動部位與對象部位的鏡頭有效**（口部接觸、手部接觸、背面視角不受影響），只在動漫上驗證過。
-- **依聲音提示「可能高低相反」（`--sound-hint`）在新影片上多半誤報**，所以預設關閉。
+**High/low direction**
+- **Front-view and first-person videos are often upside down for a whole video**: in such pictures moving up is the push in, while in a first-person top view it also moves up but is the pull back, and optical flow cannot tell them apart. The part boxes and the stroke speed check, both on by default, correct some of them; for the rest use the "possibly upside down" hints and the preview, `--invert` for a whole video that is upside down, and "Flip" for single scenes.
+- **The direction of heavily cut videos is often wrong**: when every scene is only a second or two (for example some 3D animation) there is not enough information to judge the direction, which amounts to guessing.
+- **The part boxes only work for scenes where the active part and the counterpart can be seen** (mouth contact, hand contact and rear view are not affected), and have been validated on anime only.
+- **The "possibly upside down" hints from the sound (`--sound-hint`) are mostly false alarms on new videos**, so they are off by default.
 
-**準確度**
-- **長片的準確度明顯低於短片**，每一下的深淺也常和人工腳本不同。
-- **畫面中有人但靜止的鏡頭仍會輸出動作**；只有沒有人的鏡頭會停住。
-- **疊在慢速大動作上的小動作抓不到。**
-- **行程範圍辨識的 AI 判斷幾乎總是「看不到前端」**，效果大約等於把每個鏡頭的上限設為 80；想要完整行程時可以用 `--no-stroke-range` 關閉。
-- **高頻縮小幅度比人工腳本保守**：人工腳本到每秒 4 下才明顯縮短；不要時用 `--freq-limit 0`。
-- **鏡頭切換處銜接**在原片於切換處停下或放慢時會多出一下；不要時用 `--no-bridge`。
-- **候選區域再確認偶爾換成較差的區域。**
-- **每個鏡頭（或 20 秒分段）只用一個固定的分析區域**：主體大幅移動或鏡頭運鏡時，主體可能移出區域。預覽中可以看到每個鏡頭分析的區域。
-- **光流追不到沒有紋理的畫面**（單色背景）；動畫中大片單色的畫面可能有類似問題（未驗證）。
-- **滿行程以整支影片的大動作為準**：整支都是小動作時可以用 `--gain` 調小。
-- **只輸出單一主軸**，不輸出多軸腳本。
-- **鏡頭切換只偵測硬切換**，淡入淡出、溶接可能偵測不到；長鏡頭的分段處動作點可能較少。
+**Accuracy**
+- **The accuracy of long videos is clearly lower than of short ones**, and the depth of each stroke often differs from the hand-made script.
+- **Scenes in which someone is in the picture but still keep outputting motion**; only scenes with nobody in them hold still.
+- **Small motion on top of slow large motion is not caught.**
+- **The AI's judgement in the stroke range check is almost always "tip not seen"**, which amounts to setting every scene's upper limit to 80; for full strokes turn it off with `--no-stroke-range`.
+- **Shrinking at high frequency is more conservative than hand-made scripts**: hand-made scripts shorten clearly only at 4 strokes per second; use `--freq-limit 0` when it is not wanted.
+- **Bridging scene cuts** adds one extra stroke when the original stops or slows at the cut; use `--no-bridge` when it is not wanted.
+- **The candidate region check sometimes switches to a worse region.**
+- **Each scene (or 20 s chunk) uses one fixed analysis region**: when the subject moves a lot or the camera pans, the subject may leave the region. The preview shows the region analysed in each scene.
+- **Optical flow cannot follow pictures without texture** (a plain background); large plain areas in animation may have a similar problem (not verified).
+- **Full strokes are set by the big motions of the whole video**: when the whole video has only small motion, use `--gain` to make it smaller.
+- **Only a single main axis is output**, not a multi-axis script.
+- **Scene splitting only detects hard cuts**; fades and dissolves may not be detected, and a long shot's chunk boundaries may have fewer actions.
 
 **AI**
-- **同一支影片重跑，結果可能稍有不同**：AI 在同時處理多個請求時答案可能不同（答案會快取，第二次起相同）。
-- **AI 拒答或連線失敗時**會改為分析整個畫面，準確度可能下降。
-- **Hybrid 只比一般模式略好**，但 AI 時間約兩倍。
-- **手和口同時接觸時改看移動較大的那個**（`--contact-pick`）整體效果持平，少數鏡頭會變差；覺得某段跟錯時可以用 `--no-contact-pick` 重新產生比較。
-- **未成年人判斷目前沒有作用**，不會因此略過任何鏡頭。
+- **Running the same video again may give slightly different results**: the AI's answers can differ when several requests are handled at once (answers are cached, so they are the same from the second time).
+- **When the AI refuses or the connection fails** the whole picture is analysed instead, and the accuracy may drop.
+- **Hybrid is only slightly better than the general mode**, but takes about twice the AI time.
+- **Following the one that moves more when the hand and the mouth both touch** (`--contact-pick`) is on the whole a tie, and a few scenes get worse; when a scene seems to follow the wrong one, generate again with `--no-contact-pick` and compare.
+- **The check for minors currently has no effect**; it does not skip any scene.
 
-**速度**
-- 2 分鐘、16 個鏡頭的影片在 12 核 CPU 上約 23 秒（AI 已快取、不含部位框判斷）；沒有快取時 AI 分析約 30 秒，和光流同時進行。只有一兩個鏡頭的短片也會切成小段平行計算。
-- 部位框判斷在 CPU 上很慢（3 分鐘的影片時間將近變成兩倍），結果會快取；可以改用 GPU（見「安裝」），急著要結果時用 `--no-part-sign` 關閉。
-- `--flow-width 320` 約快 2 倍，但方向不明確的影片可能換方向，所以預設 480。
-- 有 GPU（OpenCL）的電腦預設在 GPU 上算光流，產生的腳本和只用 CPU 時有極小的差異；要和 CPU 的結果完全一樣時，把「設定」分頁「運算裝置」的光流設為 CPU。
+**Speed**
+- A 2-minute video with 16 scenes takes about 23 s on a 12-core CPU (AI already cached, without the part check); without the cache the AI analysis takes about 30 s, running at the same time as the optical flow. A short video with only one or two scenes is also cut into small pieces and computed in parallel.
+- The part check is very slow on the CPU (for a 3-minute video the time almost doubles) and its result is cached; a GPU can be used instead (see "Installation"), and when in a hurry turn it off with `--no-part-sign`.
+- `--flow-width 320` is about twice as fast, but a video whose direction is unclear may change direction, so the default is 480.
+- A computer with a GPU (OpenCL) computes optical flow on the GPU by default, and the script differs very slightly from one made on the CPU only; for exactly the same result as the CPU's, set optical flow to CPU under "Compute device" in the Settings tab.
 
 **Web UI**
-- 同時只處理一個工作，其他請求會排隊。
-- 設計為單人使用，**沒有登入**；開放區網時，能開啟 Web UI 的人都能使用，並能在「設定」分頁修改 AI 端點與金鑰（金鑰不會顯示在頁面上，但可以被覆寫）。只在信任的網路中開放。
-- AI 設定、記住的設定、語言與保留天數存在伺服器上，多個瀏覽器分頁共用；改版後已不存在的選項或超出範圍的數值會改用預設值。
-- 上傳的影片暫存檔不會自動清除；「全部清除」輸出時，剛產生、尚未下載的腳本也會被刪除。
-- 桌面模式（Windows 版的 `FunscriptGen.exe`）的視窗中點下載連結時，檔案存到使用者的「下載」資料夾；要存在影片旁邊請用「設定」分頁的選項，或用「輸出」分頁的「開啟輸出資料夾」。
-- 「取消」在下一次更新進度時才停止（AI 分析時要等下一個回答回來）。
-- 預覽播放器只支援瀏覽器能播放的格式（建議 H.264 MP4）；預覽的連結在伺服器重啟後失效。編輯動作點後要按「儲存編輯」：重新產生時，還沒儲存的編輯會遺失（「反轉」會保留）。
-- 沿用上次分析重新產生時，不保留上次手動反轉的鏡頭。
-- 預覽播放器內的文字與鏡頭表中的分析備註在預覽或分析時產生，切換語言後要到下一次才會改變。
+- Only one job is processed at a time; other requests wait in line.
+- It is designed for one user and **has no login**; when it is opened to the LAN, anyone who can open the web UI can use it and can change the AI endpoint and key in the Settings tab (the key is never shown on the page, but it can be overwritten). Open it only on a trusted network.
+- The AI settings, the remembered settings, the language and the retention days are kept on the server and shared by all browser tabs; options that no longer exist after an update, or numbers out of range, fall back to the defaults.
+- The temporary files of uploaded videos are not cleaned up automatically; when "Clear all" clears the outputs, a script that was just made and not downloaded yet is deleted too.
+- When a download link is clicked in the window of the desktop mode (the Windows build's `FunscriptGen.exe`), the file goes to the user's "Downloads" folder; to keep it beside the video use the option in the Settings tab, or "Open the output folder" in the Output tab.
+- "Cancel" stops at the next progress update (during the AI analysis, after the next answer comes back).
+- The preview player only supports formats the browser can play (H.264 MP4 is recommended); a preview's link stops working after the server restarts. After editing actions press "Save edits": when generating again, edits that are not saved yet are lost ("Flip" keeps them).
+- Generating again from the last analysis does not keep the scenes flipped by hand the last time.
+- The player's own texts, and the analysis notes in the scene table, are made when the preview or the analysis is made, so after the language is changed they stay in the old language until the next one.
 
-**其他**
-- 不處理影片的旋轉資訊（手機直拍的影片可能被當成橫向畫面）。
+**Other**
+- The rotation information of videos is not handled (a portrait video from a phone may be treated as a landscape picture).
 
 ---
 
-## 使用注意與免責聲明
+## Usage notice and disclaimer
 
-- **合法使用與著作權**：請只處理你有合法使用權的影片。使用者應自行確認所處理之影音內容與所產生之 `.funscript` 腳本符合當地法令，並自行承擔一切著作權與法律責任。
-- **年齡與內容限制（18+）**：本工具針對成人動漫影片之動作分析設計，僅供符合當地法定成年年齡之人士使用。**嚴禁**將本工具用於處理任何違法內容（包含但不限於涉及未成年人或非自願之影像）。
-- **硬體操作安全免責**：本工具自動產生的 `.funscript` 腳本可能包含快速移動或方向反轉。若將腳本用於控制任何實體致動器或電動裝置，請務必先在預覽播放器或控制軟體中檢查腳本，並設定安全的行程範圍與速度上限。本軟體依「現況（AS IS）」提供，不附帶任何明示或暗示之擔保；開發者不對因使用本軟體或其輸出結果所造成的任何硬體損壞、資料遺失或人身傷害負任何責任。
-- **資料隱私**：本程式本身不收集或回傳任何遙測資料。影片解碼、光流與部位框偵測皆在本機執行；只有抽出的鏡頭關鍵幀會送往你設定的 AI 端點。請使用自己架設的本機或區網伺服器（vLLM、Ollama），切勿將私人或受著作權保護之影像傳送至第三方外部商用 API。
+- **Legal use and copyright**: Please only process videos that you have a legal right to use. You are solely responsible for ensuring that the videos you process and the `.funscript` files you generate comply with applicable laws and copyright regulations.
+- **Age and content restriction (18+)**: This tool is designed for analysing motion in adult anime videos and is intended solely for adults of legal age in their jurisdiction. Using this tool on any unlawful content (including, without limitation, any content involving minors or non-consensual imagery) is **strictly prohibited**.
+- **Hardware safety disclaimer**: Automatically generated `.funscript` files may contain fast movements or inverted directions. If you use generated scripts to drive any physical actuator or motorized device, always inspect the script in the preview player or your control software first and configure safe stroke limits and speed caps. This software is provided **"AS IS"**, without warranty of any kind, express or implied; the authors and contributors shall not be liable for any hardware damage, data loss or personal injury arising from the use of this software or its outputs.
+- **Privacy and data flow**: This program collects no telemetry. Video decoding, optical flow and part detection all run locally on your machine; only sampled scene keyframes are sent to the AI endpoint you configure. Please use a self-hosted local or LAN server (vLLM or Ollama) and do not send private or copyrighted imagery to third-party commercial APIs.
 
-## 參考來源與致謝
+## References and acknowledgements
 
-- **動漫部位偵測模型與前處理邏輯**：部位框方向判斷（`--part-sign`）於首次使用時從 Hugging Face 下載 DeepGHS 的 [`deepghs/anime_censor_detection`](https://huggingface.co/deepghs/anime_censor_detection) 模型（未包含於本儲存庫中）；`src/funscript_gen/tracking/parts.py` 的 YOLOv8 ONNX 前處理與框解碼邏輯參考了 [`dghs-imgutils`](https://github.com/deepghs/imgutils)（MIT License）。
-- **視覺語言模型與推論伺服器**：預設使用 Qwen 團隊的 [`Qwen/Qwen3-VL-8B-Instruct`](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct)（Apache-2.0），並搭配 [vLLM](https://github.com/vllm-project/vllm) 或 [Ollama](https://github.com/ollama/ollama) 推論後端。
-- **預覽播放器設計參考**：預覽播放器的位置條、捲動動作時間軸、速度熱度圖與鍵盤操作設計參考了 [OpenFunscripter (OFS)](https://github.com/OpenFunscripter/OFS)。
-- **核心開源套件**：影片解碼使用 [PyAV](https://github.com/PyAV-Org/PyAV)（FFmpeg），光流與影像處理使用 [OpenCV](https://opencv.org/)，訊號處理使用 [NumPy](https://numpy.org/) 與 [SciPy](https://scipy.org/)，部位框推論使用 [ONNX Runtime](https://onnxruntime.ai/)，Web UI 與桌面視窗使用 [Gradio](https://www.gradio.app/) 與 [pywebview](https://pywebview.flowrl.com/)；選配的骨架模式（`--extra pose`）使用 [Ultralytics YOLO11-pose](https://github.com/ultralytics/ultralytics)。
+- **Anime part detection model and preprocessing**: The part-box direction check (`--part-sign`) downloads DeepGHS's [`deepghs/anime_censor_detection`](https://huggingface.co/deepghs/anime_censor_detection) model from Hugging Face on first use (the model is not distributed in this repository); the YOLOv8 ONNX preprocessing and box decoding in `src/funscript_gen/tracking/parts.py` follow [`dghs-imgutils`](https://github.com/deepghs/imgutils) (MIT License).
+- **Vision-language model and inference servers**: Defaults to the Qwen team's [`Qwen/Qwen3-VL-8B-Instruct`](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct) (Apache-2.0), served via [vLLM](https://github.com/vllm-project/vllm) or [Ollama](https://github.com/ollama/ollama).
+- **Preview player inspiration**: The preview player's position bar, scrolling action timeline, speed heat map and keyboard controls were inspired by [OpenFunscripter (OFS)](https://github.com/OpenFunscripter/OFS).
+- **Core open-source libraries**: Video decoding uses [PyAV](https://github.com/PyAV-Org/PyAV) (FFmpeg), optical flow and image processing use [OpenCV](https://opencv.org/), signal processing uses [NumPy](https://numpy.org/) and [SciPy](https://scipy.org/), part inference uses [ONNX Runtime](https://onnxruntime.ai/), the web UI and desktop window use [Gradio](https://www.gradio.app/) and [pywebview](https://pywebview.flowrl.com/), and the optional skeleton mode (`--extra pose`) uses [Ultralytics YOLO11-pose](https://github.com/ultralytics/ultralytics).
 
-## 開發工具說明
+## Developed with Claude
 
-本專案使用 Anthropic 的 **Claude（Claude Code）** 協作開發完成，涵蓋系統架構設計、電腦視覺與訊號處理演算法實驗、CLI／Web UI／桌面版與預覽播放器實作、自動化測試、多語言支援及完整技術文件。架構與完整實驗紀錄請見 [DEVELOPMENT.md](DEVELOPMENT.md) 與 [PLAN.md](PLAN.md)。
+This project was developed with Anthropic's **Claude (Claude Code)** across system architecture design, computer-vision and signal-processing experiments, CLI / Web UI / desktop app and preview player implementation, automated tests, internationalisation and documentation. See [DEVELOPMENT.md](DEVELOPMENT.md) and [PLAN.md](PLAN.md) for the architecture and full experiment logs.
 
-## 授權條款
+## License
 
-本專案程式碼採用 [PolyForm Noncommercial License 1.0.0](LICENSE) 授權釋出（原始碼公開，但**不是** OSI 定義的開源授權）：
+This project's source code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE) (source-available, **not** open source as the OSI defines it):
 
-- **允許**：個人使用、研究、興趣、教育，以及非營利組織、教育機構、公益與政府機構等非商業用途；可以修改與散布，但散布時要附上授權條款與著作權聲明（`Required Notice`）。
-- **禁止商業使用**：不得將本軟體用於商業目的，例如作為付費產品或服務的一部分、販售、收費代工產生腳本。要商業使用請先向作者取得另外的授權（到 GitHub 上開 issue 聯絡）。
-- **產出檔案**：你用本軟體產生的 `.funscript` 屬於你；授權只限制軟體本身。但產生它所用的影片、人工腳本等素材的權利仍屬原作者，見上面的「合法使用與著作權」。
-- 授權條款只涵蓋本專案自己的程式碼。第三方套件與模型依各自的授權條款（有些允許商業使用，有些不允許或有條件，例如選配的 AGPL-3.0 套件 `ultralytics`、執行時下載的模型），使用前請自行確認。
+- **Allowed**: personal use, research, hobby and education, and other noncommercial uses such as by nonprofits, educational institutions, charities and government bodies; you may modify and distribute it, but when distributing you must include the license terms and the copyright notice (`Required Notice`).
+- **Commercial use is prohibited**: you may not use the software for a commercial purpose, for example as part of a paid product or service, selling it, or generating scripts for a fee. For commercial use, ask the author for a separate license (open an issue on GitHub).
+- **Output files**: the `.funscript` files you generate with this software are yours; the license limits the software only. The rights in the videos, hand-made scripts and other material you generated them from still belong to their authors; see "Legal use and copyright" above.
+- The license covers only this project's own code. Third-party packages and models are under their own licenses (some allow commercial use, some do not or only on conditions, for example the optional AGPL-3.0 package `ultralytics` and the models downloaded at runtime); check them before use.
 
-專案所使用或參考的第三方開源套件、Windows 免安裝版內附元件，以及執行時下載之外部模型（含選配 `--extra pose` 所安裝的 AGPL-3.0 套件 `ultralytics`）各自依其原本的授權條款釋出，詳見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+Third-party open-source packages, components bundled in the Windows portable build, and external models downloaded at runtime (including the optional `--extra pose` dependency `ultralytics` under AGPL-3.0) remain under their respective licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.

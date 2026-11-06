@@ -214,6 +214,9 @@
 
 ## 開發紀錄（最近）
 
+- [x] **README 改以英文版為主（2026-11-06，使用者要求）**
+  - 修改：`README.md` 改為英文版（原 `README.en.md`），繁體中文版改名 `README.zh.md`；連結（語言切換、`docker/README*.md`、ARCHITECTURE、DEVELOPMENT、`CLAUDE.md` 的同步規則、v1.0.0 Release 說明）一併更新。`docker/`、`packaging/windows/` 的說明檔名不變（中文版仍是沒有後綴的那一份）。舊的開發紀錄與 CHANGELOG 中的 `README.md`／`README.en.md` 指的是改名前的檔案，不改寫。
+
 - [x] **更新 Dependabot 提出的相依套件（2026-11-06，使用者要求）**
   - 修改：PR #4–8 都只改 `uv.lock`，改為在本機以 `uv lock --upgrade-package <名稱>==<版本>` 重產生並合成一個 commit：gradio 6.30.0 → 6.31.0、openai 3.39.0 → 3.42.1、huggingface-hub 2.3.0 → 2.4.0、torch 2.14.1 → 2.15.0、ultralytics 8.4.190 → 8.4.199（連帶 ultralytics-platform、ultralytics-thop）。torch 的 PR 沒有升 torchvision（0.29.1 對應 torch 2.14），一併升到 0.29.2（宣告 `torch>=2.14`）。
   - 驗證：`uv run pytest` 319 passed、2 skipped。輸出比較：同一份程式碼（HEAD `3c1d490`）在 git worktree 用舊的 `uv.lock` 跑 `deps-old`、目前的 venv 跑 `deps-new`（`-c default`，dev＋test 28 段），28/28 段動作逐點相同：dev F1 0.853、F1s 0.834、r 0.557、F1u 0.872；test F1 0.799、F1s 0.752、r 0.581、F1u 0.803（註：這是目前程式碼的數字，和 DEVELOPMENT 基準表的執行不同，沒有更新基準表）。Web UI（gradio 6.31.0）以 Playwright 開啟 5 個分頁，主控台沒有錯誤；骨架模式合成火柴人影片 F1 0.98、r 0.839。只換套件版本，沒有重建 Docker 映像（`uv.lock` 結構未變）。推送後 GitHub 回報 Pillow 的 41 個安全警告，見「尚未完成的後續工作」。
