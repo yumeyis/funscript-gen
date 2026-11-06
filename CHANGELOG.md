@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-06 — 記錄 Pillow 安全警告的處理方式（commit: `Document the pending Pillow security alerts`）
+- 目的：Dependabot 對 Pillow 12.3.0 回報 41 個警告，修正版 13.0.0 被 gradio 的 `pillow<13` 擋住。
+- 修改：PLAN 的後續工作記下風險評估（程式不開啟外來的圖檔）與決定（等 gradio 放寬，不強制 override）。
+- 驗證：只改文件。
+
 ## 2026-11-06 — 更新 Dependabot 提出的相依套件（commit: `Update gradio, openai, huggingface-hub, torch and ultralytics`）
 - 目的：處理 Dependabot 的 PR #4–8。
 - 修改：`uv.lock`：gradio 6.31.0、openai 3.42.1、huggingface-hub 2.4.0、torch 2.15.0、ultralytics 8.4.199，torchvision 一併升到 0.29.2（和 torch 2.15 配對）。

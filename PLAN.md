@@ -194,6 +194,7 @@
 ## 尚未完成的後續工作
 
 - **發布後的後續（2026-11-06 v1.0.0 已發布）**：(1) 程式碼簽章憑證（目前 README 說明 SmartScreen 怎麼放行，先不買）；(2) exe 圖示（目前用預設圖示）。
+- **Pillow 的安全警告（2026-11-06 發現，使用者決定等上游）**：Dependabot 對 Pillow 12.3.0 有 41 個警告（5 critical），修正版 13.0.0，但 gradio 6.31.0（目前最新）要求 `pillow<13`，無法升級。風險評估：這些漏洞要用 Pillow 開啟惡意圖檔（TIFF、PDF、GIF、JPEG 等）才會觸發；本程式只在 `tracking/parts.py` 對自己解碼出的畫面（numpy 陣列）用 Pillow，Web UI 只接受影片，不開啟外來的圖檔。不用 override 強制 Pillow 13：會蓋過 gradio 的上限，Windows 版的 `uv pip install -r`（`--require-hashes`）也要改，gradio 在未測過的組合上可能出錯。警告保持開啟；gradio 放寬上限後 Dependabot 會開 PR，照一般的相依更新驗證後合併。
 - **Windows 版的圖形介面視窗未實際開啟過（2026-11-05）**：SSH 與 CI 都沒有桌面工作階段，只確認了 pywebview 的 WinForms／WebView2 後端可以載入、`--ui none` 的伺服器正常。要在 Windows 桌面上雙擊 `FunscriptGen.exe` 確認：視窗開啟、「選擇…」的原生對話框、下載連結、關閉視窗後程序結束、沒有 WebView2 時改開瀏覽器並出現主控台視窗。
 
 - **多語言的後續（2026-11-05）**：英文譯文請母語者校對；其他語言（譯者放進 `lang/` 的檔案）沒有實際測過；Windows 桌面視窗中切換語言要在桌面上確認；切換語言時已載入的預覽播放器與有資料的表格標題不更新（要重新產生才換）；手動反轉備註（`pipe.manual_flip`）目前以當前語言字串寫入 `plan.note` 比對，換語言後再切換反轉時舊語言字串不會被消掉，可改為顯示時依 `plan.flipped` 動態附加。
@@ -215,7 +216,7 @@
 
 - [x] **更新 Dependabot 提出的相依套件（2026-11-06，使用者要求）**
   - 修改：PR #4–8 都只改 `uv.lock`，改為在本機以 `uv lock --upgrade-package <名稱>==<版本>` 重產生並合成一個 commit：gradio 6.30.0 → 6.31.0、openai 3.39.0 → 3.42.1、huggingface-hub 2.3.0 → 2.4.0、torch 2.14.1 → 2.15.0、ultralytics 8.4.190 → 8.4.199（連帶 ultralytics-platform、ultralytics-thop）。torch 的 PR 沒有升 torchvision（0.29.1 對應 torch 2.14），一併升到 0.29.2（宣告 `torch>=2.14`）。
-  - 驗證：`uv run pytest` 319 passed、2 skipped。輸出比較：同一份程式碼（HEAD `3c1d490`）在 git worktree 用舊的 `uv.lock` 跑 `deps-old`、目前的 venv 跑 `deps-new`（`-c default`，dev＋test 28 段），28/28 段動作逐點相同：dev F1 0.853、F1s 0.834、r 0.557、F1u 0.872；test F1 0.799、F1s 0.752、r 0.581、F1u 0.803（註：這是目前程式碼的數字，和 DEVELOPMENT 基準表的執行不同，沒有更新基準表）。Web UI（gradio 6.31.0）以 Playwright 開啟 5 個分頁，主控台沒有錯誤；骨架模式合成火柴人影片 F1 0.98、r 0.839。只換套件版本，沒有重建 Docker 映像（`uv.lock` 結構未變）。
+  - 驗證：`uv run pytest` 319 passed、2 skipped。輸出比較：同一份程式碼（HEAD `3c1d490`）在 git worktree 用舊的 `uv.lock` 跑 `deps-old`、目前的 venv 跑 `deps-new`（`-c default`，dev＋test 28 段），28/28 段動作逐點相同：dev F1 0.853、F1s 0.834、r 0.557、F1u 0.872；test F1 0.799、F1s 0.752、r 0.581、F1u 0.803（註：這是目前程式碼的數字，和 DEVELOPMENT 基準表的執行不同，沒有更新基準表）。Web UI（gradio 6.31.0）以 Playwright 開啟 5 個分頁，主控台沒有錯誤；骨架模式合成火柴人影片 F1 0.98、r 0.839。只換套件版本，沒有重建 Docker 映像（`uv.lock` 結構未變）。推送後 GitHub 回報 Pillow 的 41 個安全警告，見「尚未完成的後續工作」。
 
 - [x] **文字檔一律以 UTF-8 讀寫（2026-11-06，第一次在 GitHub Actions 上跑測試時發現）**
   - 發現：私人 repo 推送後，`tests.yml` 的 ubuntu 通過、windows-latest 2 個失敗（`test_last_form_round_trip` UnicodeEncodeError、`test_a_run_generates_scores_and_resumes` 的子程序結束碼 1），`windows.yml` 因單元測試失敗停止。原因：GitHub 的 Windows 是英文系統（cp1252），`read_text()`／`write_text()`／`open()` 沒指定編碼時用系統字碼頁；testhost 是中文系統（cp950）所以之前沒發現。影響 pip／uv 安裝在非中文 Windows 上的使用者（`.funscript` 的中文備註、設定檔、AI 快取）；免安裝版以 `-X utf8` 執行不受影響。
