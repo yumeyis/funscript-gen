@@ -193,7 +193,7 @@
 
 ## 尚未完成的後續工作
 
-- **發布到 GitHub 時要處理（2026-11-05，使用者要求發布時一併處理；2026-11-06 執行中，第一版 v1.0.0）**：已完成：授權（PolyForm Noncommercial 1.0.0）、版本規則（DEVELOPMENT「版本與發布」）、`[project.urls]`、README 下載連結（repo `yumeyis/funscript-gen`）。待做：(1) 以 orphan 分支 `main` 建立單一 commit 當第一版（舊的 `master` 改名 `private-history` 只留本機），`scripts/check_history.py` 確認 0 筆；(2) 推到 private repo，確認 `tests.yml`、`windows.yml`（workflow_dispatch）在 GitHub 上通過，`uv` 與 action 版本是否要更新；(3) 推 `v1.0.0` 標籤，檢查草稿 Release 的 zip 再發布；(4) 改成公開，開啟 secret scanning、私人漏洞回報、`main` 的分支保護。之後再決定：程式碼簽章憑證（目前 README 已說明 SmartScreen 怎麼放行，先不買）、exe 圖示（目前用預設圖示）。
+- **發布後的後續（2026-11-06 v1.0.0 已發布）**：(1) 程式碼簽章憑證（目前 README 說明 SmartScreen 怎麼放行，先不買）；(2) exe 圖示（目前用預設圖示）；(3) Dependabot 的相依套件 PR（gradio、openai、huggingface-hub、torch、ultralytics）當一般修改處理：跑過驗證再合併。
 - **Windows 版的圖形介面視窗未實際開啟過（2026-11-05）**：SSH 與 CI 都沒有桌面工作階段，只確認了 pywebview 的 WinForms／WebView2 後端可以載入、`--ui none` 的伺服器正常。要在 Windows 桌面上雙擊 `FunscriptGen.exe` 確認：視窗開啟、「選擇…」的原生對話框、下載連結、關閉視窗後程序結束、沒有 WebView2 時改開瀏覽器並出現主控台視窗。
 
 - **多語言的後續（2026-11-05）**：英文譯文請母語者校對；其他語言（譯者放進 `lang/` 的檔案）沒有實際測過；Windows 桌面視窗中切換語言要在桌面上確認；切換語言時已載入的預覽播放器與有資料的表格標題不更新（要重新產生才換）；手動反轉備註（`pipe.manual_flip`）目前以當前語言字串寫入 `plan.note` 比對，換語言後再切換反轉時舊語言字串不會被消掉，可改為顯示時依 `plan.flipped` 動態附加。
@@ -218,6 +218,7 @@
   - 修改：19 處加 `encoding="utf-8"`（讀 `.funscript` 用 `utf-8-sig`），`validate` 子程序 `PYTHONUTF8=1`，`tests/test_encoding.py` 以 AST 檢查 `src/` 沒有遺漏。之前在中文 Windows 上用 uv 安裝時寫下的含中文檔案（cp950）現在讀不出來：`.webui-last.json`、輸出設定檔當作沒有設定，部位框快取重新偵測；AI 快取的回應是英文 JSON，不受影響（未驗證）。
   - 驗證：本機 319 passed；GitHub Actions 的 Tests（ubuntu、windows-latest）通過，`windows.yml` 手動執行通過單元測試、建置、冒煙測試（zip 318 MB，3 分 48 秒）。
   - 之後：`checkout`、`setup-uv`、`upload-artifact` 升到 v7（Node 24，Dependabot PR #1–3 合成一個 commit）。Dependabot 另開的相依套件 PR（gradio、openai、huggingface-hub、torch、ultralytics）屬於發布後的一般更新，沒有併入 v1.0.0。
+  - 發布（2026-11-06）：`v1.0.0` 標籤（指向 `c119fc9`）觸發 `windows.yml` 建立草稿，zip 327 MB、sha256 與附檔相符、`build-info.json` 的 commit 正確；補上中英文發布說明後，經使用者確認才發布。repo `yumeyis/funscript-gen` 改為公開，開啟 secret scanning（含 push protection）、私人漏洞回報、Dependabot 安全更新；`main` 禁止 force push 與刪除；ruleset「release tags」禁止移動、刪除 `v*` 標籤。本機舊歷史在 `private-history` 分支，不推送。
 - [x] **第一版 v1.0.0 與版本編碼原則（2026-11-06，使用者要求）**
   - 需求：依 GitHub 慣例訂版本原則、把目前的專案發布成第一版，告訴後續的 AI 如何編版本，並完成發布後的後續工作。使用者的決定：第一版 `v1.0.0`、repo `yumeyis/funscript-gen`、在本機裝 `gh` 由我操作 GitHub、改成公開與發布 Release 前先回報確認。
   - 決策：SemVer 2.0，標籤 `vX.Y.Z`；公開介面是 CLI 參數、`options.OPTIONS`、設定檔、funscript 與 metadata 格式、分析檔、語言包 key（DEVELOPMENT「版本與發布」）。選 1.0.0 而不是 0.x：第一個公開版、Windows 一般使用者也會用，介面定義清楚後，日常的準確度調整只動 MINOR／PATCH。不用 0.1.0：已產生的腳本 metadata 是 0.2.0，版本會倒退。預發布版用 PEP 440 的 `1.1.0rc1`，因為 `windows.yml` 要求標籤等於 `v` + `__version__`。

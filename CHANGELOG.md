@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-06 — 記錄 v1.0.0 的發布（commit: `Record the v1.0.0 release in PLAN`）
+- 目的：記下發布的結果與 repo 設定。
+- 修改：PLAN 的開發紀錄與後續工作（簽章、圖示、Dependabot 的相依套件 PR）。
+- 驗證：只改文件。
+
 ## v1.0.0 — 2026-11-06（第一個公開版本）
 - 從影片產生 funscript：光流追蹤兩人的相對動作，AI（Qwen3-VL，vLLM 或 Ollama）判斷每個鏡頭的互動區域與方向，部位框輔助判斷高低。
 - CLI、Web UI、Windows 免安裝版（圖形介面與指令）、Docker；繁體中文與英文介面。
