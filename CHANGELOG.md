@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-06 — 記錄暫不使用 INT8 部位框模型（commit: `Record the decision to keep the FP32 part detector`）
+- 目的：記下使用者的決定。
+- 修改：只改 PLAN.md：INT8 量化從後續工作移到已放棄的方案（暫不使用），開發紀錄註明決定。
+- 驗證：未改程式，`uv run pytest` 通過。
+
 ## 2026-11-06 — 部位框模型 INT8 量化的離線實驗（commit: `Record the INT8 part detector experiment`）
 - 目的：部位框在 CPU 上是最大的瓶頸，評估量化能快多少、會不會改變輸出。
 - 修改：只改 PLAN.md；靜態 INT8（偵測頭保留 FP32、`reduce_range`）CPU 上快 1.9–2.5 倍，不同 CPU 逐幀相同。
