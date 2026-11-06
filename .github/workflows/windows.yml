@@ -45,7 +45,7 @@ jobs:
           $app = Get-ChildItem dist -Directory -Filter "FunscriptGen-*-win64" | Select-Object -First 1
           ./packaging/windows/smoke-test.ps1 $app.FullName
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: FunscriptGen-win64
           path: |
