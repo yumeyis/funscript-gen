@@ -7,6 +7,11 @@
 - CLI、Web UI、Windows 免安裝版（圖形介面與指令）、Docker；繁體中文與英文介面。
 - 授權：PolyForm Noncommercial 1.0.0（禁止商業使用）。
 
+## 2026-11-06 — GitHub Actions 的 action 升級到 Node 24 版（commit: `Update GitHub Actions to Node 24 releases`）
+- 目的：GitHub 警告 `checkout@v4`、`setup-uv@v6`、`upload-artifact@v4` 用的 Node.js 20 已停止支援（Dependabot 的 PR #1–3）。
+- 修改：`tests.yml`、`windows.yml` 改用 `actions/checkout@v7`、`astral-sh/setup-uv@v7`、`actions/upload-artifact@v7`；`uv` 版本維持 0.11.19（和 Dockerfile 相同）。
+- 驗證：GitHub Actions 的 Tests 與 Windows portable 結果見 PLAN。
+
 ## 2026-11-06 — 文字檔一律以 UTF-8 讀寫（commit: `Open text files as UTF-8 on every platform`）
 - 目的：GitHub Actions 的英文 Windows（cp1252）上 2 個測試失敗：沒指定編碼的讀寫用系統字碼頁，寫不出中文（`.webui-last.json`、驗證的記錄），`.funscript` 的中文備註也會受影響；免安裝版以 `-X utf8` 執行所以沒遇到。
 - 修改：`src/` 中 19 處 `read_text`／`write_text`／`open` 加 `encoding="utf-8"`（讀 `.funscript` 用 `utf-8-sig`，接受 BOM）；`validate` 的子程序設 `PYTHONUTF8=1`；新增 `tests/test_encoding.py`（以 AST 檢查沒有遺漏）。

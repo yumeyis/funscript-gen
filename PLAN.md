@@ -216,7 +216,8 @@
 - [x] **文字檔一律以 UTF-8 讀寫（2026-11-06，第一次在 GitHub Actions 上跑測試時發現）**
   - 發現：私人 repo 推送後，`tests.yml` 的 ubuntu 通過、windows-latest 2 個失敗（`test_last_form_round_trip` UnicodeEncodeError、`test_a_run_generates_scores_and_resumes` 的子程序結束碼 1），`windows.yml` 因單元測試失敗停止。原因：GitHub 的 Windows 是英文系統（cp1252），`read_text()`／`write_text()`／`open()` 沒指定編碼時用系統字碼頁；testhost 是中文系統（cp950）所以之前沒發現。影響 pip／uv 安裝在非中文 Windows 上的使用者（`.funscript` 的中文備註、設定檔、AI 快取）；免安裝版以 `-X utf8` 執行不受影響。
   - 修改：19 處加 `encoding="utf-8"`（讀 `.funscript` 用 `utf-8-sig`），`validate` 子程序 `PYTHONUTF8=1`，`tests/test_encoding.py` 以 AST 檢查 `src/` 沒有遺漏。之前在中文 Windows 上用 uv 安裝時寫下的含中文檔案（cp950）現在讀不出來：`.webui-last.json`、輸出設定檔當作沒有設定，部位框快取重新偵測；AI 快取的回應是英文 JSON，不受影響（未驗證）。
-  - 驗證：本機 319 passed。
+  - 驗證：本機 319 passed；GitHub Actions 的 Tests（ubuntu、windows-latest）通過，`windows.yml` 手動執行通過單元測試、建置、冒煙測試（zip 318 MB，3 分 48 秒）。
+  - 之後：`checkout`、`setup-uv`、`upload-artifact` 升到 v7（Node 24，Dependabot PR #1–3 合成一個 commit）。Dependabot 另開的相依套件 PR（gradio、openai、huggingface-hub、torch、ultralytics）屬於發布後的一般更新，沒有併入 v1.0.0。
 - [x] **第一版 v1.0.0 與版本編碼原則（2026-11-06，使用者要求）**
   - 需求：依 GitHub 慣例訂版本原則、把目前的專案發布成第一版，告訴後續的 AI 如何編版本，並完成發布後的後續工作。使用者的決定：第一版 `v1.0.0`、repo `yumeyis/funscript-gen`、在本機裝 `gh` 由我操作 GitHub、改成公開與發布 Release 前先回報確認。
   - 決策：SemVer 2.0，標籤 `vX.Y.Z`；公開介面是 CLI 參數、`options.OPTIONS`、設定檔、funscript 與 metadata 格式、分析檔、語言包 key（DEVELOPMENT「版本與發布」）。選 1.0.0 而不是 0.x：第一個公開版、Windows 一般使用者也會用，介面定義清楚後，日常的準確度調整只動 MINOR／PATCH。不用 0.1.0：已產生的腳本 metadata 是 0.2.0，版本會倒退。預發布版用 PEP 440 的 `1.1.0rc1`，因為 `windows.yml` 要求標籤等於 `v` + `__version__`。
