@@ -5,7 +5,7 @@
 ## 2026-11-06 — Docker 與 Windows 版的說明也改以英文版為主（commit: `Make the English Docker and Windows readmes the default`）
 - 目的：和專案 README 一致：沒有後綴的是英文版，繁體中文版加 `.zh`。
 - 修改：`docker/README.md`（英文）／`docker/README.zh.md`；`packaging/windows/README.txt`（英文）／`README.zh.txt`，`build.ps1` 放進 zip 的檔名跟著改；更新語言切換與 README、DEVELOPMENT、compose 檔中的連結。
-- 驗證：`uv run pytest` 通過；GitHub Actions 的 Windows 建置結果見 PLAN。
+- 驗證：`uv run pytest` 通過；GitHub Actions 的 Windows 建置通過，zip 內是 `README.txt` 與 `README.zh.txt`。
 
 ## 2026-11-06 — README 改以英文版為主（commit: `Make the English README the default`）
 - 目的：GitHub 首頁顯示英文說明。

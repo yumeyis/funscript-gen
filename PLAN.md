@@ -215,7 +215,7 @@
 ## 開發紀錄（最近）
 
 - [x] **README 改以英文版為主（2026-11-06，使用者要求）**
-  - 修改：`README.md` 改為英文版（原 `README.en.md`），繁體中文版改名 `README.zh.md`；連結（語言切換、`docker/README*.md`、ARCHITECTURE、DEVELOPMENT、`CLAUDE.md` 的同步規則、v1.0.0 Release 說明）一併更新。之後依使用者要求，`docker/` 與 `packaging/windows/` 也改成同樣的規則：沒有後綴的是英文版（`docker/README.md`、`README.txt`），繁體中文版加 `.zh`（`docker/README.zh.md`、`README.zh.txt`），`build.ps1` 放進 zip 的檔名跟著改。舊的開發紀錄與 CHANGELOG 中的 `README.md`／`README.en.md` 指的是改名前的檔案，不改寫。
+  - 修改：`README.md` 改為英文版（原 `README.en.md`），繁體中文版改名 `README.zh.md`；連結（語言切換、`docker/README*.md`、ARCHITECTURE、DEVELOPMENT、`CLAUDE.md` 的同步規則、v1.0.0 Release 說明）一併更新。之後依使用者要求，`docker/` 與 `packaging/windows/` 也改成同樣的規則：沒有後綴的是英文版（`docker/README.md`、`README.txt`），繁體中文版加 `.zh`（`docker/README.zh.md`、`README.zh.txt`），`build.ps1` 放進 zip 的檔名跟著改。GitHub Actions 的 `windows.yml`（手動執行）通過單元測試、建置、冒煙測試，zip 內是 `README.txt`（英文）與 `README.zh.txt`。舊的開發紀錄與 CHANGELOG 中的 `README.md`／`README.en.md` 指的是改名前的檔案，不改寫。
 
 - [x] **更新 Dependabot 提出的相依套件（2026-11-06，使用者要求）**
   - 修改：PR #4–8 都只改 `uv.lock`，改為在本機以 `uv lock --upgrade-package <名稱>==<版本>` 重產生並合成一個 commit：gradio 6.30.0 → 6.31.0、openai 3.39.0 → 3.42.1、huggingface-hub 2.3.0 → 2.4.0、torch 2.14.1 → 2.15.0、ultralytics 8.4.190 → 8.4.199（連帶 ultralytics-platform、ultralytics-thop）。torch 的 PR 沒有升 torchvision（0.29.1 對應 torch 2.14），一併升到 0.29.2（宣告 `torch>=2.14`）。
