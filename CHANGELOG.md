@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-06 — 更新 Dependabot 提出的相依套件（commit: `Update gradio, openai, huggingface-hub, torch and ultralytics`）
+- 目的：處理 Dependabot 的 PR #4–8。
+- 修改：`uv.lock`：gradio 6.31.0、openai 3.42.1、huggingface-hub 2.4.0、torch 2.15.0、ultralytics 8.4.199，torchvision 一併升到 0.29.2（和 torch 2.15 配對）。
+- 驗證：`uv run pytest` 319 passed；同一份程式碼新舊套件各跑一次驗證，28 段的動作逐點相同（dev F1 0.853、test 0.799）；Web UI 在瀏覽器中正常、骨架模式合成影片 F1 0.98。
+
 ## 2026-11-06 — 記錄 v1.0.0 的發布（commit: `Record the v1.0.0 release in PLAN`）
 - 目的：記下發布的結果與 repo 設定。
 - 修改：PLAN 的開發紀錄與後續工作（簽章、圖示、Dependabot 的相依套件 PR）。
