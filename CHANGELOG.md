@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-07 — 23.976 fps 與一拍二的穩健性驗證（commit: `Check robustness to 24 fps and animation on twos`）
+- 目的：驗證集沒有一般動畫的 23.976 fps，確認幀率與一拍二（12 fps 動作）是否造成問題。
+- 修改：新增 `scripts/make_variants.py`（重新編碼出變體素材），更新 PLAN.md；主程式未改。
+- 驗證：與同幀率重新編碼的雜訊（`F1u` −0.007）相比，23.976 fps 沒有差別，一拍二 `F1u` 再低約 0.012，只影響每秒超過約 4 Hz 的快速素材；不處理。
+
 ## 2026-11-07 — VLM 框選部位實驗（commit: `Record the VLM part box experiment`）
 - 目的：以 Qwen3-VL-8B 逐幀框陰莖與陰部，補上部位偵測器缺的方向證據。
 - 修改：新增 `scripts/vlm_parts.py`（離線），更新 PLAN.md；主程式未改。
