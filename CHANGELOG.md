@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-07 — VLM 框選部位實驗（commit: `Record the VLM part box experiment`）
+- 目的：以 Qwen3-VL-8B 逐幀框陰莖與陰部，補上部位偵測器缺的方向證據。
+- 修改：新增 `scripts/vlm_parts.py`（離線），更新 PLAN.md；主程式未改。
+- 驗證：33 個有距離的鏡頭正負號一致 15 個（隨機水準），G 系列幾乎拿不到距離，不採用。
+
 ## 2026-11-07 — RAFT 光流實驗（commit: `Record the RAFT optical flow experiment`）
 - 目的：確認低相關鏡頭是否因 Farneback 沒量到動作，學習式光流能否改善。
 - 修改：新增 `scripts/raft_compare.py`（離線比較），更新 PLAN.md；主程式未改。
