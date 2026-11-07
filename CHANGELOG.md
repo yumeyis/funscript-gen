@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-07 — 查證 D03 的低召回率（commit: `Record the D03 low-recall analysis`）
+- 目的：確認 D03 召回率 0.41 是不是節奏濾波鎖到次諧波，並盤點剩下的研究方向。
+- 修改：只改 PLAN.md（未改程式）。D03 的差距來自人工腳本每個行程頂端多寫的小抖動與疊在慢速漂移上的 5 Hz 小行程（兩者都已有紀錄）；剩下的方向都需要使用者決定。
+- 驗證：未改程式。
+
 ## 2026-11-07 — 特徵差預測方向實驗（commit: `Record the feature-difference direction experiment`）
 - 目的：用相鄰幀的凍結特徵差（而不是單幀）預測人工腳本的速度方向，補現行方向判斷的缺口。
 - 修改：新增 `scripts/depth_motion.py`（離線），更新 PLAN.md；主程式未改。
