@@ -21,6 +21,12 @@ test = ["B04", "H01", "H02", "I01", "G01", "J01", "A05", "A06", "A07", "K01", "D
 # G03, G04, G06 were moved to dev after the first look.
 holdout = ["A08", "C02", "C03", "D04", "D05", "G02", "G05", "G07", "M01", "N01"]
 
+# Added 2026-11-07: 47 more clips from 34 more series, none seen before. Split by series (alternating, in the order
+# A B C P Q ... Z AA ... AW; fixed before any score was looked at): dev2 may be used to work on, holdout2 is for
+# confirming at the end only (like holdout). Neither is in default_clips.
+dev2 = ["A09", "C04", "C05", "Q01", "S01", "U01", "W01", "Y01", "AA01", "AC01", "AE01", "AG01", "AI01", "AK01", "AM01", "AO01", "AQ01", "AS01", "AU01", "AU02", "AU03", "AW01"]
+holdout2 = ["B05", "B06", "P01", "P02", "P03", "R01", "T01", "V01", "X01", "Z01", "AB01", "AD01", "AF01", "AF02", "AF03", "AH01", "AH02", "AJ01", "AL01", "AN01", "AP01", "AR01", "AR02", "AT01", "AV01"]
+
 # Notes on single clips, for reading their scores.
 [notes]
 F01 = "the script was guessed from the sound; the motion on screen is tiny, so it says little about picture changes"
