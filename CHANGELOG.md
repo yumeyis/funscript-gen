@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — Windows 版改用 PyInstaller 建置（commit: `Build the Windows version with PyInstaller only`）
+- 目的：PyInstaller 版在 Actions 上建置通過、桌面視窗也確認正常，取代附完整 Python 的建置（15,874 個檔案）。
+- 修改：`build-pyinstaller.ps1` 改名 `build.ps1`（取代舊的）；刪除 `launcher.cs`、`smoke_ui.py`；`smoke-test.ps1` 只支援這一種配置（`-Python` 必填）；`windows.yml` 拿掉 `builder` 選項；DEVELOPMENT、PLAN 同步。
+- 驗證：Actions（`0b7a9d6`）單元測試 323 passed，建置 3,199 個檔案、538 MB、zip 240 MB，冒煙測試通過；改名後的腳本在 testhost 重跑：建置 3,154 個檔案、539 MB、zip 239 MB，冒煙測試通過；`uv run pytest` 326 passed、2 skipped。
+
 ## 2026-11-08 — Windows 版的 PyInstaller 試作（commit: `Add a PyInstaller build of the Windows version`）
 - 目的：把檔案數降到一兩千個級別；使用者同意先試作。
 - 修改：新增 `build-pyinstaller.ps1`、`pyinstaller/funscript-gen.spec`、`pyinstaller/entry.py`；`smoke-test.ps1` 支援沒有 Python 的資料夾（`-Python`）；`windows.yml` 的手動執行加 `builder` 選項（預設仍是原本的建置）。

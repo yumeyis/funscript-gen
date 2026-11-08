@@ -1,6 +1,6 @@
 """A 3-second test video for smoke-test.ps1: a textured patch moving up and down (as tests/test_parallel.py's _clip).
 
-usage: runtime\\python.exe -I smoke_clip.py OUT.mp4
+usage: python.exe -I smoke_clip.py OUT.mp4
 """
 
 import sys

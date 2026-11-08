@@ -1,6 +1,6 @@
-"""Entry of the PyInstaller build's two exes (funscript-gen.spec). Both do what packaging/windows/launcher.cs does for
-the runtime\\python.exe build: find the folder they are in, keep every file the program writes in its data\\
-(FUNSCRIPT_GEN_HOME, TEMP), point FUNSCRIPT_GEN_LANG_DIR at lang\\ beside the exe, and only then import the program.
+"""Entry of the PyInstaller build's two exes (funscript-gen.spec). Both find the folder they are in, keep
+every file the program writes in its data\\ (FUNSCRIPT_GEN_HOME, TEMP), point FUNSCRIPT_GEN_LANG_DIR at lang\\ beside
+the exe, and only then import the program.
 
 FunscriptGen.exe (windowed) runs funscript_gen.app.main, funscript-gen.exe (console) funscript_gen.cli.app.
 """

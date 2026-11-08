@@ -2,8 +2,8 @@
 window of its own (pywebview, on Windows the system's WebView2), or in the browser when no window can be opened.
 
 The window opens at once with a loading page while the server starts in a thread (importing Gradio and building the
-page take seconds); FunscriptGen.exe runs this module directly (`python -m funscript_gen.app`) so that nothing heavy
-is imported before the window.
+page take seconds); FunscriptGen.exe runs this module's main() directly (`python -m funscript_gen.app` does the same) so
+that nothing heavy is imported before the window.
 
 Unlike `webui` it takes files by their path (webui.LOCAL_FILES) instead of uploads: typed, dropped on the window
 (drop_handler) or chosen in a native file dialog, so they are read where they are and the script can be written
@@ -216,7 +216,7 @@ def open_window(url: str, startup: Startup, log: Path | None = None) -> bool:
 
 
 def ensure_console() -> None:
-    """pythonw (FunscriptGen.exe) has no console: open one for the browser mode, so that closing it ends the
+    """The windowed FunscriptGen.exe has no console: open one for the browser mode, so that closing it ends the
     program and its messages can be read."""
     if sys.platform != "win32" or ctypes.windll.kernel32.GetConsoleWindow():
         return
@@ -228,7 +228,7 @@ _log: Path | None = None
 
 
 def log_to_file() -> Path | None:
-    """pythonw has no stdout/stderr (writing to them fails): send the messages to app.log in the data folder.
+    """A windowed program has no stdout/stderr (writing to them fails): send the messages to app.log in the data folder.
     Returns that file (again on a second call), None when there is a console."""
     global _log
     if _log is not None:
@@ -289,7 +289,7 @@ def main(argv: list[str] | None = None) -> None:
     """`python -m funscript_gen.app`: what FunscriptGen.exe runs (the same as `funscript-gen app`)."""
     from funscript_gen import i18n
 
-    log_to_file()  # pythonw: an error in the arguments has nowhere else to go
+    log_to_file()  # windowed: an error in the arguments has nowhere else to go
     parser = argparse.ArgumentParser(prog="FunscriptGen", description="The funscript-gen desktop app.")
     parser.add_argument("--ui", choices=("window", "browser", "none"), default="window",
                         help="window: its own window (falls back to the browser) | browser | none (only the server)")

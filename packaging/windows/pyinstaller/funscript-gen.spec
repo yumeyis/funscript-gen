@@ -1,4 +1,4 @@
-# PyInstaller spec of the Windows build (build-pyinstaller.ps1): one folder with two exes that share _internal\:
+# PyInstaller spec of the Windows build (build.ps1): one folder with two exes that share _internal\:
 # FunscriptGen.exe (the app, no console) and funscript-gen.exe (the CLI). Both start from entry.py.
 from PyInstaller.utils.hooks import collect_all, collect_data_files, collect_submodules
 
