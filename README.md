@@ -72,7 +72,7 @@ The CLI and the web UI have exactly the same settings.
 
 ### Accuracy
 
-On 38 anime videos that come with hand-made scripts, the turning-point match (F1, 1 = identical) averages about 0.72–0.79 per group. Short single-scene videos are almost the same as the hand-made script (0.90–0.99); long multi-scene videos are worse, mainly because the high/low direction is judged wrongly (see "Known issues"). For the detailed numbers see [DEVELOPMENT.md](DEVELOPMENT.md#目前的驗證結果).
+On 85 anime videos that come with hand-made scripts, the turning-point match (F1, 1 = identical) varies a lot with the material: about 0.8 for the sources used while tuning the program, and about 0.67 on average for the 47 new sources that were never used. Short single-scene videos are almost the same as the hand-made script (0.90–0.99); long multi-scene videos are worse, mainly because the high/low direction is judged wrongly and because scenes without a clear rhythm miss many strokes (see "Known issues"). For the detailed numbers see [DEVELOPMENT.md](DEVELOPMENT.md#目前的驗證結果).
 
 ---
 
@@ -341,7 +341,7 @@ The CLI messages, the web UI, the desktop app and the preview player come in Tra
 **Accuracy**
 - **The accuracy of long videos is clearly lower than of short ones**, and the depth of each stroke often differs from the hand-made script.
 - **Scenes in which someone is in the picture but still keep outputting motion**; only scenes with nobody in them hold still.
-- **Small motion on top of slow large motion is not caught.**
+- **Small motion on top of slow large motion is not caught**: in scenes without a clear rhythm whose strokes are fast and small (the hand-made script has 2–3 strokes per second, but the movement in the picture is mostly slow) the output has far fewer strokes than the hand-made script; this is common in new videos the program was not tuned on. Such scenes often have a region where the strokes can be measured, but there is no reliable evidence for the high/low direction, so there is no fix at the moment; correct them by hand in the preview.
 - **The AI's judgement in the stroke range check is almost always "tip not seen"**, which amounts to setting every scene's upper limit to 80; for full strokes turn it off with `--no-stroke-range`.
 - **Shrinking at high frequency is more conservative than hand-made scripts**: hand-made scripts shorten clearly only at 4 strokes per second; use `--freq-limit 0` when it is not wanted.
 - **Bridging scene cuts** adds one extra stroke when the original stops or slows at the cut; use `--no-bridge` when it is not wanted.
