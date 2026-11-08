@@ -225,6 +225,11 @@
 
 ## 開發紀錄（最近）
 
+- [x] **發布 v1.1.0rc1（2026-11-08，使用者要求發布）**
+  - 流程：`Release v1.1.0rc1` commit（`cb4d37a`，`__version__` 與 CHANGELOG 標題）→ 推送 `main`，`tests.yml` 通過 → 標籤 `v1.1.0rc1` → `windows.yml`（PyInstaller）建置通過，草稿 Release 附 `FunscriptGen-1.1.0rc1-win64.zip`（251 MB）與 `.sha256`。選預發布版是因為這是第一個 PyInstaller 版，真實使用者的環境（防毒軟體、沒有 WebView2 的 Windows 10）還沒驗證。
+  - `windows.yml` 建立草稿時沒有標成 pre-release，這次用 `gh release edit --prerelease` 手動改，並補上中英文的重點；之後預發布版都要手動改，或在 workflow 依標籤是否含 `rc` 加 `--prerelease`（尚未做）。
+  - 草稿尚未發布，由使用者確認後發布；未驗證：標籤建置出的這個 zip 本身沒有在桌面上開過（使用者回報「正常」的是更早的建置）。
+
 - [x] **Windows 版改用 PyInstaller 建置（2026-11-08，使用者在 Actions 上確認建置通過、在 Windows 桌面確認視窗「正常」）**
   - 修改：`build-pyinstaller.ps1` 改名為 `build.ps1`，取代原本附完整 Python 的 `build.ps1`；刪除 `launcher.cs` 與 `smoke_ui.py`；`smoke-test.ps1` 只剩一種資料夾配置，`-Python` 必填（建置用的虛擬環境）；`windows.yml` 拿掉 `builder` 選項，手動執行與推送標籤都用 PyInstaller（`-KeepVenv`）。
   - 驗證：Actions 手動執行（`pyinstaller` 選項，commit `0b7a9d6`）：單元測試 323 passed、5 skipped，建置 538 MB、3,199 個檔案、zip 240 MB，冒煙測試通過（CLI、語言包、`--ui none` 的頁面、使用者目錄無新增）。改名後的 `build.ps1` 與簡化後的 `smoke-test.ps1` 在 testhost 上重跑（限制 4 個處理器，建置 264 秒）：3,154 個檔案、539 MB、zip 239 MB，冒煙測試通過；本機 `uv run pytest` 326 passed、2 skipped；推送後的 Actions 執行尚未做（未驗證）。
