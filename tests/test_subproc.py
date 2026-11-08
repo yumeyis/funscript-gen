@@ -22,11 +22,12 @@ def test_run_hides_the_console_window_on_windows(monkeypatch):
     assert "creationflags" not in seen
 
 
-def test_docker_check_is_cached_until_fresh(monkeypatch):
-    calls = []
+def test_docker_mode_is_listed_without_starting_docker(monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("docker must not be started")
+
+    monkeypatch.setattr(osu, "_docker", boom)
     monkeypatch.setattr(osu.shutil, "which", lambda name: "/usr/bin/docker")
-    monkeypatch.setattr(osu, "_docker", lambda *a, timeout=60: calls.append(a) or subprocess.CompletedProcess(a, 0))
-    monkeypatch.setattr(osu, "_docker_checked", None)
-    assert osu.docker_available() and osu.docker_available() and osu.docker_available()
-    assert len(calls) == 1
-    assert osu.docker_available(fresh=True) and len(calls) == 2
+    assert osu.available("docker")
+    monkeypatch.setattr(osu.shutil, "which", lambda name: None)
+    assert not osu.available("docker")

@@ -231,6 +231,9 @@
 
 ## 開發紀錄（最近）
 
+- [x] **改：啟動時不再執行 `docker info`（2026-11-08，使用者要求只在按下 Docker 模式的一鍵執行時才查詢）**
+  - 修改：新增 `ollama_setup.docker_installed()`（只用 `shutil.which`，不啟動程序）；`available("docker")`，也就是預設模式與選項旁的「找不到」提示，改用它。`docker_available()`（`docker info`，確認 daemon 有回應）只在按「執行」「檢查」「移除」時呼叫。上一筆的 30 秒快取因此移除，`CREATE_NO_WINDOW` 保留（按鈕時的 docker 呼叫仍不彈視窗）。
+  - 取捨：Docker 已安裝但 daemon 沒開時，預設模式仍選 Docker，按「執行」才回報沒有 Docker。
 - [x] **修正：Windows 版啟動時彈出多個 cmd 視窗（2026-11-08，使用者回報）**
   - 原因（依程式碼推斷，未在 Windows 實機重現）：FunscriptGen.exe 沒有主控台，它用 `subprocess` 啟動的主控台程式（`docker`、`git`）沒加 `CREATE_NO_WINDOW`，Windows 為每個子程序開一個新視窗。建立「設定」分頁時 `ollama_setup.available()` 被呼叫多次（預設模式、`ollama_mode_choices`，切換語言時又一次），每次都執行 `docker info`；裝了 git 的電腦在產生輸出時 `version.git_state()` 也會閃視窗。`ollama serve` 本來就有 `NO_WINDOW`。
   - 修改：新增 `subproc.run`（Windows 加 `CREATE_NO_WINDOW`），`_docker` 與 `git_state` 改用它；`docker_available()` 的結果快取 30 秒，按「檢查」「執行」「移除」時用 `fresh=True` 重查。沒有改偵測與輸出，不需驗證分數。

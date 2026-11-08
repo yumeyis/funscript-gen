@@ -52,7 +52,7 @@ class _Run:
 
 
 def test_docker_creates_the_container_and_falls_back_to_cpu(monkeypatch):
-    monkeypatch.setattr(osu, "docker_available", lambda fresh=False: True)
+    monkeypatch.setattr(osu, "docker_available", lambda: True)
     up = iter([False, True])
     monkeypatch.setattr(osu, "server_up", lambda url=osu.LOCAL_URL: next(up))
     calls = []
@@ -73,7 +73,7 @@ def test_docker_creates_the_container_and_falls_back_to_cpu(monkeypatch):
 
 
 def test_docker_refuses_a_foreign_server_on_the_port(monkeypatch):
-    monkeypatch.setattr(osu, "docker_available", lambda fresh=False: True)
+    monkeypatch.setattr(osu, "docker_available", lambda: True)
     monkeypatch.setattr(osu, "server_up", lambda url=osu.LOCAL_URL: True)
     monkeypatch.setattr(osu, "_docker", lambda *a, timeout=60: _Run(1))  # no container of ours
     with pytest.raises(osu.SetupError):
@@ -138,7 +138,7 @@ def test_stop_started_stops_only_what_this_program_started(monkeypatch):
 
 def test_status_and_remove(monkeypatch):
     monkeypatch.setattr(osu, "server_up", lambda url=osu.LOCAL_URL: False)
-    monkeypatch.setattr(osu, "docker_available", lambda fresh=False: True)
+    monkeypatch.setattr(osu, "docker_available", lambda: True)
     monkeypatch.setattr(osu, "native_available", lambda: False)
     calls = []
 
@@ -160,6 +160,6 @@ def test_status_and_remove(monkeypatch):
 
 
 def test_remove_needs_docker(monkeypatch):
-    monkeypatch.setattr(osu, "docker_available", lambda fresh=False: False)
+    monkeypatch.setattr(osu, "docker_available", lambda: False)
     with pytest.raises(osu.SetupError):
         list(osu.remove_docker())

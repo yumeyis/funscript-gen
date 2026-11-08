@@ -66,28 +66,23 @@ def _docker(*args: str, timeout: float = 60) -> subprocess.CompletedProcess:
     return subproc.run(["docker", *args], timeout=timeout)
 
 
-DOCKER_CHECK_TTL_S = 30.0  # the web UI asks several times while it is built; `docker info` is slow when the daemon is down
-_docker_checked: tuple[float, bool] | None = None
+def docker_installed() -> bool:
+    """The docker command exists (no process is started: the daemon is only asked by docker_available)."""
+    return shutil.which("docker") is not None
 
 
-def docker_available(fresh: bool = False) -> bool:
-    """The docker command exists and the daemon answers; the answer is kept for DOCKER_CHECK_TTL_S unless `fresh`."""
-    global _docker_checked
-    if shutil.which("docker") is None:
+def docker_available() -> bool:
+    """The docker command exists and the daemon answers; starts `docker info`, so only when the user asks for Docker."""
+    if not docker_installed():
         return False
-    now = time.monotonic()
-    if not fresh and _docker_checked is not None and now - _docker_checked[0] < DOCKER_CHECK_TTL_S:
-        return _docker_checked[1]
     try:
-        ok = _docker("info", timeout=15).returncode == 0
+        return _docker("info", timeout=15).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
-        ok = False
-    _docker_checked = (time.monotonic(), ok)
-    return ok
+        return False
 
 
 def available(mode: str) -> bool:
-    return docker_available() if mode == "docker" else native_available()
+    return docker_installed() if mode == "docker" else native_available()
 
 
 def server_up(url: str = LOCAL_URL) -> bool:
@@ -125,7 +120,7 @@ def status(url: str = LOCAL_URL) -> list[str]:
         lines.append(t("web.ollama.s.server_up", url=url, models=models))
     else:
         lines.append(t("web.ollama.s.server_down", url=url))
-    if not docker_available(fresh=True):
+    if not docker_available():
         lines.append(t("web.ollama.s.no_docker"))
     else:
         state = _container_state()
@@ -141,7 +136,7 @@ def status(url: str = LOCAL_URL) -> list[str]:
 
 def remove_docker() -> Iterator[str]:
     """Remove what the Docker mode created: the container, its model volume and the image (the models are lost)."""
-    if not docker_available(fresh=True):
+    if not docker_available():
         raise SetupError(t("web.ollama.err.no_docker"))
     stop_started()
     removed = False
@@ -159,7 +154,7 @@ def remove_docker() -> Iterator[str]:
 
 def start_docker(url: str = LOCAL_URL) -> Iterator[str]:
     global _container_started
-    if not docker_available(fresh=True):
+    if not docker_available():
         raise SetupError(t("web.ollama.err.no_docker"))
     state = _container_state()
     if state:
