@@ -233,6 +233,9 @@
 
 ## 開發紀錄（最近）
 
+- [x] **實驗：render 階段參數在 dev2 上重掃，與跨鏡頭的型態相似度（2026-11-09，離線 `--replay` 等價，未改主程式，結論：仍然平坦）**
+  - 掃描（`scripts/param_sweep.py`，`old-base`＋`fresh-base` 存下的分析，一次改一個，34 個參數 70 個設定，8 個工作程序約 12 分鐘；holdout2 沒有看）：平滑／Hampel／正規化視窗與百分位、`min_prominence`、`min_amplitude`、`min_interval_ms`、`scale_percentile`、`min_stroke_pos`、節奏濾波的各個門檻與頻帶、`scene_scale_blend`、`max_gap_ms`、快慢與聲音與部位框的門檻、行程範圍、頻率限制、`--amplitude fill`。dev／test／dev2 的 F1、`F1u`、`r` 變化幾乎都在 ±0.005 以內，沒有一個設定在 dev、test、dev2 同時變好。僅有的差異：`--no-rhythm-filter` dev2 F1 +0.005 但 dev −0.010、test −0.025；`rhythm_band` (0.4, 3.0) dev2 +0.006、test −0.006；`min_stroke_pos` 3 dev2 +0.005、test −0.006；方向相關的開關（`--no-asym-sign`、`--no-chunk-align`、`--asym-audio-threshold`）在 dev2 同樣是現行設定最好或持平（`--asym-audio-threshold 0.1` 讓 dev2 F1 −0.063）。
+  - 跨鏡頭的型態相似度（`sign_pattern` 的餘弦 ≥ 0.5 的鏡頭對，兩者的正確方向是否一致）：dev 73%、test 92%、dev2 96%、holdout2 57%。一致性只出現在輸出本來就全對的影片（A09、AI01、AS01、C04、B04…接近 100%）；在方向混合的影片（V01、X01、G03、S01、AT01）只有 50–64%，等於基準率，所以型態相同不代表方向相同，不能拿有證據的鏡頭當錨點傳給沒證據的鏡頭（和 2026-11-02 的結論相同）。
 - [x] **改：glibc 只用 2 個 malloc arena，長影片的記憶體少約三成（2026-11-09，輸出逐點相同）**
   - 發現：把驗證素材接成 1 小時的影片（27 段，854×480，`generate` 預設設定）端到端跑：第一次（AI 沒有快取）25 分 56 秒、峰值 RSS 5.1 GB，而且記憶體隨影片長度穩定增長（2.9 → 5.1 GB），推算 2 小時的影片會超過 9 GB。Python 層追蹤（tracemalloc）只有峰值約 700 MB、結束時 95 MB，關鍵幀等沒有被留住；增長是原生記憶體（很多執行緒各自的 glibc arena 碎片，加上 onnxruntime、PyAV）。
   - 修改：`__init__.py` 在載入時用 `mallopt(M_ARENA_MAX, 2)`（Linux、使用者沒設 `MALLOC_ARENA_MAX` 時；失敗就略過）。15 分鐘的片段：峰值 RSS 2.2–2.5 → 1.6 GB，耗時 2:53 → 2:51–2:54（持平）；1 小時：5.1 → 3.5 GB（第二次執行 AI 已快取，耗時 5:59 不能和第一次比），10,101 個動作與修改前逐點相同（只有 metadata 不同）。
