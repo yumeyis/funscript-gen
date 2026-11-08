@@ -39,6 +39,14 @@ def test_player_lists_the_editing_keys_and_speed_controls():
         assert f'id="{ident}"' in doc
 
 
+def test_player_keeps_volume_and_mute_for_the_next_player():
+    # the player is rebuilt after a flip or a save; a new <video> would start at full volume again
+    doc = player_html("/media/abc", Funscript([Action(0, 0)]))
+    assert 'localStorage.getItem("funscript-gen-volume")' in doc
+    assert 'localStorage.getItem("funscript-gen-muted")' in doc
+    assert 'addEventListener("volumechange"' in doc
+
+
 @pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
 def test_scene_scaling_centers_each_stroke_on_its_own_middle():
     doc = player_html("/media/abc", Funscript([Action(0, 0)]))

@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — 預覽播放器記住音量（commit: `Keep the preview player volume across rebuilds`）
+- 目的：預覽中按反轉或儲存編輯後，播放器重建，音量被重設為最大。
+- 修改：`preview.py` 把音量與靜音存在 `localStorage`，新播放器讀回（和播放速度相同做法）；`tests/test_preview.py` 加一項測試。
+- 驗證：`uv run pytest` 327 passed、2 skipped；用 Chromium 載入兩次確認音量與靜音保留。
+
 ## v1.1.0rc1 — 2026-11-08（預發布版）
 - Windows 版直接讀取本機檔案：「產生」「批次」「預覽」都可以拖放或選取檔案，不再上傳；預覽分頁新增開關，選了影片或 funscript 後自動帶入同資料夾同名的檔案。
 - Windows 版改用 PyInstaller 建置：解壓縮後約 3,200 個檔案（原本 28,000 多個），zip 約 240 MB；視窗先顯示載入頁，不必等伺服器啟動。

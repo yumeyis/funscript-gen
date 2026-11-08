@@ -225,6 +225,11 @@
 
 ## 開發紀錄（最近）
 
+- [x] **預覽播放器記住音量（2026-11-08）**
+  - 問題：反轉、儲存編輯會重建播放器（新的 `<video>`），音量與靜音回到預設。播放速度早就存在 `localStorage`，音量沒有。
+  - 修改：`preview.py` 的播放器在 `volumechange` 時把音量與靜音存到 `localStorage`（`funscript-gen-volume`、`funscript-gen-muted`），啟動時讀回；與播放速度同一種做法。
+  - 驗證：用合成 WebM 與 Chromium 載入兩次（同一個瀏覽器設定檔）：設 0.3 後重載讀回 0.3，設靜音後重載仍靜音。偵測與輸出沒有改，未重跑驗證素材。未驗證：在實際的 Gradio iframe 內反轉後的行為（srcdoc 與上層同源，播放速度已用同樣方式運作）。
+
 - [x] **發布 v1.1.0rc1（2026-11-08，使用者要求發布）**
   - 流程：`Release v1.1.0rc1` commit（`cb4d37a`，`__version__` 與 CHANGELOG 標題）→ 推送 `main`，`tests.yml` 通過 → 標籤 `v1.1.0rc1` → `windows.yml`（PyInstaller）建置通過，草稿 Release 附 `FunscriptGen-1.1.0rc1-win64.zip`（251 MB）與 `.sha256`。選預發布版是因為這是第一個 PyInstaller 版，真實使用者的環境（防毒軟體、沒有 WebView2 的 Windows 10）還沒驗證。
   - `windows.yml` 建立草稿時沒有標成 pre-release，這次用 `gh release edit --prerelease` 手動改，並補上中英文的重點；之後預發布版都要手動改，或在 workflow 依標籤是否含 `rc` 加 `--prerelease`（尚未做）。

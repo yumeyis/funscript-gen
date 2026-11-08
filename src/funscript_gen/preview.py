@@ -615,6 +615,18 @@ for (const [id, f] of [["scaledown", () => scaleScene(false)], ["scaleup", () =>
   b.addEventListener("click", () => { f(); b.blur(); });  // keep the space key for play / pause
 }
 try { const r = parseFloat(localStorage.getItem("funscript-gen-rate")); if (RATES.includes(r)) setRate(r); } catch (_) {}
+// Volume and mute, kept for the next player the same way (a new <video> starts at full volume).
+try {
+  const v = parseFloat(localStorage.getItem("funscript-gen-volume"));
+  if (v >= 0 && v <= 1) video.volume = v;
+  video.muted = localStorage.getItem("funscript-gen-muted") === "1";
+} catch (_) {}
+video.addEventListener("volumechange", () => {
+  try {
+    localStorage.setItem("funscript-gen-volume", String(video.volume));
+    localStorage.setItem("funscript-gen-muted", video.muted ? "1" : "0");
+  } catch (_) {}
+});
 for (const [id, key, top] of [["topval", "funscript-gen-top", true], ["botval", "funscript-gen-bottom", false]]) {
   const input = document.getElementById(id);
   try { const v = localStorage.getItem(key); if (v !== null && v !== "") input.value = v; } catch (_) {}
