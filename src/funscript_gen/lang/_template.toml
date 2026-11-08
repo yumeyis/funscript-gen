@@ -758,6 +758,9 @@ name = ""
 # zh-TW: 所有檔案 (*.*)
 # en: All files (*.*)
 "web.file_types.all" = ""
+# zh-TW: funscript ({types})
+# en: funscript ({types})
+"web.file_types.script" = ""
 # zh-TW: #
 # en: #
 "web.pcol.num" = ""
@@ -1007,6 +1010,12 @@ name = ""
 # zh-TW: 找不到影片：{video}
 # en: Video not found: {video}
 "web.err.video_not_found" = ""
+# zh-TW: 找不到 funscript：{script}
+# en: Funscript not found: {script}
+"web.err.script_not_found" = ""
+# zh-TW: 這個視窗沒有檔案選擇對話框，請把檔案拖放到框內，或貼上路徑
+# en: This window has no file dialog; drop the files on the box, or paste their paths
+"web.err.no_dialog" = ""
 # zh-TW: 找不到：{names}
 # en: Not found: {names}
 "web.err.not_found" = ""
@@ -1076,8 +1085,8 @@ name = ""
 # zh-TW: 運算裝置：{list}
 # en: Compute device: {list}
 "web.run.devices" = ""
-# zh-TW: 請先上傳影片或選擇本機的影片
-# en: Please upload a video or choose one on this computer first
+# zh-TW: 請先選擇影片（拖放到框內、按「選擇…」或貼上路徑）
+# en: Please choose a video first (drop it on the box, press “Choose…”, or paste its path)
 "web.err.need_video_local" = ""
 # zh-TW: 產生
 # en: Generate
@@ -1091,18 +1100,42 @@ name = ""
 # zh-TW: 影片
 # en: Video
 "web.gen.video" = ""
-# zh-TW: 或指定本機的影片
-# en: Or a video on this computer
+# zh-TW: 影片
+# en: Video
 "web.gen.local_video" = ""
 # zh-TW: 例如 D:\Videos\clip.mp4
 # en: e.g. D:\Videos\clip.mp4
 "web.gen.local_placeholder" = ""
-# zh-TW: 直接讀取原檔，不必上傳；填了就不用上面上傳的影片。「設定」分頁可以選擇同時把腳本存到影片旁邊。
-# en: The original file is read as it is, with no upload; when this is filled in, the uploaded video above is not used. The Settings tab can also save the script beside the video.
+# zh-TW: 例如 D:\Scripts\clip.funscript
+# en: e.g. D:\Scripts\clip.funscript
+"web.gen.local_script_placeholder" = ""
+# zh-TW: 把影片拖放到這裡或按「選擇…」，也可以貼上路徑。直接讀取原檔，不必上傳；「設定」分頁可以選擇同時把腳本存到影片旁邊。
+# en: Drop the video here or press “Choose…”; pasting its path works too. The original file is read as it is, with no upload. The Settings tab can also save the script beside the video.
 "web.gen.local_info" = ""
 # zh-TW: 選擇…
 # en: Choose…
 "web.pick" = ""
+# zh-TW: 選擇影片…
+# en: Choose video…
+"web.pick_video" = ""
+# zh-TW: 選擇 funscript…
+# en: Choose funscript…
+"web.pick_script" = ""
+# zh-TW: 把 funscript 拖放到這裡，或按「選擇…」，也可以貼上路徑。
+# en: Drop a funscript here or press “Choose…”; pasting its path works too.
+"web.drop.script_info" = ""
+# zh-TW: 這不是影片檔（支援的副檔名：.mp4、.mkv、.webm、.mov 等）
+# en: That is not a video file (supported suffixes: .mp4, .mkv, .webm, .mov, ...)
+"web.drop.not_video" = ""
+# zh-TW: 沒有影片或資料夾可以加入
+# en: No videos or folders to add
+"web.drop.not_videos" = ""
+# zh-TW: 這不是 funscript 檔（.funscript 或 .json）
+# en: That is not a funscript file (.funscript or .json)
+"web.drop.not_script" = ""
+# zh-TW: 要放入影片或 funscript 檔
+# en: Drop a video or a funscript file
+"web.drop.not_video_or_script" = ""
 # zh-TW: 參考腳本（選填，用來評分）
 # en: Reference script (optional, for scoring)
 "web.gen.reference" = ""
@@ -1157,8 +1190,8 @@ name = ""
 # zh-TW: 影片（可以一次選多個）
 # en: Videos (several at once are fine)
 "web.batch.videos" = ""
-# zh-TW: 或指定本機的影片或資料夾（一行一個；資料夾會處理其中所有影片）
-# en: Or videos or folders on this computer (one per line; every video in a folder is processed)
+# zh-TW: 影片或資料夾（一行一個；資料夾會處理其中所有影片）
+# en: Videos or folders (one per line; every video in a folder is processed)
 "web.batch.local" = ""
 # zh-TW: 選擇影片…
 # en: Choose videos…
@@ -1166,6 +1199,9 @@ name = ""
 # zh-TW: 選擇資料夾…
 # en: Choose folder…
 "web.batch.pick_folder" = ""
+# zh-TW: 把影片或資料夾拖放到這裡（可以一次放多個，會加到清單），或按右邊的按鈕選擇，也可以貼上路徑。
+# en: Drop videos or folders here (several at once are fine; they are added to the list) or use the buttons on the right; pasting paths works too.
+"web.batch.local_info" = ""
 # zh-TW: 結果
 # en: Result
 "web.batch.result" = ""
@@ -1187,6 +1223,33 @@ name = ""
 # zh-TW: 影片（可同時選取影片與 funscript）
 # en: Video (a video and its funscript can be picked together)
 "web.pv.video" = ""
+# zh-TW: 影片
+# en: Video
+"web.pv.video_local" = ""
+# zh-TW: funscript
+# en: funscript
+"web.pv.script_local" = ""
+# zh-TW: 把影片、funscript 或兩者一起拖放到這裡，或按「選擇…」，也可以貼上路徑後按 Enter。
+# en: Drop a video, a funscript or both here, or press “Choose…”; paste a path and press Enter works too.
+"web.pv.video_info" = ""
+# zh-TW: 自動帶入同名的檔案
+# en: Fill in the file of the same name
+"web.pv.auto" = ""
+# zh-TW: 選了影片就在同一個資料夾找同名的 funscript，選了 funscript 就找同名的影片，找到的自動填入另一欄。
+# en: Choose a video and the funscript of the same name in its folder is filled in; choose a funscript and the video of the same name is.
+"web.pv.auto_info" = ""
+# zh-TW: 已自動帶入同名的 funscript「{script}」
+# en: Filled in the funscript of the same name: “{script}”
+"web.pv.auto_script" = ""
+# zh-TW: 已自動帶入同名的影片「{video}」
+# en: Filled in the video of the same name: “{video}”
+"web.pv.auto_video" = ""
+# zh-TW: 影片「{video}」的資料夾中沒有同名的 funscript
+# en: There is no funscript of the same name in the folder of “{video}”
+"web.pv.auto_no_script" = ""
+# zh-TW: funscript「{script}」的資料夾中沒有同名的影片
+# en: There is no video of the same name in the folder of “{script}”
+"web.pv.auto_no_video" = ""
 # zh-TW: 參考腳本（選填，以灰線疊加）
 # en: Reference script (optional, overlaid as a grey line)
 "web.pv.reference" = ""

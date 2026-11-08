@@ -51,7 +51,7 @@ uv run python scripts/detect_viewer.py --port 7862 --share-lan   # 區網內的�
 - **快取**：AI 回應以請求內容為鍵存在 `~/.cache/funscript-gen/ai/`；部位框以影片路徑、大小與修改時間為鍵存在 `~/.cache/funscript-gen/parts/`。
 - **檔案位置集中在 `paths.py`**：`.env`、`.webui-*.json` 預設在工作目錄，Web UI 的輸出在 `out/webui/`，快取在 `~/.cache/funscript-gen/`。設了 `FUNSCRIPT_GEN_HOME` 時全部改到該資料夾（`.env`、`out/`、`cache/`、`tmp/`），`funscript_gen/__init__.py` 也把 Hugging Face、Gradio、Matplotlib 的快取導進去（Windows 免安裝版用這個機制）。新增寫入檔案的地方要經過 `paths.py`。
 - **多語言**：使用者看得到的文字都在語言包（`src/funscript_gen/lang/*.toml`，`[meta]` 加上 `[texts]` 的 `"key" = "文字"`），程式用 `i18n.t("key", 參數=值)` 取用，`zh-TW.toml` 是原稿、缺的文字退回它。語言包也從外部資料夾讀取（`FUNSCRIPT_GEN_LANG_DIR`，再來是工作目錄的 `lang/`），同代碼的外部檔案取代內建的；語言依序由 `--lang`、`FUNSCRIPT_GEN_LANG`、Web UI 記住的選擇（`.webui-last.json` 的 `lang`）、系統語言、英文決定。Web UI 的元件用 `webui.ui()` 建立並登記（文字以 `Late` 延遲查表），切換語言時一次 `gr.update` 全部更新，不必重新整理；預覽播放器、分析備註在產生當下就定下語言。`funscript-gen lang template` 由 zh-TW 與 en 產生 `_template.toml`，`lang check` 檢查語言包。程式中用名稱找的表格欄位用不隨語言改變的代號（`report.SCENE_COLUMNS`、`webui.PREVIEW_COLUMNS`），顯示的標題另查語言包。`tests/test_i18n.py` 檢查兩個語言包的 key 與 `{參數}` 一致、範本是最新的、程式要的 key 都存在、程式碼裡沒有殘留的中文字串；`tests/conftest.py` 把測試固定在 zh-TW。
-- **本機路徑只在桌面模式開放**：`webui.LOCAL_FILES`（`app` 設為 True）關閉時，「產生」「批次」的本機路徑欄會被拒絕，因為 `webui` 可能開放給區網其他電腦，不能讓它們讀伺服器上的任意檔案。
+- **本機路徑只在桌面模式開放**：`webui.LOCAL_FILES`（`app` 設為 True）關閉時，「產生」「批次」「預覽」的本機路徑會被拒絕，因為 `webui` 可能開放給區網其他電腦，不能讓它們讀伺服器上的任意檔案。桌面模式用路徑框取代三個分頁的上傳元件（`path_row`）：框外的列（`.fg-drop`，id `drop-<區域>`）是拖放區，選檔按鈕呼叫 pywebview 的原生對話框（`app.file_picker`，kind 為 video／videos／script／folder）。視窗的拖放只有 Python 端知道檔案路徑（WebView2 的 `pywebviewFullPath`）：`app.listen_for_drops` 在 `document` 掛 `drop` 處理器，把路徑交給頁面的 `fgDropped`（`webui.UI_JS`），它記得放在哪個區域，把 `{zone, paths, n}` 寫進隱藏的 `#fg-inbox`；要用 `.change` 觸發（程式設的 `input` 事件 Gradio 不會處理），伺服器端的 `drop_arrived` → `dropped` 決定各框的內容（影片與 funscript 依副檔名分類、批次加到清單、預覽的「自動帶入同名的檔案」用 `sibling`）。選檔按鈕、在框內按 Enter 都走同一個 `dropped`。`NATIVE_DIALOGS` 在建頁面前由 `app.run` 決定（視窗是之後才建的）。
 
 ## Windows 免安裝版的建置
 
@@ -76,7 +76,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\smoke-test
 - PowerShell 5.1 以 ANSI 讀取沒有 BOM 的 `.ps1`：`packaging/windows/*.ps1` 只用 ASCII（中文訊息放在 C# 與 Python 中）。
 - 大小（版本 0.2.0，2026-11-05）：資料夾 858 MB、zip 312 MB；最大的是 cv2 112 MB、scipy 109、gradio 75、onnxruntime 71、pandas 68、sympy 66（onnxruntime 的相依）、av 64 MB，都是必要的相依。
 - 骨架模式不放進去：CUDA 版 PyTorch 約 2.5 GB，超過 GitHub Release 單一檔案 2 GB 的上限。
-- 圖形介面的視窗（WebView2）只能在有桌面的工作階段中開啟，SSH 與 CI 無法測試，冒煙測試只檢查後端載入與伺服器（`--ui none`）。
+- 圖形介面的視窗（WebView2）只能在有桌面的工作階段中開啟，SSH 與 CI 無法測試，冒煙測試只檢查後端載入與伺服器（`--ui none`）。因此桌面視窗的檔案拖放（pywebview 的 `pywebviewFullPath`、`document` 的 drop 處理器）沒有實機驗證：頁面端的流程用 headless Chromium 驗證（模擬 drop 事件後呼叫 `fgDropped`），`app.drop_handler` 用假視窗做單元測試。
 
 ## 版本與發布
 
@@ -262,7 +262,7 @@ src/funscript_gen/
   cli.py              CLI 進入點
   webui.py            Gradio Web UI
   ollama_setup.py     一鍵執行 Ollama（Docker 容器或已安裝的 ollama serve、下載模型），供 Web UI「設定」分頁使用
-  app.py              桌面模式（funscript-gen app）：本機的 Web UI，在 pywebview 視窗或瀏覽器中開啟，原生選檔對話框
+  app.py              桌面模式（funscript-gen app）：本機的 Web UI，在 pywebview 視窗或瀏覽器中開啟，原生選檔對話框與拖放（檔案以路徑讀取，沒有上傳）
   paths.py            程式寫入的檔案位置（FUNSCRIPT_GEN_HOME）
   i18n.py             多語言：語言包的載入、`t()` 查表、語言選擇、範本與檢查
   lang/               語言包：zh-TW.toml（原稿）、en.toml、_template.toml（範本）

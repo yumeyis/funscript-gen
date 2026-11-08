@@ -321,26 +321,51 @@ def ask_clear(show: bool):
     return gr.update(visible=show)
 
 
-# Videos by their path on this computer (the desktop app, `funscript-gen app`): read where they are instead of
-# uploaded, so the script can also be written beside the video. Off for `webui`, which may serve other machines.
+# Files by their path on this computer (the desktop app, `funscript-gen app`): the 產生, 批次 and 預覽 tabs take a
+# path (typed, dropped on the box, or chosen in the native dialog) instead of an upload, so a file is read where it
+# is and the script can also be written beside the video. Off for `webui`, which may serve other machines.
 LOCAL_FILES = False
-# The app's native file dialog: pick_files(kind) with kind "video", "videos" or "folder" returns the chosen paths.
+# Whether the app opens a window with a native file dialog (known before the page is built; the window comes later).
+NATIVE_DIALOGS = False
+# The app's native file dialog: pick_files(kind) with kind "video", "videos", "script" or "folder" returns the paths.
 pick_files = None
 def video_file_types() -> tuple[str, str]:
     return (t("web.file_types.video", types=";".join(f"*{s}" for s in sorted(VIDEO_SUFFIXES))),
             t("web.file_types.all"))
 
 
-def local_video(path: str | None) -> Path | None:
-    """The 產生 tab's local path box: the video it names, None when it is empty."""
-    if not (path or "").strip():
+def script_file_types() -> tuple[str, str]:
+    return (t("web.file_types.script", types=";".join(f"*{s}" for s in sorted(SCRIPT_SUFFIXES))),
+            t("web.file_types.all"))
+
+
+def clean_path(text: str | Path | None) -> str:
+    """A path as typed or pasted: no spaces around it and no quotes (Explorer's "copy as path" adds them)."""
+    return str(text or "").strip().strip('"').strip()
+
+
+def local_video(path: str | Path | None) -> Path | None:
+    """A local path box that names a video: the file, None when the box is empty."""
+    if not clean_path(path):
         return None
     if not LOCAL_FILES:
         raise gr.Error(t("web.err.no_local_paths"))
-    video = Path(path.strip().strip('"')).expanduser()
+    video = Path(clean_path(path)).expanduser()
     if not video.is_file():
         raise gr.Error(t("web.err.video_not_found", video=video))
     return video
+
+
+def local_script(path: str | Path | None) -> Path | None:
+    """A local path box that names a funscript: the file, None when the box is empty."""
+    if not clean_path(path):
+        return None
+    if not LOCAL_FILES:
+        raise gr.Error(t("web.err.no_local_paths"))
+    script = Path(clean_path(path)).expanduser()
+    if not script.is_file():
+        raise gr.Error(t("web.err.script_not_found", script=script))
+    return script
 
 
 def local_videos(text: str | None) -> list[Path]:
@@ -358,19 +383,115 @@ def local_videos(text: str | None) -> list[Path]:
     return find_videos(Path(line).expanduser() for line in lines)
 
 
-def pick_video():
-    """選擇… in the 產生 tab: the path into the box, and the upload cleared (the box wins over it anyway)."""
-    chosen = pick_files("video") if pick_files else None
-    return (chosen[0], None) if chosen else (gr.update(), gr.update())
+# The boxes of local paths, by the zone that drops and 選擇… buttons name them (the order of box_updates).
+BOXES = ("gen-video", "gen-ref", "batch", "pv-video", "pv-script", "pv-ref")
+SCRIPT_SUFFIXES = {".funscript", ".json"}
 
 
-def pick_batch(kind: str, text: str):
-    """選擇影片… / 選擇資料夾… in the 批次 tab: adds the chosen paths to the box."""
-    chosen = pick_files(kind) if pick_files else None
-    if not chosen:
-        return gr.update()
-    lines = [line for line in (text or "").splitlines() if line.strip()]
-    return "\n".join(lines + [c for c in chosen if c not in lines])
+def is_video(path: Path) -> bool:
+    return path.suffix.lower() in VIDEO_SUFFIXES
+
+
+def is_script(path: Path) -> bool:
+    return path.suffix.lower() in SCRIPT_SUFFIXES
+
+
+def sibling(path: Path, kind: str) -> Path | None:
+    """The file named like `path` (same name, other suffix) in its folder: its script (kind "script", .funscript
+    before .json) or its video (kind "video"). An exact-case name is preferred, Windows names are not case-sensitive."""
+    try:
+        files = [f for f in path.parent.iterdir() if f.is_file()]
+    except OSError:
+        return None
+    ok = is_script if kind == "script" else is_video
+    same = [f for f in files if ok(f) and f.stem.casefold() == path.stem.casefold()]
+    return min(same, key=lambda f: (f.stem != path.stem, f.suffix.lower() != ".funscript", f.name.lower()),
+               default=None)
+
+
+def dropped(zone: str, paths, batch_text: str = "", auto: bool = False) -> tuple[dict[str, str], str, bool]:
+    """What files given for `zone` (dropped on it, or chosen by its 選擇… button or typed in its box) change:
+    ({box: its new text}, a note, whether anything was taken). The 預覽 tab takes a video and a script from any of its
+    boxes (so a pair dropped together goes to both); with `auto` the one that is missing is the file of the same name
+    beside the other. The 批次 box gets the videos and folders added to its lines (`batch_text`)."""
+    files = [Path(clean_path(p)).expanduser() for p in paths if clean_path(p)]
+    missing = [f for f in files if not f.exists()]
+    files = [f for f in files if f.exists()]
+    if missing:
+        return {}, t("web.err.not_found", names=t("sep.list").join(str(f) for f in missing)), False
+    videos, scripts = [f for f in files if is_video(f)], [f for f in files if is_script(f)]
+    if zone == "batch":
+        take = [f for f in files if f.is_dir() or is_video(f)]
+        lines = [line for line in batch_text.splitlines() if line.strip()]
+        lines += [str(f) for f in take if str(f) not in lines]
+        return ({"batch": "\n".join(lines)}, "", True) if take else ({}, t("web.drop.not_videos"), False)
+    if zone == "gen-video":
+        return ({"gen-video": str(videos[0])}, "", True) if videos else ({}, t("web.drop.not_video"), False)
+    if zone in ("gen-ref", "pv-ref"):
+        return ({zone: str(scripts[0])}, "", True) if scripts else ({}, t("web.drop.not_script"), False)
+    # 預覽: pv-video / pv-script
+    if not videos and not scripts:
+        return {}, t("web.drop.not_video_or_script"), False
+    video = videos[0] if videos else None
+    script = next((s for s in scripts if video and s.stem == video.stem), scripts[0] if scripts else None)
+    note = ""
+    if video and script:
+        note = t("web.pv.picked_both", video=video.name, script=script.name)
+    elif len(videos) > 1:
+        note = t("web.pv.picked_one", video=video.name)
+    elif script and not video:
+        note = t("web.pv.picked_script", script=script.name)
+    if auto and video and not script:
+        script = sibling(video, "script")
+        note = (t("web.pv.auto_script", script=script.name) if script
+                else t("web.pv.auto_no_script", video=video.name))
+    elif auto and script and not video:
+        video = sibling(script, "video")
+        note = (t("web.pv.auto_video", video=video.name) if video
+                else t("web.pv.auto_no_video", script=script.name))
+    out = {}
+    if video:
+        out["pv-video"] = str(video)
+    if script:
+        out["pv-script"] = str(script)
+    return out, note, True
+
+
+def box_updates(changes: dict[str, str], note: str = "", ok: bool = True) -> list:
+    """The outputs of the handlers below: one update per box in BOXES, then the 預覽 tab's message. A note when
+    nothing was taken is shown as a warning."""
+    if note and not ok:
+        gr.Warning(note)
+        note = ""
+    return [*(gr.update(value=changes[k]) if k in changes else gr.update() for k in BOXES),
+            gr.update(value=note) if note else gr.update()]
+
+
+def choose(zone: str, kind: str, batch_text: str = "", auto: bool = False):
+    """A 選擇… button: the native dialog (kind "video", "videos", "script" or "folder"), then as if dropped."""
+    if pick_files is None:
+        raise gr.Error(t("web.err.no_dialog"))
+    chosen = pick_files(kind)
+    return box_updates(*dropped(zone, chosen, batch_text, auto)) if chosen else box_updates({})
+
+
+def drop_arrived(payload: str | None, batch_text: str = "", auto: bool = False):
+    """Files dropped on the window: the page's script (UI_JS) puts {"zone", "paths", "n"} in the hidden box."""
+    try:
+        data = json.loads(payload or "")
+        zone, paths = data["zone"], data["paths"]
+    except (ValueError, KeyError, TypeError):
+        return box_updates({})
+    if zone not in BOXES:
+        return box_updates({})
+    return box_updates(*dropped(zone, paths, batch_text, auto))
+
+
+def typed(zone: str, text: str, batch_text: str = "", auto: bool = False):
+    """Enter in a path box: the same as a drop of that path (so 預覽 can bring in the file of the same name)."""
+    if not clean_path(text):
+        return box_updates({})
+    return box_updates(*dropped(zone, [text], batch_text, auto))
 
 
 def beside_copy(video: Path, lines: list[str]) -> Path | None:
@@ -603,9 +724,6 @@ def mirror_span(script: Funscript, t0: float, t1: float, lo: int, hi: int) -> Fu
     return Funscript(acts, script.inverted, script.range, dict(script.metadata)).normalized()
 
 
-SCRIPT_SUFFIXES = {".funscript", ".json"}
-
-
 def _paths(value) -> list[Path]:
     """A gr.File value as a list: one path, several (file_count="multiple") or none."""
     if not value:
@@ -649,6 +767,9 @@ def preview_cancel() -> str:
 
 def preview_files(video_path, script_file, reference_file, use_reference=False, scene_threshold=30.0,
                   progress=gr.Progress(), split_scenes_on=True):
+    if LOCAL_FILES:  # the boxes hold paths
+        video_path, script_file = local_video(video_path), local_script(script_file)
+        reference_file = local_script(reference_file) if use_reference else None
     video_path = next(iter(_paths(video_path)), None)  # the video box takes several files
     if not video_path:
         raise gr.Error(t("web.err.need_video"))
@@ -946,7 +1067,7 @@ FORM_NAMES = [o.name for o in UI_OPTIONS]
 
 def run(video_path, local_path, reference_file, previous, *values, progress=None):
     """產生: the form's settings come in FORM_NAMES order (see the signature set below, which Gradio reads). A path in
-    `local_path` (the box under the upload, desktop app only) is used instead of the uploaded video.
+    `local_path` (the video box of the desktop app, where there is no upload) is used instead of `video_path`.
 
     `previous` is the last job of this page: when it analysed the same video with the same analysis settings and
     AI backend, only the output is made again from its analysis (render), which takes about a second."""
@@ -954,6 +1075,8 @@ def run(video_path, local_path, reference_file, previous, *values, progress=None
         *values, progress = values
     form = dict(zip(FORM_NAMES, values))
     local = local_video(local_path)
+    if LOCAL_FILES and form["use_reference"]:  # the reference is a path too: check it before the long part
+        reference_file = local_script(reference_file)
     if not video_path and local is None:
         raise gr.Error(t("web.err.need_video_local" if LOCAL_FILES else "web.err.need_video"))
     try:
@@ -1146,6 +1269,54 @@ SEGMENTED_CSS = """
 """
 
 
+# Drop zones of the desktop app: a row with class fg-drop (id drop-<zone>). The window's drops reach Python
+# (app.drop_handler: only it knows the files' paths), which calls fgDropped(paths); this script remembers which zone
+# the drop was on and hands it, with the paths, to the hidden box fg-inbox, whose change event runs drop_arrived (an input event set from a script is not noticed).
+UI_CSS = """
+.fg-drop { border: 2px dashed transparent; border-radius: var(--radius-lg); padding: 2px; transition: border-color .1s; }
+.fg-drop.fg-over { border-color: var(--color-accent); background: var(--background-fill-secondary); }
+"""
+UI_JS = """() => {
+  if (window.fgDropped) return;
+  let zone = '', n = 0;
+  const files = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  const find = e => (e.target.closest ? e.target.closest('.fg-drop') : null);
+  const clear = () => document.querySelectorAll('.fg-over').forEach(el => el.classList.remove('fg-over'));
+  // A file dropped anywhere that takes no drop would be opened by the window, replacing the app.
+  window.addEventListener('dragover', e => {
+    if (!files(e)) return;
+    e.preventDefault(); clear();
+    const el = find(e); if (el) el.classList.add('fg-over');
+  }, true);
+  window.addEventListener('dragleave', e => { if (!e.relatedTarget) clear(); }, true);
+  window.addEventListener('drop', e => {
+    if (!files(e)) return;
+    e.preventDefault(); clear();
+    const el = find(e); zone = el ? el.id.replace(/^drop-/, '') : '';
+  }, true);
+  window.fgDropped = paths => {
+    const box = document.querySelector('#fg-inbox textarea');
+    if (!zone || !box) return;
+    const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+    set.call(box, JSON.stringify({zone: zone, paths: paths, n: ++n}));
+    box.dispatchEvent(new Event('input', {bubbles: true}));
+    zone = '';
+  };
+}"""
+
+
+def path_row(zone: str, label: str, buttons: dict[str, str], *, placeholder: str | None = None,
+             info: str | None = None, lines: int = 1, visible: bool = True, elem_id: str | None = None):
+    """A box of paths on this computer (the desktop app) that is also a drop zone `zone`, with a button beside it
+    for each of `buttons` (dialog kind -> its text key). Returns the row, the box and the buttons in that order."""
+    with gr.Row(equal_height=True, elem_id=f"drop-{zone}", elem_classes=["fg-drop"], visible=visible) as row:
+        box = ui(gr.Textbox, label=L(label), placeholder=L(placeholder) if placeholder else None,
+                 info=L(info) if info else None, lines=lines, scale=4, elem_id=elem_id)
+        with gr.Column(scale=1, min_width=140, visible=NATIVE_DIALOGS):
+            picks = {kind: ui(gr.Button, value=L(key)) for kind, key in buttons.items()}
+    return row, box, list(picks.values())
+
+
 def _control(o):
     """The web UI control for option `o`: a choice with "" (the AI decides) is a dropdown, other choices radios
     (a segmented control when o.control says so, see SEGMENTED_CSS)."""
@@ -1217,14 +1388,21 @@ def build() -> gr.Blocks:
                             run_btn = ui(gr.Button, value=L("web.gen.run"), variant="primary", scale=4)
                             cancel_btn = ui(gr.Button, value=L("web.cancel"), variant="stop", scale=1)
                         run_msg = gr.Markdown()
-                        video = ui(gr.Video, label=L("web.gen.video"), sources=["upload"])
-                        with gr.Row(visible=LOCAL_FILES, equal_height=True):
-                            video_local = ui(gr.Textbox,
-                                label=L("web.gen.local_video"), placeholder=L("web.gen.local_placeholder"), scale=4, elem_id="local-video",
-                                info=L("web.gen.local_info"))
-                            video_pick = ui(gr.Button, value=L("web.pick"), scale=1, visible=pick_files is not None)
-                        reference = ui(gr.File, label=L("web.gen.reference"), file_types=[".funscript", ".json"],
-                                            type="filepath", visible=False)
+                        if LOCAL_FILES:  # no uploads: the files are read where they are
+                            video = gr.State(None)
+                            _, video_local, (video_pick,) = path_row(
+                                "gen-video", "web.gen.local_video", {"video": "web.pick"},
+                                placeholder="web.gen.local_placeholder", info="web.gen.local_info", elem_id="local-video")
+                            reference_ctl, reference, (reference_pick,) = path_row(
+                                "gen-ref", "web.gen.reference", {"script": "web.pick"},
+                                placeholder="web.gen.local_script_placeholder", info="web.drop.script_info",
+                                visible=False)
+                        else:
+                            video = ui(gr.Video, label=L("web.gen.video"), sources=["upload"])
+                            video_local = gr.State("")
+                            reference = reference_ctl = ui(
+                                gr.File, label=L("web.gen.reference"), file_types=[".funscript", ".json"],
+                                type="filepath", visible=False)
 
                         with gr.Row():
                             preset = ui(gr.Dropdown, choices=Late(lambda: [(preset_label(k), k) for k in PRESETS]),
@@ -1270,14 +1448,15 @@ def build() -> gr.Blocks:
                     batch_btn = ui(gr.Button, value=L("web.batch.run"), variant="primary", scale=4)
                     batch_cancel = ui(gr.Button, value=L("web.cancel"), variant="stop", scale=1)
                 batch_msg = gr.Markdown()
-                batch_videos = ui(gr.File, label=L("web.batch.videos"), file_count="multiple", file_types=["video"],
-                                       type="filepath")
-                with gr.Row(visible=LOCAL_FILES):
-                    batch_local = ui(gr.Textbox, label=L("web.batch.local"),
-                                             lines=3, scale=4)
-                    with gr.Column(scale=1, visible=pick_files is not None):
-                        batch_add_files = ui(gr.Button, value=L("web.batch.pick_videos"))
-                        batch_add_folder = ui(gr.Button, value=L("web.batch.pick_folder"))
+                if LOCAL_FILES:
+                    batch_videos = gr.State(None)
+                    _, batch_local, (batch_add_files, batch_add_folder) = path_row(
+                        "batch", "web.batch.local", {"videos": "web.batch.pick_videos", "folder": "web.batch.pick_folder"},
+                        info="web.batch.local_info", lines=4)
+                else:
+                    batch_videos = ui(gr.File, label=L("web.batch.videos"), file_count="multiple",
+                                      file_types=["video"], type="filepath")
+                    batch_local = gr.State("")
                 batch_table = ui(gr.Dataframe, headers=Late(batch_columns), label=L("web.batch.result"), interactive=False, wrap=True)
                 batch_files = ui(gr.File, label=L("web.output_funscript"), file_count="multiple")
                 with gr.Row(equal_height=True):
@@ -1288,13 +1467,25 @@ def build() -> gr.Blocks:
 
             with ui(gr.Tab, label=L("web.tab.preview")):
                 ui(gr.Markdown, value=L("web.pv.intro"))
-                with gr.Row():
-                    pv_video = ui(gr.File, label=L("web.pv.video"), file_count="multiple",
-                                       file_types=["video", *SCRIPT_SUFFIXES], type="filepath", elem_id="pv-video")
-                    pv_script = gr.File(label="funscript", file_types=[".funscript", ".json"], type="filepath",
-                                        elem_id="pv-script")
-                    pv_ref = ui(gr.File, label=L("web.pv.reference"), file_types=[".funscript", ".json"],
-                                     type="filepath", visible=False)
+                if LOCAL_FILES:
+                    pv_auto = ui(gr.Checkbox, label=L("web.pv.auto"), value=True, info=L("web.pv.auto_info"))
+                    _, pv_video, (pv_video_pick,) = path_row(
+                        "pv-video", "web.pv.video_local", {"video": "web.pick_video"},
+                        placeholder="web.gen.local_placeholder", info="web.pv.video_info", elem_id="pv-video")
+                    _, pv_script, (pv_script_pick,) = path_row(
+                        "pv-script", "web.pv.script_local", {"script": "web.pick_script"},
+                        placeholder="web.gen.local_script_placeholder", elem_id="pv-script")
+                    pv_ref_ctl, pv_ref, (pv_ref_pick,) = path_row(
+                        "pv-ref", "web.pv.reference", {"script": "web.pick"},
+                        placeholder="web.gen.local_script_placeholder", visible=False)
+                else:
+                    with gr.Row():
+                        pv_video = ui(gr.File, label=L("web.pv.video"), file_count="multiple",
+                                           file_types=["video", *SCRIPT_SUFFIXES], type="filepath", elem_id="pv-video")
+                        pv_script = gr.File(label="funscript", file_types=[".funscript", ".json"], type="filepath",
+                                            elem_id="pv-script")
+                        pv_ref = pv_ref_ctl = ui(gr.File, label=L("web.pv.reference"),
+                                                 file_types=[".funscript", ".json"], type="filepath", visible=False)
                 with gr.Row(equal_height=True):
                     pv_threshold = _control(BY_NAME["scene_threshold"])
                     pv_btn = ui(gr.Button, value=L("web.pv.load"), variant="primary", scale=0)
@@ -1403,11 +1594,13 @@ def build() -> gr.Blocks:
                         out_expire = ui(gr.Button, value=L("web.set.delete_expired"), variant="stop")
                     set_out_msg = gr.Markdown()
 
+        if LOCAL_FILES:
+            inbox = gr.Textbox(visible="hidden", elem_id="fg-inbox")  # where UI_JS puts the files dropped on the window
         test_btn.click(check_connection, outputs=status)
         lang_outputs = [*translated_components(), set_lang, status, out_status, set_out_status, out_list]
         set_lang.input(pick_language, inputs=set_lang, outputs=lang_outputs)
         demo.load(apply_language, outputs=lang_outputs)  # a page opened later follows the language chosen since
-        use_reference.change(toggle_reference, inputs=use_reference, outputs=[reference, pv_ref])
+        use_reference.change(toggle_reference, inputs=use_reference, outputs=[reference_ctl, pv_ref_ctl])
         ai_form = [set_url, set_key, set_model, set_bbox, set_concurrency, set_backend, set_num_ctx]
         set_backend.change(backend_changed, inputs=[set_backend, set_url], outputs=[set_url, set_num_ctx, ollama_box])
         ollama_check.click(ollama_status, outputs=set_status)
@@ -1440,7 +1633,7 @@ def build() -> gr.Blocks:
                     t("web.gen.preset_applied", preset=preset_label(name), time=time.strftime('%H:%M:%S'))]
 
         preset_btn.click(apply_preset, inputs=preset, outputs=[*gen_form.values(), form_msg]).then(
-            toggle_reference, inputs=use_reference, outputs=[reference, pv_ref])
+            toggle_reference, inputs=use_reference, outputs=[reference_ctl, pv_ref_ctl])
 
         def remember(*values):
             save_last_form(dict(zip(form, values)))
@@ -1457,10 +1650,10 @@ def build() -> gr.Blocks:
             control.input(lambda v, name=name: remember_settings_tab({name: v}), inputs=control, queue=False)
 
         demo.load(lambda: restore_form(form, load_last_form()), outputs=list(form.values())).then(
-            toggle_reference, inputs=use_reference, outputs=[reference, pv_ref]).then(
+            toggle_reference, inputs=use_reference, outputs=[reference_ctl, pv_ref_ctl]).then(
             lambda v: v, inputs=scene_threshold, outputs=pv_threshold)  # the 預覽 tab starts from the same threshold
         reset_btn.click(reset_form, outputs=[*gen_form.values(), form_msg]).then(
-            toggle_reference, inputs=use_reference, outputs=[reference, pv_ref])
+            toggle_reference, inputs=use_reference, outputs=[reference_ctl, pv_ref_ctl])
         run_btn.click(remember, inputs=list(form.values()), queue=False)
         run_btn.click(lambda: "", outputs=run_msg, queue=False)
         run_btn.click(
@@ -1479,10 +1672,22 @@ def build() -> gr.Blocks:
         batch_cancel.click(cancel_run, outputs=batch_msg, queue=False)
         batch_open.click(open_batch_job, inputs=[batch_jobs, batch_pick],
                          outputs=[output_file, summary, plot, scenes, player, job, flip_msg, video, video_local, tabs])
-        video.upload(lambda: "", outputs=video_local, queue=False)
-        video_pick.click(pick_video, outputs=[video_local, video])
-        batch_add_files.click(lambda text: pick_batch("videos", text), inputs=batch_local, outputs=batch_local)
-        batch_add_folder.click(lambda text: pick_batch("folder", text), inputs=batch_local, outputs=batch_local)
+        if LOCAL_FILES:
+            drops = [video_local, reference, batch_local, pv_video, pv_script, pv_ref, pv_msg]
+            context = [batch_local, pv_auto]
+            inbox.change(drop_arrived, inputs=[inbox, *context], outputs=drops)
+            for zone, kind, button in (
+                    ("gen-video", "video", video_pick), ("gen-ref", "script", reference_pick),
+                    ("batch", "videos", batch_add_files), ("batch", "folder", batch_add_folder),
+                    ("pv-video", "video", pv_video_pick), ("pv-script", "script", pv_script_pick),
+                    ("pv-ref", "script", pv_ref_pick)):
+                button.click(lambda text, auto, zone=zone, kind=kind: choose(zone, kind, text, auto),
+                             inputs=context, outputs=drops)
+            for zone, box in (("pv-video", pv_video), ("pv-script", pv_script)):
+                box.submit(lambda text, batch, auto, zone=zone: typed(zone, text, batch, auto),
+                           inputs=[box, *context], outputs=drops)
+        else:
+            video.upload(lambda: "", outputs=video_local, queue=False)
         out_open.click(open_output_dir, outputs=out_msg)
         out_beside.input(save_beside, inputs=out_beside, outputs=set_out_msg, queue=False)
         flipped = [output_file, summary, plot, scenes, player, flip_msg]
@@ -1494,7 +1699,8 @@ def build() -> gr.Blocks:
                        js=_PLAYER_TIME_JS.format(id="gen-player"))
         pv_outputs = [pv_player, pv_job, pv_out, pv_msg, pv_scenes]
         pv_js = _PLAYER_TIME_JS.format(id="pv-player")
-        pv_video.upload(preview_video_uploaded, inputs=pv_video, outputs=[pv_video, pv_script, pv_msg])
+        if not LOCAL_FILES:
+            pv_video.upload(preview_video_uploaded, inputs=pv_video, outputs=[pv_video, pv_script, pv_msg])
         pv_btn.click(preview_files, inputs=[pv_video, pv_script, pv_ref, use_reference, pv_threshold],
                      outputs=pv_outputs)
         pv_whole.click(preview_files_whole, inputs=[pv_video, pv_script, pv_ref, use_reference, pv_threshold],
@@ -1536,7 +1742,8 @@ def create_app(cleanup_file: str | Path | None = None, last_file: str | Path | N
             raise fastapi.HTTPException(status_code=404)
         return FileResponse(path)  # honours Range requests, so the player can seek
 
-    return gr.mount_gradio_app(app, demo, path="/", allowed_paths=[str(OUTPUT_DIR)], css=SEGMENTED_CSS)
+    return gr.mount_gradio_app(app, demo, path="/", allowed_paths=[str(OUTPUT_DIR)], css=SEGMENTED_CSS + UI_CSS,
+                               js=UI_JS if LOCAL_FILES else None)
 
 
 def make_server(host: str = "127.0.0.1", port: int = 7860, cleanup_file: str | Path | None = None,

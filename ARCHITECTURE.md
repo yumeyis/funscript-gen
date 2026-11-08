@@ -67,7 +67,7 @@ flowchart LR
 ```
 
 - 哪些設定屬於分析、哪些屬於 render，由 `options.py` 選項表的 `stage` 決定；改了分析設定就要重新分析（`render` 會拒絕）。
-- Web UI 有兩種啟動方式：`webui`（可開放區網，影片一律上傳）與桌面模式 `app`（只限本機，可以直接用影片的路徑，並可把腳本另存到影片旁邊；`app.py` 在 pywebview 視窗或瀏覽器中開啟同一個 Web UI）。Windows 免安裝版的 `FunscriptGen.exe` 是 `app`、`funscript-gen.exe` 是 CLI，兩者都用內附的 Python，檔案都寫在資料夾的 `data\`（`FUNSCRIPT_GEN_HOME`，`paths.py`）。
+- Web UI 有兩種啟動方式：`webui`（可開放區網，影片一律上傳）與桌面模式 `app`（只限本機，「產生」「批次」「預覽」都不上傳，直接用檔案的路徑——拖放、原生選檔對話框或貼上；預覽可自動帶入同名的影片或 funscript，並可把腳本另存到影片旁邊；`app.py` 在 pywebview 視窗或瀏覽器中開啟同一個 Web UI）。Windows 免安裝版的 `FunscriptGen.exe` 是 `app`、`funscript-gen.exe` 是 CLI，兩者都用內附的 Python，檔案都寫在資料夾的 `data\`（`FUNSCRIPT_GEN_HOME`，`paths.py`）。
 - 使用者看得到的文字（Web UI、預覽播放器、分析備註、錯誤訊息）來自語言包（`lang/*.toml`，`i18n.py`）；語言是整個程式的設定，Web UI 切換後即時更新所有元件，對流程的各步驟沒有影響。
 - Web UI 對同一支影片只改輸出設定時，沿用記憶體中的分析（「批次」分頁的結果在「產生」分頁開啟後也是）；CLI 用 `generate --save-analysis` 存檔、`render` 重算；驗證執行器用 `--replay`。
 

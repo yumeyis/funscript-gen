@@ -59,6 +59,7 @@ Get-CimInstance Win32_Process -Filter "Name = 'pythonw.exe'" | Where-Object { $_
     ForEach-Object { Stop-Process -Force -Id $_.ProcessId }
 if (-not $page) { throw "the app did not answer on port $Port (see data\app.log)" }
 if ($page -notmatch "local-video") { throw "the app's page has no local video box" }
+if ($page -notmatch "fg-inbox") { throw "the app's page has no drop inbox" }
 Write-Host "   page served"
 
 Write-Host "== nothing outside the folder"

@@ -1,14 +1,17 @@
 """The desktop app (`funscript-gen app`, FunscriptGen.exe in the Windows build): the web UI on this computer only, in a
 window of its own (pywebview, on Windows the system's WebView2), or in the browser when no window can be opened.
 
-Unlike `webui` it takes videos by their path (webui.LOCAL_FILES), with a native file dialog in the window, so they
-are read where they are and the script can be written beside them. Closing the window ends the program; in the
+Unlike `webui` it takes files by their path (webui.LOCAL_FILES) instead of uploads: typed, dropped on the window
+(drop_handler) or chosen in a native file dialog, so they are read where they are and the script can be written
+beside the videos. Closing the window ends the program; in the
 browser it runs until its console is closed (or Ctrl+C).
 """
 
 from __future__ import annotations
 
 import ctypes
+import importlib.util
+import json
 import socket
 import sys
 import threading
@@ -67,17 +70,43 @@ def file_picker(window):
     """webui.pick_files for the window: the native open-file / open-folder dialog."""
     import webview
 
-    from funscript_gen.webui import video_file_types
+    from funscript_gen.webui import script_file_types, video_file_types
 
     def pick(kind: str) -> list[str]:
         if kind == "folder":
             chosen = window.create_file_dialog(webview.FileDialog.FOLDER)
         else:
+            types = script_file_types() if kind == "script" else video_file_types()
             chosen = window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=kind == "videos",
-                                               file_types=video_file_types())
+                                               file_types=types)
         return [str(c) for c in chosen or []]
 
     return pick
+
+
+def drop_handler(window):
+    """The window's `drop` event handler: the dropped files' paths (WebView2 tells pywebview where they are, the
+    page cannot know) go to the page's fgDropped (webui.UI_JS), which hands them to the zone they were dropped on."""
+
+    def on_drop(event: dict) -> None:
+        files = (event.get("dataTransfer") or {}).get("files") or []
+        paths = [f["pywebviewFullPath"] for f in files if f.get("pywebviewFullPath")]
+        if paths:
+            window.evaluate_js(f"window.fgDropped({json.dumps(paths)})")
+
+    return on_drop
+
+
+def listen_for_drops(window) -> None:
+    """Have `window` report every drop to drop_handler, again after each page load (the listener lives in the page)."""
+    from webview.dom import DOMEventHandler
+
+    handler = DOMEventHandler(drop_handler(window), prevent_default=True)
+
+    def on_loaded() -> None:
+        window.dom.document.events.drop += handler
+
+    window.events.loaded += on_loaded
 
 
 def open_window(url: str) -> bool:
@@ -91,6 +120,7 @@ def open_window(url: str) -> bool:
     webview.settings["ALLOW_DOWNLOADS"] = True  # the output links: saved to the user's Downloads folder
     window = webview.create_window(TITLE, url, width=1400, height=900, min_size=(800, 600))
     ui.pick_files = file_picker(window)
+    listen_for_drops(window)
     try:
         # WebView2's profile goes into the data folder too, not %APPDATA%.
         webview.start(private_mode=False, storage_path=str(cache_dir("webview")))
@@ -137,6 +167,7 @@ def run(ui_kind: str = "window", port: int | None = None) -> None:
     log = log_to_file()
     try:
         ui.LOCAL_FILES = True
+        ui.NATIVE_DIALOGS = ui_kind == "window" and importlib.util.find_spec("webview") is not None
         port = port or free_port()
         server, thread = start_server(port)
     except Exception as e:  # noqa: BLE001

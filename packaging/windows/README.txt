@@ -17,8 +17,12 @@ Graphical interface
 -------------------
 Double-click FunscriptGen.exe.
 
-- In the Generate tab: press "Choose…" to pick a video (it is read as it is, with no upload), then press
-  "Generate funscript".
+- In the Generate tab: drop a video on the box or press "Choose…" to pick one (it is read as it is, with no upload;
+  pasting the path works too), then press "Generate funscript".
+- The Batch and Preview tabs read files directly as well. With "Fill in the file of the same name" on in the Preview
+  tab, choosing a video fills in the funscript of the same name in its folder, and choosing a funscript fills in the
+  video of the same name.
+- Dropping files has not been confirmed on a real desktop (unverified); when it does nothing, press "Choose…".
 - Scripts are kept in data\out\<time>\ by default. To save them beside the video (a .funscript with the video's
   name), tick "Also save the script beside the video" under "Output files" in the Settings tab.
   A script of the same name beside the video that this program did not make is never overwritten.

@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — 桌面版直接讀取本機檔案，預覽可自動帶入同名檔案（commit: `Read local files directly in the desktop app`）
+- 目的：Windows 版（桌面模式）不再上傳，產生、批次、預覽三個分頁都直接讀取本機檔案；預覽分頁選了影片或 funscript 後可以自動帶入同資料夾的同名檔案。
+- 修改：`webui.py`（路徑框、拖放區、`dropped`／`sibling`、預覽的「自動帶入同名的檔案」開關）、`app.py`（拖放處理、選擇 funscript 的對話框）、語言包、文件；修好「選擇…」按鈕從未顯示的問題。
+- 驗證：`uv run pytest` 322 passed；headless Chromium 驗證拖放流程。Windows 實機視窗的拖放與選檔對話框未驗證。
+
 ## 2026-11-08 — 先停止改進，更新 README 的準確度與已知問題（commit: `Document the accuracy on unseen sources in the readmes`）
 - 目的：使用者決定先停在這裡；把新素材上量到的實際準確度與限制告訴使用者。
 - 修改：README.zh.md、README.md（準確度改為 85 段、新來源約 0.67；已知問題補上節奏不明顯的快行程鏡頭），DEVELOPMENT.md 與 PLAN.md 記錄決定與技術細節；未改程式。
