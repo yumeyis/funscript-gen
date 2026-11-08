@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — 新素材的 user 基準與行程率線索研究（commit: `Record the user baseline and the stroke-rate cue study`）
+- 目的：依使用者同意的三項後續，補 `user` 設定在新素材上的基準，並研究無節奏鏡頭漏掉行程的原因。
+- 修改：新增 `scripts/freq_cues.py`、`scripts/peak_cue.py`（離線）；PLAN、DEVELOPMENT 記錄結果；主程式未改。
+- 驗證：`user` 在 47 段新素材 F1 0.658（`F1u` 0.722，default 0.668／0.711）；行程率線索都對不上人工腳本（7–27%），神諭頻率只多 +0.017，瓶頸是光流沒量到；有監督的方向模型沒有執行（見 PLAN）。`uv run pytest` 通過。
+
 ## 2026-11-07 — 新增 47 段驗證素材與泛化基準（commit: `Add 47 validation clips and record the generalisation baseline`）
 - 目的：使用者補充 valid/ 的素材；用沒調過規則的來源量現行程式的泛化程度，並重新檢驗高通後備。
 - 修改：`validation.toml` 新增 `dev2`（22 段）與 `holdout2`（25 段）；PLAN、DEVELOPMENT、CLAUDE.md 記錄分組與結果；主程式未改。
