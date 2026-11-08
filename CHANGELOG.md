@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — Windows 版只放使用者用的檔案（commit: `Leave developer files out of the Windows build`）
+- 目的：使用者要求發行版只放執行時用得到的，不放開發者用的。
+- 修改：`build.ps1` 再刪 `Scripts\` 的命令列 exe、C／Cython 檔與靜態庫、onnxruntime 的轉換工具；保留 Gradio 的 `.pyi`（它每次匯入都會重寫）；`numpy.f2py` 不能刪（scipy 會碰它）。
+- 驗證：testhost 建置，15,874 個檔案、650 MB，冒煙測試通過。
+
 ## 2026-11-08 — Windows 版瘦身與加快開啟（commit: `Slim the Windows build and open its window first`）
 - 目的：解壓縮後有 28,000 多個檔案、開啟緩慢。
 - 修改：`build.ps1` 排除 sympy／mpmath 並刪掉測試、pip、Tcl/Tk、SSR node 應用、型別檔；`FunscriptGen.exe` 改執行 `funscript_gen.app`，視窗先顯示載入頁、伺服器在執行緒中啟動；冒煙測試加入 Web UI 步驟。

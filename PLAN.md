@@ -229,7 +229,8 @@
   - 量測（testhost 用 `build.ps1` 建置，限制 4 個處理器）：28,618 個檔案、859 MB；來源與數字見 DEVELOPMENT「Windows 免安裝版的建置」。warm 的伺服器啟動 5.06 秒、CLI `--help` 1.40 秒，第一次（冷）`--help` 8.7 秒；匯入時間：gradio 1.05 秒、scipy 0.8 秒、pandas 0.28 秒（`-X importtime`），建頁面 1.1 秒。
   - 修改：(1) `build.ps1` 排除 sympy／mpmath（`--no-deps`），並刪掉套件的測試、pip、Tcl/Tk 與 tkinter、`include`／`libs`、Gradio 的 SSR node 應用、`.pyi`、matplotlib 的範例資料；(2) `FunscriptGen.exe` 改執行 `-m funscript_gen.app`（新增 `main()` 與 `--lang`），不經過 `cli.py`（它一載入就匯入 pipeline：scipy、cv2、av）；(3) `app.run` 在執行緒中啟動伺服器（`Startup`），先開視窗顯示載入頁（`app.loading_page`，新增語言 key `app.loading`），伺服器好了才載入頁面；語言改由 `app.saved_language()` 讀 `.webui-last.json`（不匯入 webui，測試檢查兩邊的檔名與 key 一致）；(4) `smoke_ui.py` 加進冒煙測試：建頁面、一次產生（含圖）、預覽載入。
   - 結果：28,618 → 16,782 個檔案（−41%）、859 → 662 MB、zip 313 → 246 MB、解壓縮 12.2 → 7.6 秒；伺服器可連線 5.06 → 4.54 秒、CLI `--help` 1.40 → 1.09 秒；視窗的載入頁可在約 0.6 秒出現（原本要等約 4.3 秒）。冒煙測試（含新增的 Web UI 步驟，DirectML 部位偵測）通過，`uv run pytest` 326 passed、2 skipped。
-  - 決定：不做 `.pyc` 取代 `.py`（可再少約 5,000 個檔案，但讀原始碼的套件會出錯，要逐一驗證）、不把 openai SDK 換成 httpx（可少約 4,000 個，AI 路徑要重新驗證）、不預先產生 matplotlib 的字型快取（它記錄建置機器的系統字型，使用者電腦缺中文字型時圖表會壞）、不改 `webui` 對 pipeline 的匯入為延遲載入（只是把 scipy 等的時間從開啟移到第一次產生，收益 1 秒左右，改動大）。
+  - 後續（同日，使用者要求「發行版只放使用者用的，不放開發者用的」）：再刪 `Scripts\` 的命令列 exe、C／Cython 檔與靜態庫、onnxruntime 的轉換工具，15,874 個檔案、650 MB，冒煙測試通過。先試著連 `numpy.f2py` 一起刪，CLI 啟動就失敗（scipy 的 array_api_compat 會碰它），已還原。查出 Gradio 的 `component_meta.py` 每次匯入都讀各元件的 `.py` 並重寫 `.pyi`（所以上面刪 gradio 的 `.pyi` 沒有用，第一次匯入就長回來 61 個，現在保留它們），也證實 `.pyc` 取代 `.py` 不可行。
+  - 決定：不做 `.pyc` 取代 `.py`（Gradio 會讀原始碼，見上）、不把 openai SDK 換成 httpx（可少約 4,000 個，AI 路徑要重新驗證）、不預先產生 matplotlib 的字型快取（它記錄建置機器的系統字型，使用者電腦缺中文字型時圖表會壞）、不改 `webui` 對 pipeline 的匯入為延遲載入（只是把 scipy 等的時間從開啟移到第一次產生，收益 1 秒左右，改動大）。
   - **未驗證**：視窗先開載入頁再 `load_url` 的行為（沒有桌面工作階段，只用假的 `webview` 模組測了順序；真實的 WebView2 要確認載入頁出現、頁面載入後拖放與選檔仍可用、伺服器啟動失敗時視窗關閉並顯示錯誤、沒有 WebView2 時的瀏覽器備援）；使用者電腦上有防毒掃描時的實際體感。
 
 - [x] **桌面版改為直接讀取本機檔案：拖放、選擇、預覽自動帶入同名檔案（2026-11-08，使用者要求）**

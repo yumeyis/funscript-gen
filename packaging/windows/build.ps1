@@ -69,10 +69,13 @@ if ($Commit) {
     [IO.File]::WriteAllText((Join-Path $package "build-info.json"), $info, (New-Object Text.UTF8Encoding $false))
 }
 
-# 2b. Fewer files (a fresh copy was 28,000 files: extracting it and starting it for the first time is slow, above
-# all with a virus scanner reading each one). Only what the program never loads is removed: the test suites of the
-# packages, type stubs, pip, Tcl/Tk (nothing here uses tkinter: matplotlib draws with Agg, the window is WebView2),
-# the C headers and import libraries, and Gradio's server-side-rendering node app (SSR is off).
+# 2b. A user's copy, not a developer's: fewer files (a fresh copy was 28,000: extracting it and starting it for the
+# first time is slow, above all with a virus scanner reading each one). Only what the program never loads is removed:
+# the packages' test suites and type stubs, pip, the console-script exes in Scripts\ (they point at the build folder),
+# Tcl/Tk (nothing here uses tkinter: matplotlib draws with Agg, the window is WebView2), what is for compiling or
+# converting (C headers, import libraries, Cython files, onnxruntime's model tools; not numpy.f2py: scipy touches it), and Gradio's
+# server-side-rendering node app (SSR is off). Gradio's own .pyi files stay: it writes them next to its components'
+# sources on every import (component_meta.py), and a missing one is made again. The .py files stay too: Gradio reads them.
 Write-Host "== pruning"
 $site = Join-Path $runtime "Lib\site-packages"
 function Prune([string[]]$Paths) {
@@ -85,14 +88,19 @@ Prune @(
     (Join-Path $runtime "Lib\tkinter"), (Join-Path $runtime "Lib\idlelib"), (Join-Path $runtime "Lib\turtledemo"),
     (Join-Path $runtime "Lib\lib2to3"), (Join-Path $runtime "Lib\ensurepip"), (Join-Path $runtime "Lib\pydoc_data"),
     (Join-Path $runtime "Lib\test"), (Join-Path $site "pip"), (Join-Path $site "matplotlib\mpl-data\sample_data"),
-    (Join-Path $site "gradio\templates\node")
+    (Join-Path $site "gradio\templates\node"), (Join-Path $runtime "Scripts"),
+    (Join-Path $site "onnxruntime\tools"), (Join-Path $site "onnxruntime\quantization"),
+    (Join-Path $site "onnxruntime\transformers"), (Join-Path $site "onnxruntime\datasets")
 )
 Get-ChildItem $site -Filter "pip-*.dist-info" -Directory | ForEach-Object { Remove-Item -Recurse -Force $_.FullName }
 # The packages' own tests (never the testing helpers, such as numpy.testing, which other packages import).
 Get-ChildItem $site -Recurse -Directory -Force | Where-Object { $_.Name -in @("tests", "test") } |
     Sort-Object { $_.FullName.Length } | ForEach-Object { if (Test-Path $_.FullName) { Remove-Item -Recurse -Force $_.FullName } }
-Get-ChildItem $site -Recurse -File -Force | Where-Object { $_.Extension -eq ".pyi" -or $_.Name -eq "py.typed" } |
-    ForEach-Object { Remove-Item -Force $_.FullName }
+$gradio = Join-Path $site "gradio"
+$compile = @(".h", ".hpp", ".c", ".cc", ".cpp", ".pxd", ".pyx", ".f90", ".lib", ".a")
+Get-ChildItem $site -Recurse -File -Force | Where-Object {
+    $_.Extension -in $compile -or $_.Name -eq "py.typed" -or ($_.Extension -eq ".pyi" -and -not $_.FullName.StartsWith($gradio))
+} | ForEach-Object { Remove-Item -Force $_.FullName }
 $after = (Get-ChildItem -Recurse -File -Force $runtime | Measure-Object).Count
 Write-Host ("   {0:N0} -> {1:N0} files in runtime\" -f $before, $after)
 
