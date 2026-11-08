@@ -55,6 +55,8 @@ uv run python scripts/detect_viewer.py --port 7862 --share-lan   # 區網內的�
 
 ## Windows 免安裝版的建置
 
+有兩種建置方式（同一個資料夾配置，`smoke-test.ps1` 都能檢查）：預設的 `build.ps1`（附完整的 Python，下面的內容主要寫它），與試作中的 `build-pyinstaller.ps1`（PyInstaller `--onedir`，`pyinstaller/funscript-gen.spec`、`pyinstaller/entry.py`：兩個 exe 共用 `_internal\`，由 `entry.py` 設定 `data\` 等環境；約 3,150 個檔案、539 MB，解壓縮 2.3 秒）。GitHub Actions 手動執行時用 `builder` 選項切換，標籤發布仍用 `build.ps1`；PyInstaller 版在真實桌面上尚未驗證，見 PLAN 的開發紀錄。
+
 `packaging/windows/` 與 `.github/workflows/windows.yml`。不用 PyInstaller：Gradio、onnxruntime、OpenCV 的資料檔與動態函式庫凍結時容易漏掉，改成附上一份完整的 Python。
 
 | 檔案 | 作用 |

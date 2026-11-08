@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — Windows 版的 PyInstaller 試作（commit: `Add a PyInstaller build of the Windows version`）
+- 目的：把檔案數降到一兩千個級別；使用者同意先試作。
+- 修改：新增 `build-pyinstaller.ps1`、`pyinstaller/funscript-gen.spec`、`pyinstaller/entry.py`；`smoke-test.ps1` 支援沒有 Python 的資料夾（`-Python`）；`windows.yml` 的手動執行加 `builder` 選項（預設仍是原本的建置）。
+- 驗證：testhost 上 3,153 個檔案、539 MB、zip 239 MB、解壓縮 2.3 秒（原本 15,874 個、7.6 秒）；冒煙測試通過；用瀏覽器對打包版走過產生與預覽。真實桌面視窗與 Actions 上未驗證。
+
 ## 2026-11-08 — Windows 版只放使用者用的檔案（commit: `Leave developer files out of the Windows build`）
 - 目的：使用者要求發行版只放執行時用得到的，不放開發者用的。
 - 修改：`build.ps1` 再刪 `Scripts\` 的命令列 exe、C／Cython 檔與靜態庫、onnxruntime 的轉換工具；保留 Gradio 的 `.pyi`（它每次匯入都會重寫）；`numpy.f2py` 不能刪（scipy 會碰它）。

@@ -198,7 +198,7 @@
 - 2026-11-04 硬體解碼（PyAV 的 NVDEC、D3D11VA，RTX 3070）：畫面和 CPU 逐像素相同，但 200 幀 1080p 0.59 秒對 CPU 0.23 秒（每次開啟的初始化，而光流每 5 秒就開一次），解碼本來也不是瓶頸，不加 GPU 模式。
 
 **建置與發布**
-- **Windows 版用 PyInstaller／Nuitka 凍結（2026-11-05，未試）**：Gradio、onnxruntime、OpenCV 的資料檔與 DLL 容易漏、出錯難查，改附完整的 python-build-standalone。
+- **Windows 版用 PyInstaller／Nuitka 凍結（2026-11-05，未試；2026-11-08 PyInstaller 試作可行，見開發紀錄，尚未取代預設的建置）**：當時擔心 Gradio、onnxruntime、OpenCV 的資料檔與 DLL 容易漏、出錯難查，改附完整的 python-build-standalone。Nuitka 仍未試。
 - **Windows 版放進骨架模式（2026-11-05）**：CUDA 版 PyTorch 約 2.5 GB，超過 GitHub Release 單一檔案 2 GB，預設的光流模式不需要。
 - **把 `bridge_max`、`bridge_tol` 放進使用者設定（2026-11-06）**：只影響鏡頭交界的幾個點，render 參數掃描中屬於平坦的一類，使用者沒有調整的理由；維持只在 `SignalParams`。
 - **銜接補點改成一律照抄前一鏡頭最後一下（2026-11-06，未試）**：空隙過長會多出停頓、過短會擠在一起、方向不合會接成兩個高點或低點；使用者決定維持依空隙長度與方向決定點數的現行邏輯。
@@ -224,6 +224,14 @@
 - **批次處理與預覽編輯器擴充（2026-11-05 整理）**：批次產生一次一支依序處理，`webui` 只能上傳、不能指定伺服器上的資料夾（桌面模式 `app` 可以，見 2026-11-05）；CLI `batch` 可支援 `--save-analysis` 以便事後快速重跑 `render`；預覽播放器目前以鏡頭為單位縮放或反轉，長鏡頭內只有後段方向反或局部幅度偏小時，可支援框選時間區段直接反轉或調整密度。
 
 ## 開發紀錄（最近）
+
+- [x] **Windows 版的 PyInstaller 試作（2026-11-08，使用者同意試作）**
+  - 做法：`packaging/windows/build-pyinstaller.ps1`＋`pyinstaller/funscript-gen.spec`＋`pyinstaller/entry.py`（PyInstaller 6.22.3、hooks-contrib 2026.9）。`--onedir`，一個 spec 兩個 exe（`FunscriptGen.exe` 無主控台、`funscript-gen.exe` 主控台）共用 `_internal\`，兩者都從 `entry.py` 啟動：它做 `launcher.cs` 原本做的事（`data\`、`TEMP`、`FUNSCRIPT_GEN_LANG_DIR`、錯誤訊息方塊），所以不需要 C# 啟動程式；`-X utf8` 用 EXE 的 OPTION。`gradio`、`gradio_client`、`safehttpx`、`groovy`、`uvicorn`、`webview` 用 `collect_all`，gradio 另附 `.py`（`component_meta.py` 每次匯入都讀它），並排除 SSR node 應用與 `.br`。`smoke-test.ps1` 兩種資料夾都能檢查（PyInstaller 版沒有 Python，用 `-Python` 指定建置用的 venv 來產生測試影片，略過 Web UI 與視窗工具組兩步）；`windows.yml` 的手動執行加 `builder` 選項（`runtime`／`pyinstaller`，預設 `runtime`，標籤一律用 `runtime`）。
+  - 量測（testhost，限制 4 個處理器）：3,153 個檔案、539 MB、zip 239 MB、解壓縮 2.3 秒；`build.ps1` 版是 15,874 個、650 MB、246 MB、7.6 秒。warm 的伺服器可連線 4.54 秒、CLI 1.07 秒，和 `build.ps1` 版相同（匯入的東西一樣）；PyInstaller 的建置約 2.5～4 分鐘。
+  - 驗證：冒煙測試通過；CLI `generate` 用 OpenCL 光流與 DirectML 部位偵測；用 Playwright（SSH 通道連到 testhost 上的打包版）走完整流程：拖放（模擬）影片到「產生」、按「產生 funscript」出現播放器與圖、預覽分頁拖放影片自動帶入同名 funscript 並載入預覽，沒有頁面錯誤。視窗模式在沒有桌面的 SSH 工作階段下已走到 pywebview 的 WinForms／WebView2 初始化（錯誤是無效的視窗控制代碼 0x80070578，因為沒有桌面），表示 pythonnet 與 WebView2 的 DLL 在打包版中都載入了。
+  - 發現：(1) PyInstaller 的第一次建置只用「全部收集」的 spec 就成功，沒有漏檔；(2) 在 SSH 工作階段啟動的程序在連線結束時被終止，長時間執行的伺服器要放在同一個 ssh 連線中；(3) 視窗模式的 WebView2 初始化失敗時程序不會結束（pywebview 只印出錯誤），真機上沒有 WebView2 時的行為（改用 MSHTML 或卡住）要確認。
+  - **未驗證**：真實桌面上的視窗（載入頁、拖放、選檔、關閉視窗後程序結束）；防毒軟體對 PyInstaller 的 exe 的誤報；GitHub Actions 上的 `pyinstaller` 選項（只在 testhost 跑過同一份腳本）；沒有 `data\` 寫入權限時的錯誤訊息方塊。
+  - 決定：先不取代 `build.ps1`（標籤發布仍用 `runtime`），等使用者在桌面與 Actions 上確認再切換；切換後 `launcher.cs`、`build.ps1` 與 `smoke_ui.py` 的 Web UI 步驟要處理（PyInstaller 版的 Web UI 檢查目前靠手動的 Playwright 流程，沒有放進冒煙測試）。
 
 - [x] **Windows 版瘦身與加快開啟（2026-11-08，使用者回報解壓縮後有 29,140 個檔案、開啟緩慢）**
   - 量測（testhost 用 `build.ps1` 建置，限制 4 個處理器）：28,618 個檔案、859 MB；來源與數字見 DEVELOPMENT「Windows 免安裝版的建置」。warm 的伺服器啟動 5.06 秒、CLI `--help` 1.40 秒，第一次（冷）`--help` 8.7 秒；匯入時間：gradio 1.05 秒、scipy 0.8 秒、pandas 0.28 秒（`-X importtime`），建頁面 1.1 秒。

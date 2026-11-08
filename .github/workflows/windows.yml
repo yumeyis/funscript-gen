@@ -7,6 +7,12 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      builder:
+        description: "How the folder is built (a version tag always uses runtime)"
+        type: choice
+        options: [runtime, pyinstaller]
+        default: runtime
 
 permissions:
   contents: write  # the draft release
@@ -35,15 +41,25 @@ jobs:
           uv sync --frozen
           uv run pytest -q
 
+      # runtime: a whole Python beside the exes (build.ps1). pyinstaller: build-pyinstaller.ps1, about a fifth of the files.
       - name: Build
         shell: pwsh
-        run: ./packaging/windows/build.ps1 -OutDir dist -Commit "${{ github.sha }}"
+        run: |
+          if ("${{ inputs.builder }}" -eq "pyinstaller") {
+            ./packaging/windows/build-pyinstaller.ps1 -OutDir dist -Commit "${{ github.sha }}" -KeepVenv
+          } else {
+            ./packaging/windows/build.ps1 -OutDir dist -Commit "${{ github.sha }}"
+          }
 
       - name: Smoke test
         shell: pwsh
         run: |
           $app = Get-ChildItem dist -Directory -Filter "FunscriptGen-*-win64" | Select-Object -First 1
-          ./packaging/windows/smoke-test.ps1 $app.FullName
+          if ("${{ inputs.builder }}" -eq "pyinstaller") {
+            ./packaging/windows/smoke-test.ps1 $app.FullName -Python (Resolve-Path dist/build-venv/Scripts/python.exe).Path
+          } else {
+            ./packaging/windows/smoke-test.ps1 $app.FullName
+          }
 
       - uses: actions/upload-artifact@v7
         with:
