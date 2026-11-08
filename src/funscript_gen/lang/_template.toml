@@ -95,6 +95,9 @@ name = ""
 # zh-TW: \n\n詳細記錄：{log}
 # en: \n\nDetails: {log}
 "app.log_hint" = ""
+# zh-TW: funscript-gen 啟動中…
+# en: funscript-gen is starting…
+"app.loading" = ""
 
 # --- opt ---
 # zh-TW: 使用 AI 判斷每個鏡頭的區域、方向與部位

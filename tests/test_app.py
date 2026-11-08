@@ -6,6 +6,7 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 from pathlib import Path
@@ -293,3 +294,97 @@ def test_the_windows_build_records_its_commit(tmp_path):
     assert build_info(tmp_path) == {}
     (tmp_path / "build-info.json").write_text('{"commit": "abc123", "dirty": false, "other": 1}')
     assert build_info(tmp_path) == {"commit": "abc123", "dirty": False}
+
+
+def test_the_window_opens_before_the_web_ui_is_ready(tmp_path, monkeypatch):
+    import types
+
+    from funscript_gen import app
+
+    events = []
+    release = threading.Event()
+
+    class Window:
+        def __init__(self):
+            self.events = types.SimpleNamespace(loaded=types.SimpleNamespace(__iadd__=lambda self, f: self))
+
+        def load_url(self, url):
+            events.append(("load_url", url))
+
+        def destroy(self):
+            events.append(("destroy",))
+
+    window = Window()
+    fake = types.ModuleType("webview")
+    fake.settings = {}
+    fake.create_window = lambda title, **kw: events.append(("create_window", kw)) or window
+
+    def start(func, **kw):
+        events.append(("start", sorted(kw)))
+        runner = threading.Thread(target=func)  # pywebview runs it in a thread once the window shows
+        runner.start()
+        events.append(("window shown, server not ready", not release.is_set()))
+        release.set()
+        runner.join()
+
+    fake.start = start
+    monkeypatch.setitem(sys.modules, "webview", fake)
+    monkeypatch.setattr(app, "listen_for_drops", lambda w: None)
+    monkeypatch.setattr(app, "file_picker", lambda w: "picker")
+
+    def slow_start_server(port, native=False):
+        assert release.wait(5), "the window must open while the server is still starting"
+        return "server", threading.Thread()
+
+    monkeypatch.setattr(app, "start_server", slow_start_server)
+    startup = app.Startup(7860)
+    assert app.open_window("http://127.0.0.1:7860/", startup) is True
+    kinds = [e[0] for e in events]
+    assert kinds == ["create_window", "start", "window shown, server not ready", "load_url"]
+    shown = events[0][1]
+    assert "html" in shown and "url" not in shown and "啟動中" in shown["html"]  # the loading page, not the app yet
+    assert events[2][1] is True and events[3] == ("load_url", "http://127.0.0.1:7860/")
+    assert sys.modules["funscript_gen.webui"].pick_files is None  # reset when the window closes
+
+    # a server that cannot start: the window says why and closes
+    events.clear()
+    shown_errors = []
+    monkeypatch.setattr(app, "show_error", shown_errors.append)
+    monkeypatch.setattr(app, "start_server", lambda port, native=False: (_ for _ in ()).throw(OSError("port taken")))
+    startup = app.Startup(7860)
+    assert app.open_window("http://127.0.0.1:7860/", startup) is True
+    assert ("destroy",) in events and not any(e[0] == "load_url" for e in events)
+    assert shown_errors and "port taken" in shown_errors[0] and isinstance(startup.error, OSError)
+    with pytest.raises(OSError):
+        startup.wait()
+
+
+def test_the_window_path_imports_nothing_heavy_before_the_window():
+    code = ("import sys; from funscript_gen import app; app.saved_language(); app.loading_page(); app.free_port(); "
+            "print([m for m in ('gradio', 'scipy', 'cv2', 'av', 'funscript_gen.webui', 'funscript_gen.pipeline') if m in sys.modules])")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout.strip()
+    assert out == "[]"
+
+
+def test_the_app_reads_the_language_the_web_ui_remembers(tmp_path, monkeypatch):
+    from funscript_gen import app
+    from funscript_gen import webui as ui
+
+    assert (app.LAST_FORM_NAME, app.LANG_KEY) == (ui.DEFAULT_LAST_FILE.name, ui.LANG_KEY)  # the two must not drift apart
+    monkeypatch.setenv(paths.HOME_ENV, str(tmp_path))
+    assert app.saved_language() is None
+    (tmp_path / app.LAST_FORM_NAME).write_text(json.dumps({app.LANG_KEY: "en"}), encoding="utf-8")
+    assert app.saved_language() == "en"
+    (tmp_path / app.LAST_FORM_NAME).write_text("[1]", encoding="utf-8")
+    assert app.saved_language() is None
+
+
+def test_app_module_takes_the_exes_arguments(monkeypatch):
+    from funscript_gen import app
+
+    seen = []
+    monkeypatch.setattr(app, "run", lambda ui, port: seen.append((ui, port)))
+    monkeypatch.setattr(app, "log_to_file", lambda: None)
+    app.main(["--ui", "none", "--port", "17860"])
+    app.main([])
+    assert seen == [("none", 17860), ("window", None)]

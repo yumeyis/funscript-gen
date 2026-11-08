@@ -1,6 +1,8 @@
 // Launcher of the Windows portable build, compiled twice by build.ps1 with the .NET Framework's csc.exe:
 //   funscript-gen.exe  (/target:exe)                 the CLI: runtime\python.exe -m funscript_gen.cli <arguments>
-//   FunscriptGen.exe   (/target:winexe /define:GUI)  the app: runtime\pythonw.exe -m funscript_gen.cli app <arguments>
+//   FunscriptGen.exe   (/target:winexe /define:GUI)  the app: runtime\pythonw.exe -m funscript_gen.app <arguments>
+//                      (that module, not the CLI's `app` command: the CLI imports the whole pipeline first, and the
+//                      window should open before that is loaded)
 // Both find runtime\ next to themselves, so the folder can be moved or renamed, and point FUNSCRIPT_GEN_HOME and
 // TEMP at data\, so nothing is written outside the folder, and FUNSCRIPT_GEN_LANG_DIR at lang\ (the language packs: a
 // .toml file added there shows up in the language list). Python runs isolated (-I: no PYTHON* variables, no user
@@ -52,10 +54,10 @@ static class Launcher
         string root = AppDomain.CurrentDomain.BaseDirectory;
 #if GUI
         string python = Path.Combine(root, "runtime", "pythonw.exe");
-        string command = "app";
+        string module = "funscript_gen.app";
 #else
         string python = Path.Combine(root, "runtime", "python.exe");
-        string command = "";
+        string module = "funscript_gen.cli";
 #endif
         if (!File.Exists(python))
         {
@@ -76,7 +78,7 @@ static class Launcher
             return 1;
         }
 
-        var start = new ProcessStartInfo(python, ("-I -X utf8 -m funscript_gen.cli " + command + " " + Arguments()).Trim());
+        var start = new ProcessStartInfo(python, ("-I -X utf8 -m " + module + " " + Arguments()).Trim());
         start.UseShellExecute = false;
         start.EnvironmentVariables["FUNSCRIPT_GEN_HOME"] = data;
         start.EnvironmentVariables["FUNSCRIPT_GEN_LANG_DIR"] = Path.Combine(root, "lang");

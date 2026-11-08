@@ -37,6 +37,7 @@ name = "繁體中文"
 "app.start_failed" = "funscript-gen 無法啟動：{e}"
 "app.in_browser" = "funscript-gen 在瀏覽器中開啟：{url}\n關閉這個視窗（或按 Ctrl+C）即結束程式。"
 "app.log_hint" = "\n\n詳細記錄：{log}"
+"app.loading" = "funscript-gen 啟動中…"
 
 # --- opt ---
 "opt.use_ai.label" = "使用 AI 判斷每個鏡頭的區域、方向與部位"

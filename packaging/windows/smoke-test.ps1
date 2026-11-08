@@ -32,6 +32,13 @@ $result = [IO.File]::ReadAllText($script) | ConvertFrom-Json
 if ($result.actions.Count -lt 4) { throw "the test video gave only $($result.actions.Count) actions" }
 Write-Host "   $($result.actions.Count) actions, $($result.metadata.creator)"
 
+Write-Host "== web UI (page, a run, the preview)"
+$env:FUNSCRIPT_GEN_HOME = Join-Path $App "data"
+& $py -I -X utf8 (Join-Path $PSScriptRoot "smoke_ui.py") $clip
+$uiExit = $LASTEXITCODE
+Remove-Item Env:FUNSCRIPT_GEN_HOME
+if ($uiExit -ne 0) { throw "smoke_ui.py failed ($uiExit)" }
+
 Write-Host "== language packs"
 $packs = (& $cli lang list) -join "`n"
 if ($LASTEXITCODE -ne 0 -or $packs -notmatch "English" -or $packs -notmatch "external") {

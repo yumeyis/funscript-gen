@@ -46,7 +46,18 @@ $py = Join-Path $runtime "python.exe"
 Write-Host "== packages"
 $requirements = Join-Path $work "requirements.txt"
 Run uv export --frozen --no-dev --extra gui --no-emit-project --format requirements.txt --output-file $requirements --quiet
-Run uv pip install --python $py --require-hashes --compile-bytecode --link-mode copy -r $requirements
+# Packages that are in the lock only because another one lists them, and that nothing imports when the program runs:
+# onnxruntime lists sympy (and so mpmath), which only onnxruntime.tools.symbolic_shape_infer uses.
+$unused = @("sympy", "mpmath")
+$kept = New-Object System.Collections.Generic.List[string]
+$skipping = $false
+foreach ($line in (Get-Content $requirements)) {
+    if ($line -match '^[A-Za-z0-9]') { $skipping = $unused -contains (($line -split '[=; ]')[0].ToLower()) }
+    if (-not $skipping) { $kept.Add($line) }
+}
+[IO.File]::WriteAllLines($requirements, $kept, (New-Object Text.UTF8Encoding $false))
+# The export already lists every dependency, so nothing is resolved again (--no-deps) and the unused ones stay out.
+Run uv pip install --python $py --require-hashes --no-deps --compile-bytecode --link-mode copy -r $requirements
 $wheels = Join-Path $work "wheel"
 Run uv build --wheel --out-dir $wheels --quiet
 $wheel = Get-ChildItem $wheels -Filter "funscript_gen-*.whl" | Select-Object -First 1
@@ -57,6 +68,33 @@ if ($Commit) {
     $info = @{ commit = $Commit.Substring(0, [Math]::Min(12, $Commit.Length)); dirty = $false } | ConvertTo-Json -Compress
     [IO.File]::WriteAllText((Join-Path $package "build-info.json"), $info, (New-Object Text.UTF8Encoding $false))
 }
+
+# 2b. Fewer files (a fresh copy was 28,000 files: extracting it and starting it for the first time is slow, above
+# all with a virus scanner reading each one). Only what the program never loads is removed: the test suites of the
+# packages, type stubs, pip, Tcl/Tk (nothing here uses tkinter: matplotlib draws with Agg, the window is WebView2),
+# the C headers and import libraries, and Gradio's server-side-rendering node app (SSR is off).
+Write-Host "== pruning"
+$site = Join-Path $runtime "Lib\site-packages"
+function Prune([string[]]$Paths) {
+    foreach ($p in $Paths) { if (Test-Path $p) { Remove-Item -Recurse -Force $p } }
+}
+$before = (Get-ChildItem -Recurse -File -Force $runtime | Measure-Object).Count
+Prune @(
+    (Join-Path $runtime "tcl"), (Join-Path $runtime "include"), (Join-Path $runtime "libs"),
+    (Join-Path $runtime "DLLs\_tkinter.pyd"), (Join-Path $runtime "DLLs\tcl86t.dll"), (Join-Path $runtime "DLLs\tk86t.dll"),
+    (Join-Path $runtime "Lib\tkinter"), (Join-Path $runtime "Lib\idlelib"), (Join-Path $runtime "Lib\turtledemo"),
+    (Join-Path $runtime "Lib\lib2to3"), (Join-Path $runtime "Lib\ensurepip"), (Join-Path $runtime "Lib\pydoc_data"),
+    (Join-Path $runtime "Lib\test"), (Join-Path $site "pip"), (Join-Path $site "matplotlib\mpl-data\sample_data"),
+    (Join-Path $site "gradio\templates\node")
+)
+Get-ChildItem $site -Filter "pip-*.dist-info" -Directory | ForEach-Object { Remove-Item -Recurse -Force $_.FullName }
+# The packages' own tests (never the testing helpers, such as numpy.testing, which other packages import).
+Get-ChildItem $site -Recurse -Directory -Force | Where-Object { $_.Name -in @("tests", "test") } |
+    Sort-Object { $_.FullName.Length } | ForEach-Object { if (Test-Path $_.FullName) { Remove-Item -Recurse -Force $_.FullName } }
+Get-ChildItem $site -Recurse -File -Force | Where-Object { $_.Extension -eq ".pyi" -or $_.Name -eq "py.typed" } |
+    ForEach-Object { Remove-Item -Force $_.FullName }
+$after = (Get-ChildItem -Recurse -File -Force $runtime | Measure-Object).Count
+Write-Host ("   {0:N0} -> {1:N0} files in runtime\" -f $before, $after)
 
 # 3. Launchers: compiled with the C# compiler that comes with Windows' .NET Framework 4.
 Write-Host "== launchers"

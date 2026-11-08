@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — Windows 版瘦身與加快開啟（commit: `Slim the Windows build and open its window first`）
+- 目的：解壓縮後有 28,000 多個檔案、開啟緩慢。
+- 修改：`build.ps1` 排除 sympy／mpmath 並刪掉測試、pip、Tcl/Tk、SSR node 應用、型別檔；`FunscriptGen.exe` 改執行 `funscript_gen.app`，視窗先顯示載入頁、伺服器在執行緒中啟動；冒煙測試加入 Web UI 步驟。
+- 驗證：檔案 28,618 → 16,782、zip 313 → 246 MB、解壓縮 12.2 → 7.6 秒、伺服器可連線 5.06 → 4.54 秒（testhost）；冒煙測試與 `uv run pytest`（326 passed）通過。視窗的載入頁在真實桌面上未驗證。
+
 ## 2026-11-08 — 桌面版直接讀取本機檔案，預覽可自動帶入同名檔案（commit: `Read local files directly in the desktop app`）
 - 目的：Windows 版（桌面模式）不再上傳，產生、批次、預覽三個分頁都直接讀取本機檔案；預覽分頁選了影片或 funscript 後可以自動帶入同資料夾的同名檔案。
 - 修改：`webui.py`（路徑框、拖放區、`dropped`／`sibling`、預覽的「自動帶入同名的檔案」開關）、`app.py`（拖放處理、選擇 funscript 的對話框）、語言包、文件；修好「選擇…」按鈕從未顯示的問題。

@@ -37,6 +37,7 @@ name = "English"
 "app.start_failed" = "funscript-gen could not start: {e}"
 "app.in_browser" = "funscript-gen is open in the browser: {url}\nClose this window (or press Ctrl+C) to quit."
 "app.log_hint" = "\n\nDetails: {log}"
+"app.loading" = "funscript-gen is starting…"
 
 # --- opt ---
 "opt.use_ai.label" = "Use the AI to decide each scene's region, axis and body parts"

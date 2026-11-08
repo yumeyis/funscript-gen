@@ -59,9 +59,9 @@ uv run python scripts/detect_viewer.py --port 7862 --share-lan   # 區網內的�
 
 | 檔案 | 作用 |
 |---|---|
-| `build.ps1` | `uv python install` 取得 python-build-standalone（可在任何資料夾執行）→ 依 `uv export --frozen --extra gui` 的版本與雜湊安裝套件 → 安裝專案的 wheel → 用 Windows 內建的 .NET Framework `csc.exe` 編譯兩個啟動程式 → 打包成 zip 與 `.sha256` |
-| `launcher.cs` | 同一份原始碼編兩次：`funscript-gen.exe`（主控台，`python.exe -m funscript_gen.cli`，等它結束並傳回結束碼）與 `FunscriptGen.exe`（`/target:winexe`，`pythonw.exe -m funscript_gen.cli app`）。以 `-I -X utf8` 執行（忽略 `PYTHON*` 環境變數與使用者的 site-packages），設定 `FUNSCRIPT_GEN_HOME`、`TEMP`、`TMP` 指向 `data\`、`FUNSCRIPT_GEN_LANG_DIR` 指向 `lang\`；自己的錯誤訊息依系統語言用中文或英文 |
-| `smoke-test.ps1`、`smoke_clip.py` | 建置後的檢查：CLI 用合成影片產生腳本、pywebview 的 WinForms／WebView2 後端可以載入、`FunscriptGen.exe --ui none` 回應頁面，以及使用者目錄（`USERPROFILE`、`.cache`、`APPDATA`、`LOCALAPPDATA`）沒有多出任何項目；`lang list` 要找得到 `lang\` 的語言包 |
+| `build.ps1` | `uv python install` 取得 python-build-standalone（可在任何資料夾執行）→ 依 `uv export --frozen --extra gui` 的版本與雜湊安裝套件（排除 sympy、mpmath，用 `--no-deps`）→ 安裝專案的 wheel → 刪掉用不到的檔案（見下面的「檔案數」）→ 用 Windows 內建的 .NET Framework `csc.exe` 編譯兩個啟動程式 → 打包成 zip 與 `.sha256` |
+| `launcher.cs` | 同一份原始碼編兩次：`funscript-gen.exe`（主控台，`python.exe -m funscript_gen.cli`，等它結束並傳回結束碼）與 `FunscriptGen.exe`（`/target:winexe`，`pythonw.exe -m funscript_gen.app`：不經過 CLI，因為 `cli.py` 一載入就匯入整個分析流程，視窗要在那之前開啟）。以 `-I -X utf8` 執行（忽略 `PYTHON*` 環境變數與使用者的 site-packages），設定 `FUNSCRIPT_GEN_HOME`、`TEMP`、`TMP` 指向 `data\`、`FUNSCRIPT_GEN_LANG_DIR` 指向 `lang\`；自己的錯誤訊息依系統語言用中文或英文 |
+| `smoke-test.ps1`、`smoke_clip.py`、`smoke_ui.py` | 建置後的檢查：CLI 用合成影片產生腳本、Web UI 的頁面建立、一次產生（含訊號圖）與預覽載入（`smoke_ui.py`，驗證刪檔後套件還完整）、pywebview 的 WinForms／WebView2 後端可以載入、`FunscriptGen.exe --ui none` 回應頁面，以及使用者目錄（`USERPROFILE`、`.cache`、`APPDATA`、`LOCALAPPDATA`）沒有多出任何項目；`lang list` 要找得到 `lang\` 的語言包 |
 | `README.txt`、`README.zh.txt` | 放進 zip 的使用說明（英文與繁體中文）；`build.ps1` 另外把根目錄的 `LICENSE`（存為 `LICENSE.txt`）與 `THIRD_PARTY_NOTICES.md` 放進 zip |
 | `lang\`（build.ps1 從 `src/funscript_gen/lang/` 複製） | 放在 exe 旁的語言包，使用者在這裡加入翻譯 |
 
@@ -74,7 +74,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\smoke-test
 - **GitHub Actions**（`windows-latest`）：手動執行（workflow_dispatch）時把 zip 上傳成 artifact（保留 14 天）；推送 `v*` 標籤時先確認標籤和 `__version__` 相同，再建立**草稿** Release 並附上 zip，檢查後再手動發布。順序是單元測試 → 建置 → 冒煙測試。
 - 建置版沒有 git，`build.ps1 -Commit` 把 commit 寫進 `funscript_gen/build-info.json`，`version.provenance()` 讀它填入輸出檔 metadata 的 `commit`。
 - PowerShell 5.1 以 ANSI 讀取沒有 BOM 的 `.ps1`：`packaging/windows/*.ps1` 只用 ASCII（中文訊息放在 C# 與 Python 中）。
-- 大小（版本 0.2.0，2026-11-05）：資料夾 858 MB、zip 312 MB；最大的是 cv2 112 MB、scipy 109、gradio 75、onnxruntime 71、pandas 68、sympy 66（onnxruntime 的相依）、av 64 MB，都是必要的相依。
+- 大小與**檔案數**（2026-11-08，testhost 上量）：原本資料夾 859 MB、28,618 個檔案、zip 313 MB（解壓縮 12.2 秒）；來源是 `.py` 與各自的 `.pyc`（`--compile-bytecode`，約各 1 萬）、套件自帶的測試（5,800 個）、sympy＋mpmath（3,300，onnxruntime 列為相依但只有 `onnxruntime.tools` 用）、Tcl/Tk（1,250，沒有程式用 tkinter）、pip（830）、Gradio 的 SSR node 應用（約 1,150，SSR 沒開）、型別檔 `.pyi`（570）、C 標頭檔。`build.ps1` 的「pruning」步驟刪掉這些（只刪 `tests`／`test` 資料夾，不刪 `numpy.testing` 之類的輔助模組），結果 662 MB、16,782 個檔案、zip 246 MB（解壓縮 7.6 秒）。留下的大宗是 openai（約 4,100，`types` 底下上千個小模組，只在用 AI 時才匯入）、pandas／gradio／scipy／numpy，都是執行時要用的。要再減檔案數的選項（未做）：套件改成只附 `.pyc` 不附 `.py`（可再少約 5,000 個，但 `inspect.getsource` 之類讀原始碼的套件會出錯，要逐一驗證）、把 openai SDK 換成 httpx（少約 4,000 個，要重新驗證 AI 路徑）。
+- **啟動時間**（testhost，4 個邏輯處理器，檔案快取已熱）：`FunscriptGen.exe` 的伺服器可連線 5.06 → 4.54 秒，CLI `--help` 1.40 → 1.09 秒；第一次執行（冷檔案）原本 `--help` 要 8.7 秒。剩下的時間是匯入 Gradio（1.9 秒）、scipy（0.6 秒）與建立頁面（1.1 秒）。視窗現在不等這些：`app.run` 在執行緒中啟動伺服器（`app.Startup`），主執行緒馬上開視窗顯示載入頁，伺服器好了再 `load_url`（視窗工具組載入完約 0.6 秒，原本要等伺服器建好約 4.3 秒）。視窗的行為沒有在桌面上實際看過（未驗證）。
 - 骨架模式不放進去：CUDA 版 PyTorch 約 2.5 GB，超過 GitHub Release 單一檔案 2 GB 的上限。
 - 圖形介面的視窗（WebView2）只能在有桌面的工作階段中開啟，SSH 與 CI 無法測試，冒煙測試只檢查後端載入與伺服器（`--ui none`）。因此桌面視窗的檔案拖放（pywebview 的 `pywebviewFullPath`、`document` 的 drop 處理器）沒有實機驗證：頁面端的流程用 headless Chromium 驗證（模擬 drop 事件後呼叫 `fgDropped`），`app.drop_handler` 用假視窗做單元測試。
 
