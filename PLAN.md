@@ -231,6 +231,9 @@
 
 ## 開發紀錄（最近）
 
+- [x] **發布 v1.1.0rc2（2026-11-08，使用者要求發布）**
+  - 流程：`Release v1.1.0rc2` commit（`84916ff`）→ 推送 `main`，`tests.yml` 通過 → 標籤 `v1.1.0rc2` → `windows.yml` 建置通過，草稿附 `FunscriptGen-1.1.0rc2-win64.zip`（251 MB）與 `.sha256`；草稿手動標成 pre-release 並補中英文說明後，由使用者確認公開。內容：Windows 啟動不再閃 cmd 視窗、預覽音量。
+  - 未驗證：視窗閃現的修正沒有在 Windows 實機確認。`windows.yml` 建立草稿時仍不會標 pre-release（同 rc1，尚未做）。
 - [x] **改：啟動時不再執行 `docker info`（2026-11-08，使用者要求只在按下 Docker 模式的一鍵執行時才查詢）**
   - 修改：新增 `ollama_setup.docker_installed()`（只用 `shutil.which`，不啟動程序）；`available("docker")`，也就是預設模式與選項旁的「找不到」提示，改用它。`docker_available()`（`docker info`，確認 daemon 有回應）只在按「執行」「檢查」「移除」時呼叫。上一筆的 30 秒快取因此移除，`CREATE_NO_WINDOW` 保留（按鈕時的 docker 呼叫仍不彈視窗）。
   - 取捨：Docker 已安裝但 daemon 沒開時，預設模式仍選 Docker，按「執行」才回報沒有 Docker。
