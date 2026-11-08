@@ -231,6 +231,9 @@
 
 ## 開發紀錄（最近）
 
+- [x] **修正：Windows 版啟動時彈出多個 cmd 視窗（2026-11-08，使用者回報）**
+  - 原因（依程式碼推斷，未在 Windows 實機重現）：FunscriptGen.exe 沒有主控台，它用 `subprocess` 啟動的主控台程式（`docker`、`git`）沒加 `CREATE_NO_WINDOW`，Windows 為每個子程序開一個新視窗。建立「設定」分頁時 `ollama_setup.available()` 被呼叫多次（預設模式、`ollama_mode_choices`，切換語言時又一次），每次都執行 `docker info`；裝了 git 的電腦在產生輸出時 `version.git_state()` 也會閃視窗。`ollama serve` 本來就有 `NO_WINDOW`。
+  - 修改：新增 `subproc.run`（Windows 加 `CREATE_NO_WINDOW`），`_docker` 與 `git_state` 改用它；`docker_available()` 的結果快取 30 秒，按「檢查」「執行」「移除」時用 `fresh=True` 重查。沒有改偵測與輸出，不需驗證分數。
 - [x] **評估：長鏡頭的後段沿用前一段的 AI 分析（區域、方向）（2026-11-08，使用者要求；結論：不採用，沒有改主程式）**
   - 做法：暫時加 `--chain-ai G`（分析階段）：接續前一段的分段（`continued`），若前一段最後一張關鍵幀與本段第一張關鍵幀的縮圖差（HSV 平均絕對差）≤ G，就不問 AI、直接用前一段所用的分析（整條鏈用第一段的）；`out/runs/chain1`，dev＋test 28 段 default。縮圖差在分段之間 0.5–25（硬切的中位數 30–80），所以試了 G ＝ 1000（一律沿用）、12、6。
   - 結果（F1／F1s／r／`F1u`；基準 `chunk0b/default` 0.830／0.799／0.567／0.842）：G 1000 為 0.817／0.792／0.542／0.837；G 12 為 0.818／0.794／0.551／0.837；G 6 為 0.820／0.790／0.552／0.840。逐點相同的素材 10／14／17 段。

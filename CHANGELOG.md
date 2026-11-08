@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — 修正 Windows 版啟動時彈出多個 cmd 視窗（commit: `Hide console windows of docker and git calls on Windows`）
+- 目的：Windows 版啟動時會閃出好幾個 cmd 視窗。
+- 修改：新增 `subproc.py`（Windows 上子程序不開主控台視窗），`docker`、`git` 的呼叫改用它；`docker info` 的結果快取 30 秒，不再每次建立畫面都重查。
+- 驗證：`uv run pytest` 全部通過；Windows 實機上視窗是否消失尚未驗證。
+
 ## 2026-11-08 — 記錄長鏡頭沿用前一段 AI 分析的評估（commit: `Record the chunk AI reuse evaluation in PLAN`）
 - 目的：使用者要求試「長鏡頭的後段沿用前一段的 AI 區域與方向」。
 - 修改：沒有改程式；PLAN 加評估紀錄與已放棄的方案。實驗用的選項與設定已移除。

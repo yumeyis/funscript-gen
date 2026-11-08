@@ -263,6 +263,7 @@ src/funscript_gen/
   cli.py              CLI 進入點
   webui.py            Gradio Web UI
   ollama_setup.py     一鍵執行 Ollama（Docker 容器或已安裝的 ollama serve、下載模型），供 Web UI「設定」分頁使用
+  subproc.py          執行 docker、git 等主控台程式（Windows 上不彈出主控台視窗）
   app.py              桌面模式（funscript-gen app）：本機的 Web UI，在 pywebview 視窗或瀏覽器中開啟，原生選檔對話框與拖放（檔案以路徑讀取，沒有上傳）
   paths.py            程式寫入的檔案位置（FUNSCRIPT_GEN_HOME）
   i18n.py             多語言：語言包的載入、`t()` 查表、語言選擇、範本與檢查

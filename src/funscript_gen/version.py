@@ -8,7 +8,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from funscript_gen import __version__
+from funscript_gen import __version__, subproc
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 BUILD_INFO = "build-info.json"  # {"commit", "dirty"} written by the Windows build, which has no git
@@ -28,7 +28,7 @@ def git_state(package_dir: Path = PACKAGE_DIR) -> dict | None:
     checkout; None otherwise (no git, a copy outside the repository, or a copy in an ignored folder such as out/)."""
 
     def git(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(["git", "-C", str(package_dir), *args], capture_output=True, text=True, timeout=10)
+        return subproc.run(["git", "-C", str(package_dir), *args], timeout=10)
 
     try:
         if git("ls-files", "--error-unmatch", "__init__.py").returncode != 0:
