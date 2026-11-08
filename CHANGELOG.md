@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-09 — 長影片少用約三成記憶體，與新素材失分的診斷（commit: `Use two malloc arenas to cut memory on long videos`）
+- 目的：1 小時影片的峰值記憶體 5.1 GB 且隨長度增長；研究新來源 F1 偏低的原因。
+- 修改：`__init__.py` 在 Linux 把 glibc 的 malloc arena 限為 2 個（1 小時影片 5.1 → 3.5 GB，速度與輸出不變）；新增離線腳本（微調光流場 CNN、失分拆解、光流神諭等）。
+- 驗證：`uv run pytest` 通過；1 小時影片輸出 10,101 個動作與修改前逐點相同；診斷與微調光流 CNN（不採用）見 PLAN。
+
 ## 2026-11-08 — 評估端到端微調影像模型當方向線索（commit: `Evaluate a fine-tuned image network as a direction cue`）
 - 目的：使用者同意試最後一個沒試過的方向：微調影像模型。
 - 修改：新增 `scripts/ft_motion.py`（裁切、標籤、訓練、評估）；程式沒有改。
