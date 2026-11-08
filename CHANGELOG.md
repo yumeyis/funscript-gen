@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## v1.1.0rc1 — 2026-11-08（預發布版）
+- Windows 版直接讀取本機檔案：「產生」「批次」「預覽」都可以拖放或選取檔案，不再上傳；預覽分頁新增開關，選了影片或 funscript 後自動帶入同資料夾同名的檔案。
+- Windows 版改用 PyInstaller 建置：解壓縮後約 3,200 個檔案（原本 28,000 多個），zip 約 240 MB；視窗先顯示載入頁，不必等伺服器啟動。
+- 偵測與輸出的程式碼沒有修改（只動到桌面版與 Web UI）。
+
 ## 2026-11-08 — Windows 版改用 PyInstaller 建置（commit: `Build the Windows version with PyInstaller only`）
 - 目的：PyInstaller 版在 Actions 上建置通過、桌面視窗也確認正常，取代附完整 Python 的建置（15,874 個檔案）。
 - 修改：`build-pyinstaller.ps1` 改名 `build.ps1`（取代舊的）；刪除 `launcher.cs`、`smoke_ui.py`；`smoke-test.ps1` 只支援這一種配置（`-Python` 必填）；`windows.yml` 拿掉 `builder` 選項；DEVELOPMENT、PLAN 同步。
