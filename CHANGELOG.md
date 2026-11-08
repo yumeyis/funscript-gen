@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — 記錄長鏡頭分段一致性的評估（commit: `Record the chunk consistency evaluation in PLAN`）
+- 目的：使用者說有些鏡頭其實相同卻被切成好幾段，想知道有沒有辦法讓它們一致。
+- 修改：沒有改程式；PLAN 加評估紀錄。實驗用的選項與設定已移除。
+- 驗證：28 段 default 平均 F1 0.830；相鄰分段共用節奏 0.828–0.829、共用行程大小 0.825，都不採用。
+
 ## 2026-11-08 — 記錄長鏡頭不分段的評估（commit: `Record the no-chunk evaluation in PLAN`）
 - 目的：使用者問長鏡頭為什麼預設每 20 秒切一段，並要求沒差多少就預設關閉。
 - 修改：沒有改程式；PLAN 加評估紀錄與已放棄的方案。實驗用的 `--max-chunk` 選項已移除。
