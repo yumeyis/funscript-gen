@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-08 — 網格區域搜尋的實驗（commit: `Record the grid region search experiment`）
+- 目的：依使用者選的方向，為無節奏的快行程鏡頭保留多個區域的光流，採用節奏最清楚的區域。
+- 修改：新增 `scripts/region_oracle.py`（離線）；PLAN 記錄結果；主程式未改（臨時的實驗程式碼已還原）。
+- 驗證：上限很高（依集中度挑的 |r| 中位數 0.74，使用的區域 0.42，機率水準 0.39），但新區域的方向只有一半和人工腳本同向；完整流程 dev2 F1 −0.009（`F1u` +0.026）、舊 28 段 −0.006、holdout2 −0.002，不採用。`uv run pytest` 通過。
+
 ## 2026-11-08 — 無節奏鏡頭改用 Hybrid 測量的實驗（commit: `Record the Hybrid measurement splice experiment`）
 - 目的：Hybrid 在 default 量不到動作的鏡頭上較好，檢查逐鏡頭選用它能不能提高整體分數。
 - 修改：新增 `scripts/splice_scenes.py`（離線）；PLAN 記錄結果；主程式未改（臨時的閘門實驗已還原）。
