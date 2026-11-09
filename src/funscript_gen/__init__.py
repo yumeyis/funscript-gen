@@ -28,4 +28,4 @@ if os.environ.get("FUNSCRIPT_GEN_HOME", "").strip():
     os.environ.setdefault("GRADIO_TEMP_DIR", str(data_home() / "tmp" / "gradio"))
     os.environ.setdefault("MPLCONFIGDIR", str(cache_dir("matplotlib")))
 
-__version__ = "1.1.0rc3"  # the only place the version is written; release rules in DEVELOPMENT.md
+__version__ = "1.1.0rc4"  # the only place the version is written; release rules in DEVELOPMENT.md
