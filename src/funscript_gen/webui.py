@@ -20,7 +20,7 @@ from funscript_gen.batch import VIDEO_SUFFIXES
 from funscript_gen.devices import DeviceError
 from funscript_gen.devices import check as check_devices
 from funscript_gen.export.funscript import Funscript
-from funscript_gen import i18n, ollama_setup
+from funscript_gen import i18n, multiaxis, ollama_setup
 from funscript_gen.i18n import L, Late, column_headers, t
 from funscript_gen.outputs import DEFAULT_CONFIG as DEFAULT_CLEANUP_FILE
 from funscript_gen.outputs import OutputStore, beside_video, human_size, replaceable
@@ -32,7 +32,7 @@ from funscript_gen.options import build as build_options
 from funscript_gen.pipeline import (
     PipelineOptions, PipelineResult, flipped_scenes, generate, refinalize, render, toggle_flip,
 )
-from funscript_gen.preview import iframe, player_html, scene_regions
+from funscript_gen.preview import AXIS_STRIP_PX, axes_viewer_html, iframe, player_html, scene_regions, viewer_height
 from funscript_gen.report import FLIP_COLUMN
 from funscript_gen.video.decoder import probe
 from funscript_gen.video.scenes import FrameDiffs, cut_strength, frame_diffs, split_scenes
@@ -327,7 +327,8 @@ def ask_clear(show: bool):
 LOCAL_FILES = False
 # Whether the app opens a window with a native file dialog (known before the page is built; the window comes later).
 NATIVE_DIALOGS = False
-# The app's native file dialog: pick_files(kind) with kind "video", "videos", "script" or "folder" returns the paths.
+# The app's native file dialog: pick_files(kind) with kind "video", "videos", "script", "scripts" or "folder" returns
+# the paths.
 pick_files = None
 def video_file_types() -> tuple[str, str]:
     return (t("web.file_types.video", types=";".join(f"*{s}" for s in sorted(VIDEO_SUFFIXES))),
@@ -384,7 +385,7 @@ def local_videos(text: str | None) -> list[Path]:
 
 
 # The boxes of local paths, by the zone that drops and 選擇… buttons name them (the order of box_updates).
-BOXES = ("gen-video", "gen-ref", "batch", "pv-video", "pv-script", "pv-ref")
+BOXES = ("gen-video", "gen-ref", "batch", "pv-video", "pv-script", "pv-ref", "pv-axes", "tool-in", "tool-out")
 SCRIPT_SUFFIXES = {".funscript", ".json"}
 
 
@@ -409,6 +410,25 @@ def sibling(path: Path, kind: str) -> Path | None:
                default=None)
 
 
+def pick_scripts(scripts: list[Path], video: Path | None = None, auto: bool = False) -> tuple[Path | None, list[Path], int]:
+    """(the main script, its axis files, how many files `auto` brought in) among scripts given together: the main
+    script is the one named like the video, else the first without an axis in its name; the axis files are the ones
+    of its name (the files beside them too with `auto`, see multiaxis.expand). A single axis file is a script as it is."""
+    full = multiaxis.expand(scripts) if auto else list(scripts)
+    def axis_of(f: Path) -> str | None:
+        return multiaxis.split_name(f)[1]
+
+    mains = [f for f in full if axis_of(f) is None]
+    axes = [f for f in full if axis_of(f) is not None]
+    main = next((f for f in mains if video and f.stem == video.stem), mains[0] if mains else None)
+    if main is None:
+        return (axes[0], [], 0) if axes else (None, [], 0)
+    if len(mains) > 1:  # several scripts: the axes of the one chosen
+        axes = [f for f in axes if multiaxis.split_name(f)[0].casefold() == main.stem.casefold()]
+    axes.sort(key=lambda f: multiaxis.AXIS_IDS.index(axis_of(f)))  # in the order of the axes, whatever came first
+    return main, axes, len(full) - len(scripts)
+
+
 def dropped(zone: str, paths, batch_text: str = "", auto: bool = False) -> tuple[dict[str, str], str, bool]:
     """What files given for `zone` (dropped on it, or chosen by its 選擇… button or typed in its box) change:
     ({box: its new text}, a note, whether anything was taken). The 預覽 tab takes a video and a script from any of its
@@ -425,6 +445,17 @@ def dropped(zone: str, paths, batch_text: str = "", auto: bool = False) -> tuple
         lines = [line for line in batch_text.splitlines() if line.strip()]
         lines += [str(f) for f in take if str(f) not in lines]
         return ({"batch": "\n".join(lines)}, "", True) if take else ({}, t("web.drop.not_videos"), False)
+    if zone == "tool-in":  # the files of the 工具 tab replace what was there; with `auto` the rest of each script comes too
+        take = [f for f in files if f.is_file() and is_script(f)]
+        if not take:
+            return {}, t("web.drop.not_script"), False
+        take = multiaxis.expand(take) if auto else take
+        return {"tool-in": "\n".join(str(f) for f in take)}, "", True
+    if zone == "tool-out":
+        folders = [f for f in files if f.is_dir()]
+        return ({"tool-out": str(folders[0])}, "", True) if folders else ({}, t("web.drop.not_folder"), False)
+    if zone == "pv-axes":
+        return ({"pv-axes": "\n".join(str(f) for f in scripts)}, "", True) if scripts else ({}, t("web.drop.not_script"), False)
     if zone == "gen-video":
         return ({"gen-video": str(videos[0])}, "", True) if videos else ({}, t("web.drop.not_video"), False)
     if zone in ("gen-ref", "pv-ref"):
@@ -433,7 +464,7 @@ def dropped(zone: str, paths, batch_text: str = "", auto: bool = False) -> tuple
     if not videos and not scripts:
         return {}, t("web.drop.not_video_or_script"), False
     video = videos[0] if videos else None
-    script = next((s for s in scripts if video and s.stem == video.stem), scripts[0] if scripts else None)
+    script, axes, _ = pick_scripts(scripts, video)
     note = ""
     if video and script:
         note = t("web.pv.picked_both", video=video.name, script=script.name)
@@ -449,11 +480,16 @@ def dropped(zone: str, paths, batch_text: str = "", auto: bool = False) -> tuple
         video = sibling(script, "video")
         note = (t("web.pv.auto_video", video=video.name) if video
                 else t("web.pv.auto_no_video", script=script.name))
+    if auto and script:  # the axis files beside the script (also those of a script that came in as the video's)
+        script, axes, brought = pick_scripts([script, *axes], video, True)
+        if brought:
+            note += t("sep.note") + t("web.pv.auto_axes", n=brought)
     out = {}
     if video:
         out["pv-video"] = str(video)
     if script:
         out["pv-script"] = str(script)
+        out["pv-axes"] = "\n".join(str(f) for f in axes)  # the axes of the script before do not belong to this one
     return out, note, True
 
 
@@ -468,14 +504,14 @@ def box_updates(changes: dict[str, str], note: str = "", ok: bool = True) -> lis
 
 
 def choose(zone: str, kind: str, batch_text: str = "", auto: bool = False):
-    """A 選擇… button: the native dialog (kind "video", "videos", "script" or "folder"), then as if dropped."""
+    """A 選擇… button: the native dialog (kind "video", "videos", "script", "scripts" or "folder"), then as if dropped."""
     if pick_files is None:
         raise gr.Error(t("web.err.no_dialog"))
     chosen = pick_files(kind)
     return box_updates(*dropped(zone, chosen, batch_text, auto)) if chosen else box_updates({})
 
 
-def drop_arrived(payload: str | None, batch_text: str = "", auto: bool = False):
+def drop_arrived(payload: str | None, batch_text: str = "", auto: bool = False, tool_auto: bool = False):
     """Files dropped on the window: the page's script (UI_JS) puts {"zone", "paths", "n"} in the hidden box."""
     try:
         data = json.loads(payload or "")
@@ -484,7 +520,7 @@ def drop_arrived(payload: str | None, batch_text: str = "", auto: bool = False):
         return box_updates({})
     if zone not in BOXES:
         return box_updates({})
-    return box_updates(*dropped(zone, paths, batch_text, auto))
+    return box_updates(*dropped(zone, paths, batch_text, tool_auto if zone.startswith("tool-") else auto))
 
 
 def typed(zone: str, text: str, batch_text: str = "", auto: bool = False):
@@ -591,13 +627,14 @@ def register_media(path: str | Path) -> str:
 
 def preview(video: Path, script: Funscript, reference: Funscript | None = None, scene_list=None,
             start_ms: float = 0.0, play: bool = False, checks: list[int] | None = None,
-            regions: dict[int, dict] | None = None) -> str:
+            regions: dict[int, dict] | None = None, axes: dict[str, Funscript] | None = None) -> str:
     try:
         fps = probe(video).fps
     except Exception:  # noqa: BLE001 - only used for frame stepping
         fps = 30.0
     return iframe(player_html(register_media(video), script, reference, fps=fps, scene_list=scene_list,
-                              start_ms=start_ms, play=play, checks=checks, regions=regions))
+                              start_ms=start_ms, play=play, checks=checks, regions=regions, axes=axes),
+                  height=880 + AXIS_STRIP_PX * len(axes or {}))
 
 
 # The 反轉 / 儲存編輯 buttons under the players read where the video is, and the actions edited in the player
@@ -658,6 +695,7 @@ class PreviewJob:
     diffs: FrameDiffs | None = None  # kept to split the scenes again at another threshold without decoding
     threshold: float = 30.0
     continued: list[bool] = field(default_factory=list)  # per scene: a chunk of a long shot, not a cut
+    axes: dict[str, Funscript] = field(default_factory=dict)  # the other axes of a multi-axis script, shown only
 
     def scene_list(self) -> list[tuple[float, int, bool]]:
         return [(s, k, k in self.flipped) for k, s in enumerate(self.starts)]
@@ -709,6 +747,8 @@ def preview_summary(job: PreviewJob) -> str:
         lo, hi = max(5.0, round(job.threshold * 0.8)), round(job.threshold * 1.25)
         lines.append(t("web.pv.summary_steps", lo=format(lo, "g"), n_lo=len(split_scenes(job.diffs, lo)),
                        hi=format(hi, "g"), n_hi=len(split_scenes(job.diffs, hi))))
+    if job.axes:
+        lines.append(t("web.pv.axes_loaded", n=len(job.axes), axes=t("sep.list").join(job.axes)))
     return "".join(lines)
 
 
@@ -731,30 +771,33 @@ def _paths(value) -> list[Path]:
     return [Path(value)] if isinstance(value, (str, Path)) else [Path(v) for v in value]
 
 
-def pair_files(files: list[Path]) -> tuple[Path | None, Path | None]:
-    """The video and the script among files picked together; a script named like the video is preferred."""
-    videos = [p for p in files if p.suffix.lower() not in SCRIPT_SUFFIXES]
-    scripts = [p for p in files if p.suffix.lower() in SCRIPT_SUFFIXES]
+def pair_files(files: list[Path]) -> tuple[Path | None, list[Path]]:
+    """The video and the scripts among files picked together: the main script first (the one named like the video is
+    preferred), then its axis files."""
+    videos = [p for p in files if not is_script(p)]
     video = videos[0] if videos else None
-    script = next((s for s in scripts if video and s.stem == video.stem), scripts[0] if scripts else None)
-    return video, script
+    main, axes, _ = pick_scripts([p for p in files if is_script(p)], video)
+    return video, [main, *axes] if main else []
 
 
 def preview_video_uploaded(picked):
-    """預覽 tab: the video box takes several files, so a video and its script picked together (the browser does not
-    say which folder a file came from) go to their own boxes. A video alone stays as it is."""
+    """預覽 tab: the video box takes several files, so a video and its script (and the axis files of a multi-axis
+    script) picked together (the browser does not say which folder a file came from) go to their own boxes. A video
+    alone stays as it is."""
     files = _paths(picked)
-    if len(files) <= 1 and not any(p.suffix.lower() in SCRIPT_SUFFIXES for p in files):
+    if len(files) <= 1 and not any(is_script(p) for p in files):
         return gr.update(), gr.update(), gr.update()
-    video, script = pair_files(files)
-    if video and script:
-        msg = t("web.pv.picked_both", video=video.name, script=script.name)
-    elif script:
-        msg = t("web.pv.picked_script", script=script.name)
+    video, scripts = pair_files(files)
+    if video and scripts:
+        msg = t("web.pv.picked_both", video=video.name, script=scripts[0].name)
+    elif scripts:
+        msg = t("web.pv.picked_script", script=scripts[0].name)
     else:
         msg = t("web.pv.picked_one", video=video.name)
-    return (gr.update(value=[str(video)] if video else None), gr.update(value=str(script)) if script else gr.update(),
-            msg)
+    if len(scripts) > 1:
+        msg += t("sep.note") + t("web.pv.picked_axes", n=len(scripts) - 1)
+    return (gr.update(value=[str(video)] if video else None),
+            gr.update(value=[str(f) for f in scripts]) if scripts else gr.update(), msg)
 
 
 _pv_cancel = threading.Event()  # set by the 取消載入 button; the loading preview stops at its next frame
@@ -765,18 +808,47 @@ def preview_cancel() -> str:
     return t("web.pv.cancel_requested", time=time.strftime('%H:%M:%S'))
 
 
+def local_scripts(text: str | None) -> list[Path]:
+    """The 預覽 tab's box of axis files: one funscript per line."""
+    lines = [clean_path(line) for line in (text or "").splitlines() if clean_path(line)]
+    if lines and not LOCAL_FILES:
+        raise gr.Error(t("web.err.no_local_paths"))
+    out = []
+    for line in lines:
+        script = Path(line).expanduser()
+        if not script.is_file():
+            raise gr.Error(t("web.err.script_not_found", script=script))
+        out.append(script)
+    return out
+
+
+def main_and_axes(files: list[Path]) -> tuple[Path, list[Path]]:
+    """The scripts of the 預覽 tab: the main script (a file whose name names no axis; a single file is the main one
+    whatever its name) and the axis files."""
+    mains = [f for f in files if multiaxis.split_name(f)[1] is None]
+    if mains:
+        return mains[0], [f for f in files if f not in mains]
+    if len(files) == 1:
+        return files[0], []
+    raise gr.Error(t("web.err.need_main_script"))
+
+
 def preview_files(video_path, script_file, reference_file, use_reference=False, scene_threshold=30.0,
-                  progress=gr.Progress(), split_scenes_on=True):
+                  axes_files=None, progress=gr.Progress(), split_scenes_on=True):
     if LOCAL_FILES:  # the boxes hold paths
         video_path, script_file = local_video(video_path), local_script(script_file)
         reference_file = local_script(reference_file) if use_reference else None
+        axes_files = local_scripts(axes_files)
     video_path = next(iter(_paths(video_path)), None)  # the video box takes several files
     if not video_path:
         raise gr.Error(t("web.err.need_video"))
-    if not script_file:
+    scripts = [*_paths(script_file), *_paths(axes_files)]  # the script box takes the axis files of a script too
+    if not scripts:
         raise gr.Error(t("web.err.need_script"))
+    script_file, axis_files = main_and_axes(scripts)
     try:
         script = Funscript.load(script_file)
+        axes = multiaxis.load_separate(script_file, axis_files).funscripts()[1]
         reference = Funscript.load(reference_file) if use_reference and reference_file else None
     except Exception as e:  # noqa: BLE001
         raise gr.Error(t("web.err.script_unreadable", e=e))
@@ -803,17 +875,18 @@ def preview_files(video_path, script_file, reference_file, use_reference=False, 
         raise gr.Error(t("web.err.video_unreadable", e=e))
     pos = [a.pos for a in script.actions] or [0, 100]
     job = PreviewJob(video, script, reference, [], [], min(pos), max(pos), output_stem(Path(script_file).stem),
-                     diffs=diffs)
+                     diffs=diffs, axes=axes)
     if diffs is not None:
         job.split(float(scene_threshold))
     else:  # no scene detection: the whole video is one scene
         job.starts, job.ends, job.continued = [0.0], [duration], [False]
-    return (preview(video, script, reference, job.scene_list()), job, gr.update(value=None), preview_summary(job),
+    return (preview(video, script, reference, job.scene_list(), axes=axes), job, gr.update(value=None), preview_summary(job),
             preview_table(job))
 
 
-def preview_files_whole(video_path, script_file, reference_file, use_reference=False, scene_threshold=30.0):
-    return preview_files(video_path, script_file, reference_file, use_reference, scene_threshold,
+def preview_files_whole(video_path, script_file, reference_file, use_reference=False, scene_threshold=30.0,
+                        axes_files=None):
+    return preview_files(video_path, script_file, reference_file, use_reference, scene_threshold, axes_files,
                          split_scenes_on=False)
 
 
@@ -830,7 +903,7 @@ def preview_rescene(job: PreviewJob | None, threshold: float, t_ms: float, play:
         job.script.save(_preview_out(job))
     job.split(float(threshold))
     msg = preview_summary(job) + (t("web.pv.saved_first") if acts is not None else "")
-    return (preview(job.video, job.script, job.reference, job.scene_list(), max(0.0, t_ms), play), job,
+    return (preview(job.video, job.script, job.reference, job.scene_list(), max(0.0, t_ms), play, axes=job.axes), job,
             str(job.out_path) if job.out_path else gr.update(), msg, preview_table(job))
 
 
@@ -851,7 +924,7 @@ def preview_save(job: PreviewJob | None, t_ms: float, play: bool, edits: str = "
         return gr.update(), job, gr.update(), t("web.msg.no_edits"), gr.update()
     job.script = hand_edited(job.script, acts)
     job.script.save(_preview_out(job))
-    return (preview(job.video, job.script, job.reference, job.scene_list(), t_ms, play), job, str(job.out_path),
+    return (preview(job.video, job.script, job.reference, job.scene_list(), t_ms, play, axes=job.axes), job, str(job.out_path),
             t("web.pv.saved_edits", n=len(acts)), preview_table(job))
 
 
@@ -883,8 +956,110 @@ def _preview_flip_scene(job: PreviewJob, k: int, t_ms: float, play: bool, edits:
     msg = t("web.flipped_scene" if k in job.flipped else "web.unflipped_scene", k=k,
             start=format(job.starts[k] / 1000, ".1f"), end=format(end / 1000, ".1f"),
             flips=", ".join(map(str, sorted(job.flipped))) or t("web.none"))
-    return (preview(job.video, job.script, job.reference, job.scene_list(), t_ms, play), job, str(job.out_path), msg,
+    return (preview(job.video, job.script, job.reference, job.scene_list(), t_ms, play, axes=job.axes), job, str(job.out_path), msg,
             preview_table(job))
+
+
+# --- 工具 tab: merge the axis files of a multi-axis script into one file, or split such a file ----------------------
+
+# Column ids (English, stable); the headers shown are web.tcol.* in the language pack.
+TOOL_COLUMNS = ["script", "axis", "name", "actions", "length (s)"]
+
+
+def tool_headers() -> list[str]:
+    return column_headers(TOOL_COLUMNS, "web.tcol")
+
+
+def tool_paths(files) -> list[Path]:
+    """The files of the 工具 tab: the lines of its path box (the desktop app), or the uploads."""
+    if LOCAL_FILES:
+        return [Path(clean_path(line)).expanduser() for line in (files or "").splitlines() if clean_path(line)]
+    return _paths(files)
+
+
+def tool_rows(plan: multiaxis.Plan) -> list[list]:
+    """The tools table: one row per axis of every script in the plan."""
+    rows = []
+    for s in plan.sets:
+        for axis, actions in [(multiaxis.MAIN_AXIS, s.actions), *s.ordered()]:
+            last = max((a["at"] for a in actions if isinstance(a, dict) and isinstance(a.get("at"), (int, float))),
+                       default=0)
+            rows.append([s.name, axis, t(f"axis.{axis}"), len(actions), round(last / 1000, 1)])
+    return rows
+
+
+def tool_problem(code: str, name: str) -> str:
+    if code == "unreadable":
+        file, _, why = name.partition("\t")
+        return t("web.tool.problem.unreadable", file=file, why=why)
+    return t(f"web.tool.problem.{code}", name=name)
+
+
+def tool_message(plan: multiaxis.Plan | None, missing: list[Path] | None = None) -> str:
+    """What the 工具 tab found in the files, and what can be done with them."""
+    lines = []
+    if missing:
+        lines.append(t("web.err.not_found", names=t("sep.list").join(str(f) for f in missing)))
+    if plan is not None:
+        if plan.kind == "merge":
+            lines.append(t("web.tool.detected_merge", n=len(plan.sets), axes=sum(len(s.axes) for s in plan.sets)))
+        elif plan.kind == "split":
+            lines.append(t("web.tool.detected_split", n=len(plan.sets), axes=sum(len(s.axes) for s in plan.sets)))
+        elif plan.kind == "single":
+            lines.append(t("web.tool.detected_single"))
+        else:
+            lines.append(t("web.tool.detected_none"))
+        lines += [tool_problem(code, name) for code, name in plan.problems]
+    return "\n\n".join(f"- {line}" if k else line for k, line in enumerate(lines))
+
+
+def tool_inspect(files):
+    """The 工具 tab, when its files change: tell which kind they are, show them in a table and in the viewer, and
+    show the button that fits (合併 for the axis files of a script, 分割 for a file with all its axes).
+    Returns the plan (kept for the button), message, table, viewer, merge button, split button."""
+    paths = tool_paths(files)
+    hide = gr.update(visible=False)
+    if not paths:
+        return None, "", gr.update(value=[], headers=tool_headers()), "", hide, hide
+    missing = [f for f in paths if not f.is_file()]
+    plan = multiaxis.classify([f for f in paths if f.is_file()])
+    viewer = iframe(axes_viewer_html(plan.sets), height=viewer_height(plan.sets)) if plan.sets else ""
+    return (plan, tool_message(plan, missing), gr.update(value=tool_rows(plan), headers=tool_headers()), viewer,
+            gr.update(visible=plan.kind == "merge"), gr.update(visible=plan.kind == "split"))
+
+
+def tool_where_changed(where: str):
+    """The 工具 tab's 輸出方式: the folder to save in is asked for when saving elsewhere, what to do with the
+    originals when writing beside them."""
+    return gr.update(visible=where == "elsewhere"), gr.update(visible=where == "beside")
+
+
+def tool_run(plan: multiaxis.Plan | None, where: str = "beside", folder: str = "", keep: str = "backup"):
+    """The 工具 tab's 合併 / 分割 button: write the files of the plan. The desktop app writes beside the originals
+    (`where` "beside"; an existing file is renamed to name.backup when `keep` is "backup", else replaced) or into a
+    folder (an existing file is always kept as a backup); the web server, which has no original place to write to,
+    puts them in its output folder to download. Returns the message and the files."""
+    if plan is None or plan.kind not in ("merge", "split"):
+        raise gr.Error(t("web.tool.nothing"))
+    target, backup = None, False
+    if LOCAL_FILES:
+        if where == "elsewhere":
+            if not clean_path(folder):
+                raise gr.Error(t("web.tool.need_folder"))
+            target, backup = Path(clean_path(folder)).expanduser(), True
+        else:
+            backup = keep != "overwrite"
+    else:
+        target = OUTPUT_DIR / time.strftime("%Y%m%d-%H%M%S")
+    try:
+        written = multiaxis.write_plan(plan, target, backup)
+    except (OSError, ValueError) as e:
+        raise gr.Error(t("web.tool.write_failed", e=e))
+    lines = [t("web.tool.done_" + plan.kind, n=len(written))]
+    lines += [f"`{w.path}`" + (t("web.tool.backup_of", backup=w.backup.name) if w.backup else "") for w in written]
+    if plan.kind == "merge":
+        lines.append(t("web.tool.axes_stay"))
+    return "\n\n".join(f"- {line}" if 0 < k <= len(written) else line for k, line in enumerate(lines)), [str(w.path) for w in written]
 
 
 @dataclass
@@ -1475,6 +1650,9 @@ def build() -> gr.Blocks:
                     _, pv_script, (pv_script_pick,) = path_row(
                         "pv-script", "web.pv.script_local", {"script": "web.pick_script"},
                         placeholder="web.gen.local_script_placeholder", elem_id="pv-script")
+                    _, pv_axes, (pv_axes_pick,) = path_row(
+                        "pv-axes", "web.pv.axes_local", {"scripts": "web.tool.pick_scripts"},
+                        info="web.pv.axes_info", lines=2, elem_id="pv-axes")
                     pv_ref_ctl, pv_ref, (pv_ref_pick,) = path_row(
                         "pv-ref", "web.pv.reference", {"script": "web.pick"},
                         placeholder="web.gen.local_script_placeholder", visible=False)
@@ -1482,8 +1660,10 @@ def build() -> gr.Blocks:
                     with gr.Row():
                         pv_video = ui(gr.File, label=L("web.pv.video"), file_count="multiple",
                                            file_types=["video", *SCRIPT_SUFFIXES], type="filepath", elem_id="pv-video")
-                        pv_script = gr.File(label="funscript", file_types=[".funscript", ".json"], type="filepath",
-                                            elem_id="pv-script")
+                        pv_script = ui(gr.File, label=L("web.pv.script"), file_count="multiple",
+                                       file_types=[".funscript", ".json"], type="filepath", elem_id="pv-script")
+                    pv_axes = gr.State(None)
+                    with gr.Row():
                         pv_ref = pv_ref_ctl = ui(gr.File, label=L("web.pv.reference"),
                                                  file_types=[".funscript", ".json"], type="filepath", visible=False)
                 with gr.Row(equal_height=True):
@@ -1506,6 +1686,40 @@ def build() -> gr.Blocks:
                 pv_t = gr.Number(visible=False)
                 pv_play = gr.Checkbox(visible=False)
                 pv_edits = gr.Textbox(visible=False)
+
+            with ui(gr.Tab, label=L("web.tab.tools"), id="tools"):
+                ui(gr.Markdown, value=L("web.tool.intro"))
+                if LOCAL_FILES:
+                    tool_auto = ui(gr.Checkbox, label=L("web.tool.auto"), value=True, info=L("web.tool.auto_info"))
+                    _, tool_in, (tool_in_pick,) = path_row(
+                        "tool-in", "web.tool.files_local", {"scripts": "web.tool.pick_scripts"},
+                        info="web.tool.files_info", lines=4, elem_id="tool-in")
+                else:
+                    tool_auto = gr.State(False)
+                    tool_in = ui(gr.File, label=L("web.tool.files"), file_count="multiple",
+                                 file_types=[".funscript", ".json"], type="filepath", elem_id="tool-in")
+                tool_msg = gr.Markdown()
+                tool_table = ui(gr.Dataframe, headers=Late(tool_headers), label=L("web.tool.table"),
+                                interactive=False, wrap=True)
+                tool_view = gr.HTML(elem_id="tool-view")
+                if LOCAL_FILES:
+                    tool_where = ui(gr.Radio, value="beside", label=L("web.tool.where"), info=L("web.tool.where_info"),
+                                    choices=Late(lambda: [(t("web.tool.where_beside"), "beside"),
+                                                          (t("web.tool.where_elsewhere"), "elsewhere")]))
+                    tool_keep = ui(gr.Radio, value="backup", label=L("web.tool.keep"), info=L("web.tool.keep_info"),
+                                   choices=Late(lambda: [(t("web.tool.keep_backup"), "backup"),
+                                                         (t("web.tool.keep_overwrite"), "overwrite")]))
+                    tool_out_row, tool_out, (tool_out_pick,) = path_row(
+                        "tool-out", "web.tool.folder", {"folder": "web.tool.pick_folder"},
+                        info="web.tool.folder_info", visible=False, elem_id="tool-out")
+                else:
+                    tool_where, tool_keep, tool_out = gr.State("beside"), gr.State("backup"), gr.State("")
+                with gr.Row():
+                    tool_merge = ui(gr.Button, value=L("web.tool.merge"), variant="primary", scale=0, visible=False)
+                    tool_split = ui(gr.Button, value=L("web.tool.split"), variant="primary", scale=0, visible=False)
+                tool_result = gr.Markdown()
+                tool_files = ui(gr.File, label=L("web.tool.out"), file_count="multiple")
+                tool_plan = gr.State()
 
             with ui(gr.Tab, label=L("web.tab.output")) as out_tab:
                 ui(gr.Markdown, value=L("web.out.intro"))
@@ -1673,18 +1887,20 @@ def build() -> gr.Blocks:
         batch_open.click(open_batch_job, inputs=[batch_jobs, batch_pick],
                          outputs=[output_file, summary, plot, scenes, player, job, flip_msg, video, video_local, tabs])
         if LOCAL_FILES:
-            drops = [video_local, reference, batch_local, pv_video, pv_script, pv_ref, pv_msg]
-            context = [batch_local, pv_auto]
+            drops = [video_local, reference, batch_local, pv_video, pv_script, pv_ref, pv_axes, tool_in, tool_out, pv_msg]
+            context = [batch_local, pv_auto, tool_auto]
             inbox.change(drop_arrived, inputs=[inbox, *context], outputs=drops)
             for zone, kind, button in (
                     ("gen-video", "video", video_pick), ("gen-ref", "script", reference_pick),
                     ("batch", "videos", batch_add_files), ("batch", "folder", batch_add_folder),
                     ("pv-video", "video", pv_video_pick), ("pv-script", "script", pv_script_pick),
-                    ("pv-ref", "script", pv_ref_pick)):
-                button.click(lambda text, auto, zone=zone, kind=kind: choose(zone, kind, text, auto),
+                    ("pv-axes", "scripts", pv_axes_pick), ("pv-ref", "script", pv_ref_pick),
+                    ("tool-in", "scripts", tool_in_pick), ("tool-out", "folder", tool_out_pick)):
+                button.click(lambda text, auto, tool_auto, zone=zone, kind=kind:
+                             choose(zone, kind, text, tool_auto if zone.startswith("tool-") else auto),
                              inputs=context, outputs=drops)
             for zone, box in (("pv-video", pv_video), ("pv-script", pv_script)):
-                box.submit(lambda text, batch, auto, zone=zone: typed(zone, text, batch, auto),
+                box.submit(lambda text, batch, auto, tool_auto, zone=zone: typed(zone, text, batch, auto),
                            inputs=[box, *context], outputs=drops)
         else:
             video.upload(lambda: "", outputs=video_local, queue=False)
@@ -1697,13 +1913,20 @@ def build() -> gr.Blocks:
                        js=_PLAYER_TIME_JS.format(id="gen-player"))
         save_btn.click(save_edits, inputs=[job, cur_t, cur_play, cur_edits], outputs=flipped,
                        js=_PLAYER_TIME_JS.format(id="gen-player"))
+        tool_inspected = [tool_plan, tool_msg, tool_table, tool_view, tool_merge, tool_split]
+        tool_in.change(tool_inspect, inputs=tool_in, outputs=tool_inspected)
+        if LOCAL_FILES:
+            tool_where.change(tool_where_changed, inputs=tool_where, outputs=[tool_out_row, tool_keep], queue=False)
+        for button in (tool_merge, tool_split):
+            button.click(tool_run, inputs=[tool_plan, tool_where, tool_out, tool_keep],
+                         outputs=[tool_result, tool_files]).success(tool_inspect, inputs=tool_in, outputs=tool_inspected)
         pv_outputs = [pv_player, pv_job, pv_out, pv_msg, pv_scenes]
         pv_js = _PLAYER_TIME_JS.format(id="pv-player")
         if not LOCAL_FILES:
             pv_video.upload(preview_video_uploaded, inputs=pv_video, outputs=[pv_video, pv_script, pv_msg])
-        pv_btn.click(preview_files, inputs=[pv_video, pv_script, pv_ref, use_reference, pv_threshold],
+        pv_btn.click(preview_files, inputs=[pv_video, pv_script, pv_ref, use_reference, pv_threshold, pv_axes],
                      outputs=pv_outputs)
-        pv_whole.click(preview_files_whole, inputs=[pv_video, pv_script, pv_ref, use_reference, pv_threshold],
+        pv_whole.click(preview_files_whole, inputs=[pv_video, pv_script, pv_ref, use_reference, pv_threshold, pv_axes],
                        outputs=pv_outputs)
         pv_cancel.click(preview_cancel, outputs=pv_msg, queue=False)
         # The threshold goes between the job and the player's values: the JS passes the extra inputs through.

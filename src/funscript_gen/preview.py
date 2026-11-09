@@ -11,6 +11,9 @@ import re
 
 from funscript_gen import i18n
 from funscript_gen.export.funscript import Funscript
+from funscript_gen.multiaxis import MAIN_AXIS
+
+AXIS_STRIP_PX = 62  # what one axis strip adds to the player: its canvas (58 px) and the gap
 
 _PLAYER = r"""<!doctype html>
 <html lang="__LANG__">
@@ -21,12 +24,12 @@ _PLAYER = r"""<!doctype html>
 <style>
 :root {
   --bg: #ffffff; --panel: #f4f4f5; --text: #18181b; --muted: #71717a; --grid: #d4d4d8;
-  --line: #ea580c; --ref: #52525b; --cursor: #dc2626; --scene: #a1a1aa; --fill: #ea580c;
+  --line: #ea580c; --axis: #2563eb; --ref: #52525b; --cursor: #dc2626; --scene: #a1a1aa; --fill: #ea580c;
   --check: rgba(234, 179, 8, .22); --checkline: #ca8a04;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #0b0f19; --panel: #1f2937; --text: #e5e7eb; --muted: #9ca3af; --grid: #374151;
-          --line: #fb923c; --ref: #9ca3af; --cursor: #f87171; --scene: #6b7280; --fill: #fb923c;
+          --line: #fb923c; --axis: #60a5fa; --ref: #9ca3af; --cursor: #f87171; --scene: #6b7280; --fill: #fb923c;
           --check: rgba(250, 204, 21, .18); --checkline: #facc15; }
 }
 * { box-sizing: border-box; }
@@ -34,7 +37,7 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 syst
 #wrap { display: flex; flex-direction: column; gap: 6px; padding: 6px; }
 #top { display: flex; gap: 6px; align-items: stretch; }
 #vwrap { flex: 1; min-width: 0; position: relative; display: flex; }
-#video { width: 100%; max-height: calc(100vh - 380px); background: #000; border-radius: 6px; }
+#video { width: 100%; max-height: calc(100vh - 380px - __AXH__px);  /* the iframe grows with the axis strips: the video does not */ background: #000; border-radius: 6px; }
 #roi { position: absolute; pointer-events: none; display: none; background: none; border-radius: 0; }  /* over the video */
 #bar { width: 56px; background: var(--panel); border-radius: 6px; position: relative; overflow: hidden; }
 #barfill { position: absolute; left: 0; right: 0; bottom: 0; background: var(--fill); opacity: .85; }
@@ -43,6 +46,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 syst
           font-variant-numeric: tabular-nums; mix-blend-mode: difference; color: #fff; }
 canvas { width: 100%; display: block; background: var(--panel); border-radius: 6px; cursor: pointer; }
 #timeline { height: 190px; }
+#axes { display: flex; flex-direction: column; gap: 4px; }
+canvas.axis { height: 58px; }
 #overview { height: 34px; }
 #info { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
 #info b { color: var(--text); font-weight: 600; }
@@ -71,6 +76,7 @@ body.editing #bar { cursor: ns-resize; }
   </div>
   <div id="err">@@preview.err@@</div>
   <canvas id="timeline" title="@@preview.timeline_title@@"></canvas>
+  <div id="axes">__AXES__</div>
   <canvas id="overview" title="@@preview.overview_title@@"></canvas>
   <div id="info">
     <span>@@preview.time@@ <b id="itime">0:00.000</b></span>
@@ -116,11 +122,12 @@ body.editing #bar { cursor: ns-resize; }
 const DATA = __DATA__;
 const I18N = __I18N__;  // the language pack's preview.js.* texts
 function T(key, p) { let s = I18N[key] || key; for (const k in p || {}) s = s.split("{" + k + "}").join(p[k]); return s; }
-const acts = DATA.actions, ref = DATA.reference, scenes = DATA.scenes, sceneList = DATA.scene_list;
+const acts = DATA.actions, axes = DATA.axes, ref = DATA.reference, scenes = DATA.scenes, sceneList = DATA.scene_list;
 const checks = sceneList.filter(x => x.check && !x.flipped);  // possibly upside down, not flipped since
 const hasRegions = sceneList.some(x => x.region);
 const video = document.getElementById("video");
 const tl = document.getElementById("timeline"), ov = document.getElementById("overview");
+const axCanvas = Array.from(document.querySelectorAll("canvas.axis"));
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let windowS = 10;
 
@@ -219,6 +226,7 @@ function drawTimeline(t) {
     g.beginPath(); g.moveTo(x(s), h - 10); g.lineTo(x(s), h); g.stroke();
     g.fillText(fmt(s).replace(/\.\d+$/, ""), x(s) + 2, h - 2);
   }
+  if (axes.length) { g.fillStyle = css("--text"); g.font = "600 11px system-ui"; g.fillText(DATA.main_label, 30, 12); }
   g.fillStyle = css("--check");
   for (const s of checks) { const a = x(s.at), b = x(sceneEnd(s)); if (b > 0 && a < w) g.fillRect(a, 0, b - a, h); }
   g.setLineDash([4, 4]); g.strokeStyle = css("--scene");
@@ -241,6 +249,28 @@ function drawTimeline(t) {
   }
   g.strokeStyle = css("--cursor"); g.lineWidth = 2;
   g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.stroke();
+}
+
+// The other axes of a multi-axis script: one strip each under the timeline, in the same time window and with the same
+// cursor. They are shown, not edited.
+function drawAxes(t) {
+  if (!axes.length) return;
+  const { t0, t1, x } = geom(t);
+  axes.forEach((ax, k) => {
+    const [g, w, h] = setup(axCanvas[k]), pad = 6, y = p => pad + (1 - p / 100) * (h - 2 * pad);
+    g.clearRect(0, 0, w, h);
+    g.strokeStyle = css("--grid"); g.lineWidth = 1;
+    for (const p of [0, 50, 100]) { g.beginPath(); g.moveTo(0, y(p)); g.lineTo(w, y(p)); g.stroke(); }
+    drawSeries(g, ax.actions, t0, t1, x, y, css("--axis"), 1.8, false);
+    g.strokeStyle = css("--cursor"); g.lineWidth = 2;
+    g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.stroke();
+    const p = posAt(ax.actions, t);
+    if (p !== null) { g.fillStyle = css("--axis"); g.beginPath(); g.arc(w / 2, y(p), 4, 0, 2 * Math.PI); g.fill(); }
+    const label = ax.id + " " + ax.label + "  " + (p === null ? "-" : Math.round(p));
+    g.font = "600 11px system-ui";
+    g.globalAlpha = .85; g.fillStyle = css("--panel"); g.fillRect(28, 2, g.measureText(label).width + 8, 15); g.globalAlpha = 1;
+    g.fillStyle = css("--text"); g.fillText(label, 32, 13);
+  });
 }
 
 let heat = null;  // cached overview background
@@ -330,7 +360,7 @@ function frame() {
   document.getElementById("icheck").textContent = sc !== null && checks.includes(sc) ? T("preview.js.check") : "";
   document.getElementById("iscale").textContent =
     scaled && scaled.at === dirty && scaled.key === target().key ? ` ×${scaled.factor.toFixed(2)}` : "";
-  drawTimeline(t); drawOverview(t); drawRegions(t);
+  drawTimeline(t); drawAxes(t); drawOverview(t); drawRegions(t);
   requestAnimationFrame(frame);
 }
 
@@ -577,11 +607,19 @@ function stepRate(up) {
   const k = RATES.indexOf(video.playbackRate), cur = k >= 0 ? k : RATES.indexOf(1);
   setRate(RATES[Math.min(RATES.length - 1, Math.max(0, cur + (up ? 1 : -1)))]);
 }
-tl.addEventListener("wheel", e => {
+function zoom(e) {
   e.preventDefault();
   windowS = Math.min(120, Math.max(2, windowS * (e.deltaY > 0 ? 1.2 : 1 / 1.2)));
   document.getElementById("iwin").textContent = windowS.toFixed(windowS < 10 ? 1 : 0);
-}, { passive: false });
+}
+tl.addEventListener("wheel", zoom, { passive: false });
+for (const c of axCanvas) {  // the strips take the same wheel zoom and click-to-seek as the timeline
+  c.addEventListener("wheel", zoom, { passive: false });
+  c.addEventListener("click", e => {
+    const r = c.getBoundingClientRect(), t = video.currentTime * 1000;
+    video.currentTime = Math.max(0, (t + ((e.clientX - r.left) / r.width - 0.5) * windowS * 1000) / 1000);
+  });
+}
 ov.addEventListener("click", e => {
   const r = ov.getBoundingClientRect();
   video.currentTime = (e.clientX - r.left) / r.width * duration() / 1000;
@@ -650,6 +688,137 @@ requestAnimationFrame(frame);
 """
 
 
+_VIEWER = r"""<!doctype html>
+<html lang="__LANG__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>multi-axis funscript</title>
+<style>
+:root {
+  --bg: #ffffff; --panel: #f4f4f5; --text: #18181b; --muted: #71717a; --grid: #d4d4d8;
+  --line: #ea580c; --axis: #2563eb; --cursor: #dc2626;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0b0f19; --panel: #1f2937; --text: #e5e7eb; --muted: #9ca3af; --grid: #374151;
+          --line: #fb923c; --axis: #60a5fa; --cursor: #f87171; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, sans-serif; }
+#sets { display: flex; flex-direction: column; gap: 14px; padding: 6px; }
+.set { display: flex; flex-direction: column; gap: 4px; }
+.head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; }
+.head .hint, .head .time { color: var(--muted); font-variant-numeric: tabular-nums; }
+canvas { width: 100%; height: 58px; display: block; background: var(--panel); border-radius: 6px; cursor: crosshair; }
+</style>
+</head>
+<body>
+<div id="sets"></div>
+<script>
+const DATA = __DATA__;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function posAt(a, t) {  // linear interpolation of position at time t (ms)
+  if (!a.length) return null;
+  if (t <= a[0].at) return a[0].pos;
+  if (t >= a[a.length - 1].at) return a[a.length - 1].pos;
+  let lo = 0, hi = a.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (a[m].at <= t) lo = m; else hi = m; }
+  const p = a[lo], q = a[hi];
+  return p.pos + (q.pos - p.pos) * (t - p.at) / Math.max(1, q.at - p.at);
+}
+function fmt(ms) {
+  const s = Math.max(0, ms) / 1000, m = Math.floor(s / 60);
+  return `${m}:${(s - m * 60).toFixed(1).padStart(4, "0")}`;
+}
+function setup(c) {
+  const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  if (c.width !== Math.round(r.width * d) || c.height !== Math.round(r.height * d)) {
+    c.width = Math.round(r.width * d); c.height = Math.round(r.height * d);
+  }
+  const g = c.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0);
+  return [g, r.width, r.height];
+}
+function build(set) {
+  const root = document.createElement("div"); root.className = "set";
+  const head = document.createElement("div"); head.className = "head";
+  const title = document.createElement("b"); title.textContent = set.name;
+  const time = document.createElement("span"); time.className = "time";
+  const hint = document.createElement("span"); hint.className = "hint"; hint.textContent = "@@viewer.hint@@";
+  head.append(title, time, hint); root.append(head);
+  const dur = Math.max(1000, set.duration);
+  let t0 = 0, t1 = dur, hover = null, pan = null;
+  const canvases = set.axes.map((ax, k) => {
+    const c = document.createElement("canvas"); root.append(c); return c;
+  });
+  function draw() {
+    const x = (t, w) => (t - t0) / (t1 - t0) * w;
+    const step = [1, 2, 5, 10, 30, 60, 120, 300, 600, 1800, 3600].find(s => s * 1000 * 8 >= t1 - t0) || 3600;
+    set.axes.forEach((ax, k) => {
+      const [g, w, h] = setup(canvases[k]), pad = 6, y = p => pad + (1 - p / 100) * (h - 2 * pad);
+      g.clearRect(0, 0, w, h);
+      g.strokeStyle = css("--grid"); g.lineWidth = 1; g.fillStyle = css("--muted"); g.font = "10px system-ui";
+      for (const p of [0, 50, 100]) { g.beginPath(); g.moveTo(0, y(p)); g.lineTo(w, y(p)); g.stroke(); }
+      for (let s = Math.ceil(t0 / 1000 / step) * step; s * 1000 <= t1; s += step) {
+        g.beginPath(); g.moveTo(x(s * 1000, w), h - 8); g.lineTo(x(s * 1000, w), h); g.stroke();
+        g.fillText(fmt(s * 1000), x(s * 1000, w) + 2, h - 1);
+      }
+      g.strokeStyle = css(k ? "--axis" : "--line"); g.lineWidth = 1.6; g.beginPath();
+      let started = false;
+      const a = ax.actions;
+      let i = 0, j = a.length - 1;  // the actions that reach into the window, and one either side
+      while (i < a.length - 1 && a[i + 1].at < t0) i++;
+      while (j > 0 && a[j - 1].at > t1) j--;
+      for (let n = i; n <= j; n++) {
+        const px = x(a[n].at, w), py = y(a[n].pos);
+        started ? g.lineTo(px, py) : g.moveTo(px, py); started = true;
+      }
+      g.stroke();
+      let label = ax.id + " " + ax.label + " (" + a.length + ")";
+      if (hover !== null) {
+        const p = posAt(a, hover);
+        g.strokeStyle = css("--cursor"); g.lineWidth = 1;
+        g.beginPath(); g.moveTo(x(hover, w), 0); g.lineTo(x(hover, w), h); g.stroke();
+        if (p !== null) label += "  " + Math.round(p);
+      }
+      g.font = "600 11px system-ui";
+      g.globalAlpha = .85; g.fillStyle = css("--panel"); g.fillRect(2, 2, g.measureText(label).width + 8, 15); g.globalAlpha = 1;
+      g.fillStyle = css("--text"); g.fillText(label, 6, 13);
+    });
+    time.textContent = hover === null ? fmt(t0) + " – " + fmt(t1) : fmt(hover);
+  }
+  const at = (e, c) => { const r = c.getBoundingClientRect(); return t0 + (e.clientX - r.left) / r.width * (t1 - t0); };
+  canvases.forEach(c => {
+    c.addEventListener("mousemove", e => {
+      if (pan) {
+        const r = c.getBoundingClientRect(), d = (e.clientX - pan.x) / r.width * (pan.t1 - pan.t0);
+        const lo = Math.min(Math.max(0, pan.t0 - d), Math.max(0, dur - (pan.t1 - pan.t0)));
+        t0 = lo; t1 = lo + (pan.t1 - pan.t0);
+      }
+      hover = at(e, c); draw();
+    });
+    c.addEventListener("mouseleave", () => { hover = null; pan = null; draw(); });
+    c.addEventListener("mousedown", e => { pan = { x: e.clientX, t0, t1 }; });
+    window.addEventListener("mouseup", () => { pan = null; });
+    c.addEventListener("dblclick", () => { t0 = 0; t1 = dur; draw(); });
+    c.addEventListener("wheel", e => {
+      e.preventDefault();
+      const m = at(e, c), f = e.deltaY > 0 ? 1.25 : 0.8, span = Math.min(dur, Math.max(2000, (t1 - t0) * f));
+      const share = (m - t0) / (t1 - t0);
+      t0 = Math.min(Math.max(0, m - share * span), dur - span); t1 = t0 + span;
+      draw();
+    }, { passive: false });
+  });
+  document.getElementById("sets").append(root);
+  window.addEventListener("resize", draw);
+  draw();
+}
+DATA.sets.forEach(build);
+</script>
+</body>
+</html>
+"""
+
+
 _TOKEN = re.compile(r"@@([\w.]+)@@")
 _KEYCAP = re.compile(r"&lt;k&gt;(.*?)&lt;/k&gt;")
 
@@ -667,6 +836,11 @@ def _localize(page: str) -> str:
             .replace("__I18N__", payload).replace("__LANG__", html.escape(i18n.current())))
 
 
+def axis_label(axis: str) -> str:
+    """The name of an axis in the chosen language: "前後推移 (Surge)"."""
+    return i18n.t(f"axis.{axis}")
+
+
 def _actions(fs: Funscript | None) -> list[dict]:
     return [{"at": a.at, "pos": a.pos} for a in fs.normalized().actions] if fs else []
 
@@ -682,12 +856,14 @@ def player_html(
     play: bool = False,
     checks: list[int] | None = None,
     regions: dict[int, dict] | None = None,
+    axes: dict[str, Funscript] | None = None,
 ) -> str:
     """`scene_list`: (start ms, number, flipped) per scene, shown under the player and drawn as cuts when
     `scene_starts_ms` is not given. `checks`: numbers of the scenes to check by hand (possibly upside down), shaded
     while not flipped, with a button to jump from one to the next. `start_ms` / `play`: where to resume when the
     player is rebuilt. `regions`: per scene number, the region its motion was analysed in, drawn over the video
-    (see scene_regions)."""
+    (see scene_regions). `axes`: the other axes of a multi-axis script by id (L1, R1, ...), drawn as strips under the
+    timeline (the editing tools work on `script`, the main axis, only)."""
     if scene_list and scene_starts_ms is None:
         scene_starts_ms = [s for s, _, _ in scene_list]
     data = {
@@ -696,6 +872,8 @@ def player_html(
         "scenes": [round(s) for s in (scene_starts_ms or []) if s > 0],
         "scene_list": [{"at": round(s), "i": i, "flipped": bool(f), "check": i in set(checks or []),
                         "region": (regions or {}).get(i)} for s, i, f in sorted(scene_list or [])],
+        "axes": [{"id": a, "label": axis_label(a), "actions": _actions(fs)} for a, fs in (axes or {}).items()],
+        "main_label": f"{MAIN_AXIS} {axis_label(MAIN_AXIS)}",
         "fps": fps or 30.0,
         "start_ms": max(0.0, float(start_ms)),
         "play": bool(play),
@@ -704,8 +882,32 @@ def player_html(
     return _localize(
         _PLAYER.replace("__VIDEO__", html.escape(video_url, quote=True))
         .replace("__COUNT__", str(len(data["actions"])))
+        .replace("__AXH__", str(AXIS_STRIP_PX * len(data["axes"])))
+        .replace("__AXES__", "".join('<canvas class="axis" title="@@preview.timeline_title@@"></canvas>' for _ in data["axes"]))
         .replace("__DATA__", payload)
     )
+
+
+def axes_viewer_html(sets) -> str:
+    """A page showing the axes of multi-axis scripts (multiaxis.ScriptSet) with no video: per script one strip per
+    axis over its whole length, with a cursor that reads the position of every axis at the mouse, wheel zoom, drag to
+    scroll and a double click to show everything again."""
+    data = {"sets": []}
+    for s in sets:
+        main, axes = s.funscripts()
+        strips = [(MAIN_AXIS, main), *axes.items()]
+        data["sets"].append({
+            "name": s.name,
+            "duration": max((fs.actions[-1].at for _, fs in strips if fs.actions), default=0),
+            "axes": [{"id": a, "label": axis_label(a), "actions": _actions(fs)} for a, fs in strips],
+        })
+    payload = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
+    return _localize(_VIEWER.replace("__DATA__", payload))
+
+
+def viewer_height(sets) -> int:
+    """The iframe height that shows every strip of `sets` (axes_viewer_html)."""
+    return 16 + sum(30 + 62 * (1 + len(s.axes)) + 14 for s in sets)
 
 
 def scene_regions(plans) -> dict[int, dict]:

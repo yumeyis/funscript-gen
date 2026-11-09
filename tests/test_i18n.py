@@ -169,10 +169,10 @@ def test_the_web_ui_follows_a_language_change(tmp_path, monkeypatch):
     demo = ui.build()
     components = ui.translated_components()
     tabs = {c.label: k for k, c in enumerate(components) if isinstance(c, gr.Tab)}
-    assert list(tabs) == ["產生", "批次", "預覽", "輸出", "設定"]
+    assert list(tabs) == ["產生", "批次", "預覽", "工具", "輸出", "設定"]
     out = ui.pick_language("en")
     assert len(out) == len(components) + 5 and i18n.current() == "en"
-    assert [out[k]["label"] for k in tabs.values()] == ["Generate", "Batch", "Preview", "Output", "Settings"]
+    assert [out[k]["label"] for k in tabs.values()] == ["Generate", "Batch", "Preview", "Tools", "Output", "Settings"]
     assert ui.saved_language() == "en"
     lang_list = out[len(components)]
     assert ("English", "en") in lang_list["choices"] and lang_list["value"] == "en"

@@ -21,7 +21,10 @@ Double-click FunscriptGen.exe.
   pasting the path works too), then press "Generate funscript".
 - The Batch and Preview tabs read files directly as well. With "Fill in the file of the same name" on in the Preview
   tab, choosing a video fills in the funscript of the same name in its folder, and choosing a funscript fills in the
-  video of the same name.
+  video of the same name; the files of the other axes of a multi-axis script (video.roll.funscript etc.) come with it.
+- The Tools tab merges the files of the axes of a multi-axis script into one file, or splits a file with several
+  axes into one file per axis; the output can go in the original place (the original kept as .backup, or
+  overwritten) or be saved into another folder.
 - Dropping files has not been confirmed on a real desktop (unverified); when it does nothing, press "Choose…".
 - Scripts are kept in data\out\<time>\ by default. To save them beside the video (a .funscript with the video's
   name), tick "Also save the script beside the video" under "Output files" in the Settings tab.

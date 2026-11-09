@@ -128,20 +128,20 @@ def test_preview_brings_in_the_file_of_the_same_name(tmp_path):
     assert ui.sibling(tmp_path / "lone.mp4", "script") is None and ui.sibling(tmp_path / "nope" / "a.mp4", "video") is None
     # a video alone: the script of the same name when asked for, nothing when not
     out, note, ok = ui.dropped("pv-video", [f("clip.mp4")], auto=True)
-    assert out == {"pv-video": f("clip.mp4"), "pv-script": f("clip.funscript")} and "同名的 funscript「clip.funscript」" in note
+    assert out == {"pv-video": f("clip.mp4"), "pv-script": f("clip.funscript"), "pv-axes": ""} and "同名的 funscript「clip.funscript」" in note
     assert ui.dropped("pv-video", [f("clip.mp4")], auto=False) == ({"pv-video": f("clip.mp4")}, "", True)
     out, note, _ = ui.dropped("pv-video", [f("lone.mp4")], auto=True)  # none there: the script box is not touched
     assert out == {"pv-video": f("lone.mp4")} and "沒有同名的 funscript" in note
     # a script alone, dropped on either box: the video of the same name
     for zone in ("pv-script", "pv-video"):
         out, note, _ = ui.dropped(zone, [f("clip.funscript")], auto=True)
-        assert out == {"pv-video": f("clip.mp4"), "pv-script": f("clip.funscript")} and "同名的影片「clip.mp4」" in note
+        assert out == {"pv-video": f("clip.mp4"), "pv-script": f("clip.funscript"), "pv-axes": ""} and "同名的影片「clip.mp4」" in note
     out, note, _ = ui.dropped("pv-script", [f("x.funscript")], auto=True)
-    assert out == {"pv-script": f("x.funscript")} and "沒有同名的影片" in note
+    assert out == {"pv-script": f("x.funscript"), "pv-axes": ""} and "沒有同名的影片" in note
     assert ui.dropped("pv-script", [f("x.funscript")], auto=False)[1] == ui.t("web.pv.picked_script", script="x.funscript")
     # a pair dropped together is used as it is (the script named like the video wins), the switch changes nothing
     out, note, _ = ui.dropped("pv-video", [f("x.funscript"), f("clip.mp4"), f("clip.funscript")], auto=True)
-    assert out == {"pv-video": f("clip.mp4"), "pv-script": f("clip.funscript")} and "已分別代入" in note
+    assert out == {"pv-video": f("clip.mp4"), "pv-script": f("clip.funscript"), "pv-axes": ""} and "已分別代入" in note
     # the reference takes a script only, and no switch applies
     assert ui.dropped("pv-ref", [f("clip.mp4"), f("x.funscript")], auto=True) == ({"pv-ref": f("x.funscript")}, "", True)
     assert ui.dropped("pv-video", [f("missing.mp4")])[2] is False  # a path that is not there
@@ -388,3 +388,95 @@ def test_app_module_takes_the_exes_arguments(monkeypatch):
     app.main(["--ui", "none", "--port", "17860"])
     app.main([])
     assert seen == [("none", 17860), ("window", None)]
+
+
+def _script(path, actions, **extra):
+    path.write_text(json.dumps({"version": "1.0", "actions": [{"at": at, "pos": pos} for at, pos in actions], **extra}))
+    return path
+
+
+def test_dropping_a_script_brings_in_its_axis_files(tmp_path):
+    from funscript_gen import webui as ui
+
+    for name in ("clip.mp4", "lone.funscript"):
+        (tmp_path / name).write_text("")
+    for name in ("clip.funscript", "clip.roll.funscript", "clip.surge.funscript", "other.funscript"):
+        _script(tmp_path / name, [(0, 1)])
+    f = lambda n: str(tmp_path / n)
+    roll_surge = f("clip.surge.funscript") + "\n" + f("clip.roll.funscript")
+    # with the switch the files of the script beside the main one are filled in (in the order of the axes)
+    out, note, ok = ui.dropped("pv-script", [f("clip.funscript")], auto=True)
+    assert out["pv-axes"] == roll_surge and out["pv-script"] == f("clip.funscript") and "另帶入 2 個其他軸的檔案" in note
+    assert ui.dropped("pv-script", [f("clip.funscript")], auto=False)[0]["pv-axes"] == ""  # not asked: and cleared
+    # a video brings its script, and the script its axes
+    out, note, _ = ui.dropped("pv-video", [f("clip.mp4")], auto=True)
+    assert out["pv-script"] == f("clip.funscript") and out["pv-axes"] == roll_surge
+    # an axis file alone brings the main file; the files dropped together are used as they are
+    out, _, _ = ui.dropped("pv-script", [f("clip.roll.funscript")], auto=True)
+    assert out["pv-script"] == f("clip.funscript") and out["pv-axes"] == roll_surge
+    out, _, _ = ui.dropped("pv-script", [f("clip.roll.funscript"), f("clip.funscript")], auto=False)
+    assert out == {"pv-script": f("clip.funscript"), "pv-axes": f("clip.roll.funscript")}
+    out, _, _ = ui.dropped("pv-script", [f("clip.funscript"), f("other.funscript"), f("clip.roll.funscript")])
+    assert out["pv-script"] == f("clip.funscript") and out["pv-axes"] == f("clip.roll.funscript")  # the axes of the one chosen
+    # a lone axis file with no main file beside it is still a script
+    solo = _script(tmp_path / "solo.roll.funscript", [(0, 1)])
+    assert ui.dropped("pv-script", [str(solo)], auto=True)[0] == {"pv-script": str(solo), "pv-axes": ""}
+    # the axes box takes scripts of any name; a drop of other files is refused
+    assert ui.dropped("pv-axes", [f("clip.roll.funscript"), f("clip.mp4")]) == ({"pv-axes": f("clip.roll.funscript")}, "", True)
+    assert ui.dropped("pv-axes", [f("clip.mp4")])[2] is False
+
+
+def test_the_tools_boxes_take_scripts_and_a_folder(tmp_path):
+    from funscript_gen import webui as ui
+
+    for name in ("v.funscript", "v.roll.funscript", "v.sway.funscript", "w.funscript"):
+        _script(tmp_path / name, [(0, 1)])
+    (tmp_path / "v.mp4").write_text("")
+    f = lambda n: str(tmp_path / n)
+    out, note, ok = ui.dropped("tool-in", [f("v.roll.funscript")], auto=True)
+    assert out == {"tool-in": "\n".join(f(n) for n in ("v.roll.funscript", "v.funscript", "v.sway.funscript"))} and ok
+    assert ui.dropped("tool-in", [f("v.funscript")], auto=False)[0] == {"tool-in": f("v.funscript")}
+    assert ui.dropped("tool-in", [f("v.mp4")])[2] is False
+    assert ui.dropped("tool-out", [str(tmp_path)]) == ({"tool-out": str(tmp_path)}, "", True)
+    assert ui.dropped("tool-out", [f("v.funscript")])[2] is False  # a file is not a folder
+    # the switch of the 工具 tab decides for its boxes, the 預覽 tab's for its own
+    drop = lambda **flags: ui.drop_arrived(json.dumps({"zone": "tool-in", "paths": [f("v.funscript")], "n": 1}), "", **flags)
+    boxes = lambda updates: dict(zip(ui.BOXES, updates))
+    assert boxes(drop(auto=True, tool_auto=False))["tool-in"]["value"] == f("v.funscript")
+    assert boxes(drop(auto=False, tool_auto=True))["tool-in"]["value"].count("\n") == 2
+
+
+def test_preview_of_a_multi_axis_script_with_local_paths(tmp_path, monkeypatch):
+    from test_webui import _cuts_video
+
+    from funscript_gen import webui as ui
+
+    monkeypatch.setattr(ui, "OUTPUT_DIR", tmp_path / "out")
+    monkeypatch.setattr(ui, "LOCAL_FILES", True)
+    video = _cuts_video(tmp_path / "v.mp4")
+    main = _script(tmp_path / "v.funscript", [(500, 20), (1000, 90)])
+    roll = _script(tmp_path / "v.roll.funscript", [(0, 5), (1000, 50)])
+    player, job, _, msg, _ = ui.preview_files(str(video), str(main), "", False, 30.0, str(roll))
+    assert list(job.axes) == ["R1"] and "R1" in msg and "多軸腳本" in msg
+    assert "(Roll)" in player  # the strip's label is in the player's data
+    assert job.name == "v" and [a.pos for a in job.script.actions] == [20, 90]  # editing and flips work on L0
+    # the same through the script box alone (several files, as the web server's upload gives them)
+    monkeypatch.setattr(ui, "LOCAL_FILES", False)
+    _, job, _, _, _ = ui.preview_files([str(video)], [str(roll), str(main)], None, False, 30.0)
+    assert list(job.axes) == ["R1"] and job.name == "v"
+    # a one-file multi-axis script shows its own axes
+    merged = _script(tmp_path / "m.funscript", [(0, 1), (900, 9)], axes=[{"id": "L2", "actions": [{"at": 0, "pos": 4}]}])
+    _, job, _, _, _ = ui.preview_files([str(video)], str(merged), None, False, 30.0)
+    assert list(job.axes) == ["L2"]
+    # the flip keeps the axes in the player
+    player, *_ = ui.preview_flip(job, 100.0, False, "")
+    assert "(Surge)" not in player and "(Sway)" in player
+    # axis files with no main file cannot be previewed; a single axis file is a script as it is
+    _script(tmp_path / "v.sway.funscript", [(0, 1)])
+    with pytest.raises(gr.Error, match="主軸"):
+        ui.preview_files([str(video)], [str(roll), str(tmp_path / "v.sway.funscript")], None, False, 30.0)
+    _, job, _, _, _ = ui.preview_files([str(video)], str(roll), None, False, 30.0)
+    assert job.axes == {} and job.name == "v.roll"
+    with pytest.raises(gr.Error, match="找不到 funscript"):
+        monkeypatch.setattr(ui, "LOCAL_FILES", True)
+        ui.preview_files(str(video), str(main), "", False, 30.0, str(tmp_path / "gone.roll.funscript"))

@@ -279,7 +279,8 @@ src/funscript_gen/
   config.py           .env 設定與 provider 建立
   devices.py          運算裝置：光流、部位框、骨架用 GPU 或 CPU（Auto／GPU／CPU 的繼承與 GPU 偵測）
   report.py           訊號圖、鏡頭表、除錯資料（CLI 與 Web UI 共用）
-  preview.py          預覽播放器（自成一體的 HTML／JS）
+  preview.py          預覽播放器（自成一體的 HTML／JS；多軸腳本的軸列）與工具分頁的多軸檢視頁
+  multiaxis.py        多軸腳本：從檔名與內容辨識（每軸一檔／一檔多軸）、合併、分割、帶入同資料夾的軸檔、備份與寫檔（預覽與「工具」分頁共用）
   outputs.py          Web UI 輸出資料夾的保留天數、清理與「存到影片旁邊」設定
   ai/                 視覺語言模型 provider（OpenAI 相容、Ollama 原生）、提示詞與 schema、回應快取、候選區域（regions.py）
   video/              解碼（精確時間戳）、鏡頭切分

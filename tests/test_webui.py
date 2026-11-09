@@ -310,13 +310,16 @@ def test_preview_video_box_splits_files_picked_together(tmp_path):
 
     video, other, script = (str(tmp_path / n) for n in ("a b.mp4", "c.funscript", "a b.funscript"))
     v, s, msg = ui.preview_video_uploaded([other, video, script])
-    assert v["value"] == [video] and s["value"] == script and "已分別代入" in msg  # the same-name script
+    assert v["value"] == [video] and s["value"] == [script] and "已分別代入" in msg  # the same-name script
     assert ui.preview_video_uploaded([video]) == (gr.update(),) * 3  # a video alone, as before
     v, s, msg = ui.preview_video_uploaded([other])  # only a script: it moves to its own box
-    assert v["value"] is None and s["value"] == other and "funscript 欄" in msg
+    assert v["value"] is None and s["value"] == [other] and "funscript 欄" in msg
     v, s, msg = ui.preview_video_uploaded([video, str(tmp_path / "d.mp4")])
     assert v["value"] == [video] and s == gr.update() and "一次只能預覽一部影片" in msg
-
+    # the axis files of a multi-axis script go along, the main script first
+    roll, surge = str(tmp_path / "a b.roll.funscript"), str(tmp_path / "a b.surge.funscript")
+    v, s, msg = ui.preview_video_uploaded([roll, video, surge, script])
+    assert v["value"] == [video] and s["value"] == [script, surge, roll] and "另有 2 個其他軸的檔案" in msg
 
 
 def test_preview_without_scene_cuts_and_cancel(tmp_path, monkeypatch):
@@ -562,3 +565,103 @@ def test_one_click_ollama_failure_leaves_the_settings(monkeypatch):
     monkeypatch.setattr(osu, "setup", boom)
     out = list(ui.run_ollama("docker", "m"))
     assert out[-1][0].startswith("❌") and "no docker" in out[-1][0] and ui._settings is before
+
+
+def _axis_script(path, actions, **extra):
+    import json
+
+    path.write_text(json.dumps({"version": "1.0", "range": 100, "actions": [{"at": a, "pos": p} for a, p in actions], **extra}))
+    return str(path)
+
+
+def test_tools_tab_recognizes_the_files_and_merges_for_download(tmp_path, monkeypatch):
+    import json
+
+    from funscript_gen import webui as ui
+
+    monkeypatch.setattr(ui, "OUTPUT_DIR", tmp_path / "out")
+    files = [_axis_script(tmp_path / "v.funscript", [(0, 1), (500, 90)]), _axis_script(tmp_path / "v.roll.funscript", [(0, 5)])]
+    plan, msg, table, viewer, merge_btn, split_btn = ui.tool_inspect(files)
+    assert plan.kind == "merge" and "多檔多軸" in msg and merge_btn["visible"] and not split_btn["visible"]
+    assert table["headers"] == ui.tool_headers() and [r[:2] for r in table["value"]] == [["v", "L0"], ["v", "R1"]]
+    assert table["value"][0][3:] == [2, 0.5] and "<iframe" in viewer and "(Roll)" in viewer
+    result, written = ui.tool_run(plan)  # the web server has no original place: its output folder
+    assert len(written) == 1 and written[0].startswith(str(tmp_path / "out")) and "已合併" in result
+    assert [a["id"] for a in json.loads(open(written[0], encoding="utf-8").read())["axes"]] == ["R1"]
+    # and the result splits again
+    plan, msg, table, viewer, merge_btn, split_btn = ui.tool_inspect(written)
+    assert plan.kind == "split" and "一檔多軸" in msg and split_btn["visible"] and not merge_btn["visible"]
+    result, written = ui.tool_run(plan)
+    assert [p.rsplit("/", 1)[1] for p in written] == ["v.funscript", "v.roll.funscript"] and "已分割" in result
+
+
+def test_tools_tab_messages_and_nothing_to_do(tmp_path):
+    from funscript_gen import webui as ui
+
+    assert ui.tool_inspect(None)[:2] == (None, "") and ui.tool_inspect([])[0] is None
+    one = _axis_script(tmp_path / "a.funscript", [(0, 1)])
+    plan, msg, table, viewer, merge_btn, split_btn = ui.tool_inspect([one])
+    assert plan.kind == "single" and "只有一個軸" in msg and viewer == "" and not merge_btn["visible"] and not split_btn["visible"]
+    with pytest.raises(gr.Error, match="沒有可以處理"):
+        ui.tool_run(plan)
+    with pytest.raises(gr.Error, match="沒有可以處理"):
+        ui.tool_run(None)
+    bad = tmp_path / "b.funscript"
+    bad.write_text("{nope")
+    plan, msg, *_ = ui.tool_inspect([str(bad), str(tmp_path / "gone.funscript"), _axis_script(tmp_path / "c.roll.funscript", [])])
+    assert plan.kind == "none" and "無法讀取「b.funscript」" in msg and "找不到" in msg and "c.funscript" in msg
+
+
+def test_tools_tab_writes_beside_the_originals_or_elsewhere(tmp_path, monkeypatch):
+    import json
+
+    from funscript_gen import webui as ui
+
+    monkeypatch.setattr(ui, "LOCAL_FILES", True)
+    main = _axis_script(tmp_path / "v.funscript", [(0, 1)])
+    _axis_script(tmp_path / "v.roll.funscript", [(0, 5)])
+    paths = "\n".join([main, str(tmp_path / "v.roll.funscript")])
+    plan, msg, *_ = ui.tool_inspect(paths)  # the desktop app's box holds the paths
+    assert plan.kind == "merge"
+    result, written = ui.tool_run(plan, "beside", "", "backup")  # the default: the original is kept
+    assert written == [main] and (tmp_path / "v.funscript.backup").is_file() and "v.funscript.backup" in result
+    assert "axes" in json.loads((tmp_path / "v.funscript").read_text())
+    # the merged file is now a one-file script: splitting it over the originals, without a backup
+    plan, *_ = ui.tool_inspect(paths)
+    assert plan.kind == "split"
+    result, written = ui.tool_run(plan, "beside", "", "overwrite")
+    assert len(written) == 2 and not (tmp_path / "v.funscript.backup2").exists()
+    assert "axes" not in json.loads((tmp_path / "v.funscript").read_text())
+    # saved elsewhere: a file already there is always kept
+    plan, *_ = ui.tool_inspect(paths)
+    assert plan.kind == "merge"
+    other = tmp_path / "elsewhere"
+    other.mkdir()
+    (other / "v.funscript").write_text("old")
+    result, written = ui.tool_run(plan, "elsewhere", f' "{other}" ', "overwrite")
+    assert written == [str(other / "v.funscript")] and (other / "v.funscript.backup").read_text() == "old"
+    assert "axes" in json.loads((other / "v.funscript").read_text()) and "axes" not in json.loads((tmp_path / "v.funscript").read_text())
+    with pytest.raises(gr.Error, match="另存的資料夾"):
+        ui.tool_run(plan, "elsewhere", "  ", "backup")
+    # the radio buttons show the folder or the question about the originals
+    folder, keep = ui.tool_where_changed("elsewhere")
+    assert folder["visible"] and not keep["visible"]
+    folder, keep = ui.tool_where_changed("beside")
+    assert not folder["visible"] and keep["visible"]
+
+
+@pytest.mark.parametrize("local", [False, True])
+def test_the_tools_tab_is_wired_in_both_modes(local, tmp_path, monkeypatch):
+    from funscript_gen import webui as ui
+
+    monkeypatch.setattr(ui, "LOCAL_FILES", local)
+    monkeypatch.setattr(ui, "NATIVE_DIALOGS", local)
+    monkeypatch.setattr(ui, "_last_file", tmp_path / "last.json")
+    monkeypatch.setattr(ui, "_cleanup_file", tmp_path / "cleanup.json")
+    monkeypatch.setattr(ui, "OUTPUT_DIR", tmp_path / "out")
+    demo = ui.build()
+    handlers = {f.fn.__name__ for f in demo.fns.values() if f.fn is not None}
+    assert {"tool_inspect", "tool_run", "preview_files"} <= handlers
+    assert ("tool_where_changed" in handlers) == local
+    run = next(f for f in demo.fns.values() if f.fn is not None and f.fn.__name__ == "tool_run")
+    assert len(run.inputs) == 4

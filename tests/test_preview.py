@@ -147,3 +147,31 @@ def test_media_route_serves_registered_files_with_range(tmp_path):
     assert part.status_code == 206 and part.content == bytes(range(10, 20))
     assert client.get("/media/not-a-token").status_code == 404
     assert client.head(url).status_code == 200
+
+
+def test_player_shows_the_other_axes_of_a_multi_axis_script():
+    surge = Funscript([Action(0, 10), Action(1000, 90)])
+    doc = player_html("/media/abc", Funscript([Action(0, 0)]), axes={"L1": surge, "R1": Funscript([Action(0, 50)])})
+    data = _data(doc)
+    assert [a["id"] for a in data["axes"]] == ["L1", "R1"]
+    assert data["axes"][0]["label"] == "前後推移 (Surge)" and data["axes"][0]["actions"][1] == {"at": 1000, "pos": 90}
+    assert data["main_label"] == "L0 上下衝程 (Stroke)"
+    assert doc.count('<canvas class="axis"') == 2 and "點擊跳轉" in re.search(r'<canvas class="axis" title="([^"]*)"', doc).group(1)
+    assert "@@" not in doc and "__AXES__" not in doc
+    plain = player_html("/media/abc", Funscript([Action(0, 0)]))
+    assert _data(plain)["axes"] == [] and '<canvas class="axis"' not in plain  # nothing changes for a single axis
+
+
+def test_viewer_page_holds_every_axis_of_every_script():
+    from funscript_gen import multiaxis as ma
+    from funscript_gen.preview import axes_viewer_html, viewer_height
+
+    sets = [ma.ScriptSet("a</script>", {}, [{"at": 0, "pos": 1}, {"at": 4000, "pos": 9}], {"R1": [{"at": 100, "pos": 5}]}),
+            ma.ScriptSet("b", {}, [], {})]
+    doc = axes_viewer_html(sets)
+    data = json.loads(re.search(r"const DATA = (\{.*?\});\n", doc).group(1))
+    assert [s["name"] for s in data["sets"]] == ["a</script>", "b"] and data["sets"][0]["duration"] == 4000
+    assert [a["id"] for a in data["sets"][0]["axes"]] == ["L0", "R1"] and data["sets"][1]["axes"][0]["actions"] == []
+    assert doc.count("</script>") == 1  # the name cannot end the script
+    assert "拖曳平移" in doc and "@@" not in doc
+    assert viewer_height(sets) > viewer_height(sets[:1]) > viewer_height([])

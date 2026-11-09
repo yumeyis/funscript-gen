@@ -127,8 +127,8 @@ def file_picker(window):
         if kind == "folder":
             chosen = window.create_file_dialog(webview.FileDialog.FOLDER)
         else:
-            types = script_file_types() if kind == "script" else video_file_types()
-            chosen = window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=kind == "videos",
+            types = script_file_types() if kind in ("script", "scripts") else video_file_types()
+            chosen = window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=kind in ("videos", "scripts"),
                                                file_types=types)
         return [str(c) for c in chosen or []]
 

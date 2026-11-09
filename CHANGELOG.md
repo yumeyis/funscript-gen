@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-09 — 多軸腳本：預覽軸列與合併／分割工具（commit: `Add multi-axis script preview and the merge/split tool`）
+- 目的：使用者要求預覽能顯示多軸腳本（每軸一個檔案或一個檔案含多軸），並提供合併與分割的工具。
+- 修改：新增 `multiaxis.py`（辨識、合併、分割、`.backup` 安全寫檔）；預覽播放器每個軸多一條時間軸，「預覽」分頁可放入軸檔；新增「工具」分頁（自動判斷合併或分割、先預覽，桌面模式可自動帶入軸檔、直接輸出或另存、覆蓋或保留 `.backup`）；語言包、README、Windows 版說明同步。
+- 驗證：`uv run pytest` 356 項通過；瀏覽器實測上傳模式的「工具」與「預覽」分頁；Windows 桌面版的選檔與拖放未驗證。不涉及偵測與輸出，沒有跑驗證分數。屬 MINOR（新功能）。
+
 ## 2026-11-09 — 長影片少用約三成記憶體，與新素材失分的診斷（commit: `Use two malloc arenas to cut memory on long videos`）
 - 目的：1 小時影片的峰值記憶體 5.1 GB 且隨長度增長；研究新來源 F1 偏低的原因。
 - 修改：`__init__.py` 在 Linux 把 glibc 的 malloc arena 限為 2 個（1 小時影片 5.1 → 3.5 GB，速度與輸出不變）；新增離線腳本（微調光流場 CNN、失分拆解、光流神諭等）。
