@@ -1028,6 +1028,12 @@ def tool_inspect(files):
             gr.update(visible=plan.kind == "merge"), gr.update(visible=plan.kind == "split"))
 
 
+def tool_cleared():
+    """The 工具 tab, after a merge or split: the files are done with, so the selection is cleared (the written files
+    stay listed) and nothing about them is analysed again. Returns the files box and what tool_inspect returns for none."""
+    return ("" if LOCAL_FILES else None, *tool_inspect(None))
+
+
 def tool_where_changed(where: str):
     """The 工具 tab's 輸出方式: the folder to save in is asked for when saving elsewhere, what to do with the
     originals when writing beside them."""
@@ -1919,7 +1925,7 @@ def build() -> gr.Blocks:
             tool_where.change(tool_where_changed, inputs=tool_where, outputs=[tool_out_row, tool_keep], queue=False)
         for button in (tool_merge, tool_split):
             button.click(tool_run, inputs=[tool_plan, tool_where, tool_out, tool_keep],
-                         outputs=[tool_result, tool_files]).success(tool_inspect, inputs=tool_in, outputs=tool_inspected)
+                         outputs=[tool_result, tool_files]).success(tool_cleared, outputs=[tool_in, *tool_inspected])
         pv_outputs = [pv_player, pv_job, pv_out, pv_msg, pv_scenes]
         pv_js = _PLAYER_TIME_JS.format(id="pv-player")
         if not LOCAL_FILES:

@@ -651,6 +651,16 @@ def test_tools_tab_writes_beside_the_originals_or_elsewhere(tmp_path, monkeypatc
     assert not folder["visible"] and keep["visible"]
 
 
+def test_tools_tab_clears_the_files_after_the_work(monkeypatch):
+    from funscript_gen import webui as ui
+
+    upload = ui.tool_cleared()
+    assert upload[0] is None and upload[1] is None and upload[2] == ""  # no files, no plan, no message
+    assert upload[3]["value"] == [] and upload[4] == "" and not upload[5]["visible"] and not upload[6]["visible"]
+    monkeypatch.setattr(ui, "LOCAL_FILES", True)
+    assert ui.tool_cleared()[0] == ""  # the path box is a text box
+
+
 @pytest.mark.parametrize("local", [False, True])
 def test_the_tools_tab_is_wired_in_both_modes(local, tmp_path, monkeypatch):
     from funscript_gen import webui as ui
@@ -666,3 +676,6 @@ def test_the_tools_tab_is_wired_in_both_modes(local, tmp_path, monkeypatch):
     assert ("tool_where_changed" in handlers) == local
     run = next(f for f in demo.fns.values() if f.fn is not None and f.fn.__name__ == "tool_run")
     assert len(run.inputs) == 4
+    # after the work the files box is cleared, and nothing reads the processed files again
+    clear = next(f for f in demo.fns.values() if f.fn is not None and f.fn.__name__ == "tool_cleared")
+    assert len(clear.outputs) == 7 and clear.inputs == []

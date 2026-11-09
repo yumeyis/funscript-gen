@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-09 — 合併／分割後清除選擇的檔案（commit: `Clear the tools tab files after a merge or split`）
+- 目的：使用者要求處理完後清除選擇區的檔案，不要再拿剛處理完的檔案重新辨識一次。
+- 修改：`webui.py` 新增 `tool_cleared`，合併／分割成功後清空檔案框、計畫、訊息、表、預覽與按鈕（輸出的檔案保留）；README（中英）、PLAN 同步。
+- 驗證：`uv run pytest` 通過；瀏覽器實測上傳模式：合併後選擇區清空、合併鈕隱藏、輸出保留、沒有再次辨識。屬 PATCH。
+
 ## 2026-11-09 — 發布步驟補上檢查每個 CI job 與標籤不可刪除（commit: `Document the release gate after the rc3 tag mishap`）
 - 目的：v1.1.0rc3 在 Windows 的測試失敗時被打了標籤，而儲存庫不允許刪除標籤，只能改發 rc4。
 - 修改：DEVELOPMENT.md 的發布步驟：打標籤前要確認 ubuntu 與 windows 的 job 都成功（不要把 `gh run watch` 接到 `tail`）、標籤無法重打、冒煙測試偶發失敗的處理。
