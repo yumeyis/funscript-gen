@@ -576,6 +576,7 @@ def _axis_script(path, actions, **extra):
 
 def test_tools_tab_recognizes_the_files_and_merges_for_download(tmp_path, monkeypatch):
     import json
+    from pathlib import Path
 
     from funscript_gen import webui as ui
 
@@ -592,7 +593,7 @@ def test_tools_tab_recognizes_the_files_and_merges_for_download(tmp_path, monkey
     plan, msg, table, viewer, merge_btn, split_btn = ui.tool_inspect(written)
     assert plan.kind == "split" and "一檔多軸" in msg and split_btn["visible"] and not merge_btn["visible"]
     result, written = ui.tool_run(plan)
-    assert [p.rsplit("/", 1)[1] for p in written] == ["v.funscript", "v.roll.funscript"] and "已分割" in result
+    assert [Path(p).name for p in written] == ["v.funscript", "v.roll.funscript"] and "已分割" in result
 
 
 def test_tools_tab_messages_and_nothing_to_do(tmp_path):
