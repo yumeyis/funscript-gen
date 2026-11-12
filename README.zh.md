@@ -105,7 +105,7 @@ CLI 與 Web UI 的設定項目完全相同。
 
 > **用 Docker**：不想在主機上安裝 Python 時，可以用 [docker/](docker/README.zh.md)（[English](docker/README.md)）中的設定建置映像檔，`docker compose up -d --build` 就啟動 Web UI；另有一個連同 Ollama（Qwen3-VL）一起啟動的版本（需要 NVIDIA 顯示卡）。容器中只用 CPU 計算光流與部位框，詳見 [docker/README.zh.md](docker/README.zh.md)。
 
-> **骨架模式**是選配（`uv sync --extra pose`，CPU 版 PyTorch）；裝了之後執行 `uv sync` 時也要加 `--extra pose`，否則會被移除（`uv run` 不會移除）。要在 NVIDIA GPU 上執行骨架偵測，刪除 `pyproject.toml` 的 `[tool.uv.sources]` 與 `[[tool.uv.index]]` 兩段後重新執行 `uv sync --extra pose`。第一次使用時會下載約 6 MB 的模型。
+> **骨架模式**是選配（`uv sync --extra pose`，CPU 版 PyTorch）；裝了之後執行 `uv sync` 時也要加 `--extra pose`，否則會被移除（`uv run` 不會移除）。要在 NVIDIA GPU 上執行骨架偵測，改裝 `uv sync --extra pose-cuda`（CUDA 版 PyTorch，約 2.5 GB；兩者擇一，之後每次 `uv sync` 都要帶同一個；`./set-env.sh --pose-cuda` 也一樣）。第一次使用時會下載約 6 MB 的模型。
 
 > **GPU 加速**：光流、部位框偵測與骨架三個步驟可以用 GPU，預設是 Auto（有可用的 GPU 就用，沒有就用 CPU），可以在 Web UI「設定」分頁的「運算裝置」或 CLI 的 `--compute`、`--flow-compute` 等改成一律用 GPU 或 CPU。光流用顯示卡驅動程式內建的 OpenCL，不必另外安裝；GPU 上算出的數值和 CPU 有極小的差異，所以同一支影片在有 GPU 與沒有 GPU 的電腦上產生的腳本可能略有不同，要和 CPU 的結果完全一樣時選 CPU。CLI 會印出實際使用的裝置（`optical flow ran on …`、`part check ran on …`），Web UI 寫在結果的「運算裝置」。
 

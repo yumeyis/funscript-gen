@@ -19,7 +19,8 @@
 
 ```bash
 uv sync                    # 安裝套件（或 ./set-env.sh）
-uv sync --extra pose       # 另外安裝骨架模式的 PyTorch 與 YOLO；裝過之後 uv sync 都要加 --extra pose
+uv sync --extra pose       # 另外安裝骨架模式的 PyTorch（CPU 版）與 YOLO；裝過之後 uv sync 都要加 --extra pose
+uv sync --extra pose-cuda  # 同上，CUDA 版 PyTorch（NVIDIA 顯示卡；和 pose 擇一，不能同時）
 uv run pytest              # 單元測試（含 tests/test_synthetic.py：有紋理的合成影片的完整流程，光流模式）
 ```
 

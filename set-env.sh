@@ -6,6 +6,7 @@
 #   ./set-env.sh -y       非互動模式（自動安裝 uv；.env 不存在時只複製範本，不詢問）
 #   ./set-env.sh --test   安裝完成後執行單元測試
 #   ./set-env.sh --pose   另外安裝骨架模式（--mode pose）需要的 PyTorch 與 YOLO（約 0.8 GB）並下載權重
+#   ./set-env.sh --pose-cuda  同上，但用 CUDA 版 PyTorch（NVIDIA 顯示卡，約 2.5 GB；之後的 uv sync 也要加 --extra pose-cuda）
 #
 # 會做的事：
 #   1. 確認系統工具（uv）
@@ -20,12 +21,14 @@ cd "$(dirname "$0")"
 ASSUME_YES=0
 RUN_TESTS=0
 WITH_POSE=0
+POSE_EXTRA=pose
 for arg in "$@"; do
     case "$arg" in
         -y|--yes) ASSUME_YES=1 ;;
         --test) RUN_TESTS=1 ;;
         --pose) WITH_POSE=1 ;;
-        -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --pose-cuda) WITH_POSE=1; POSE_EXTRA=pose-cuda ;;
+        -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "未知的參數：$arg（用 --help 查看說明）" >&2; exit 2 ;;
     esac
 done
@@ -65,8 +68,8 @@ ok "uv $(uv --version | awk '{print $2}')"
 
 # --- 2. Python 與套件 --------------------------------------------------------
 if [ "$WITH_POSE" = 1 ]; then
-    info "安裝 Python 與套件，含骨架模式（第一次約需幾分鐘，會下載 CPU 版 PyTorch）"
-    uv sync --frozen --python 3.12 --extra pose
+    info "安裝 Python 與套件，含骨架模式（第一次約需幾分鐘，會下載 $([ "$POSE_EXTRA" = pose-cuda ] && echo CUDA || echo CPU) 版 PyTorch）"
+    uv sync --frozen --python 3.12 --extra "$POSE_EXTRA"
 else
     info "安裝 Python 與套件（第一次約需幾分鐘）"
     uv sync --frozen --python 3.12

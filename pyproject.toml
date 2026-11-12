@@ -39,6 +39,14 @@ pose = [
     "torch>=2.2",
     "torchvision>=0.17",
 ]
+# The same with the CUDA build of PyTorch (about 2.5 GB), for an NVIDIA GPU: `uv sync --extra pose-cuda`. Use one of the
+# two (they conflict), and keep the same one in every later `uv sync`.
+pose-cuda = [
+    "ultralytics>=8.3",
+    "lap>=0.5.12",
+    "torch>=2.2",
+    "torchvision>=0.17",
+]
 
 # The desktop app's window (funscript-gen app; without it the app opens in the browser): on Windows it uses the
 # system's WebView2. The Windows portable build includes it. Install with `uv sync --extra gui`.
@@ -78,12 +86,26 @@ select = ["E9", "F"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-# The pose extra's torch: CPU-only wheels (this dev machine has no GPU). Remove on a CUDA host.
+# The pose extras' PyTorch: pose uses CPU-only wheels (small), pose-cuda the CUDA 13.0 ones.
+[tool.uv]
+conflicts = [[{ extra = "pose" }, { extra = "pose-cuda" }]]
+
 [tool.uv.sources]
-torch = { index = "pytorch-cpu" }
-torchvision = { index = "pytorch-cpu" }
+torch = [
+    { index = "pytorch-cpu", extra = "pose" },
+    { index = "pytorch-cuda", extra = "pose-cuda" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "pose" },
+    { index = "pytorch-cuda", extra = "pose-cuda" },
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu130"
 explicit = true

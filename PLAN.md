@@ -80,7 +80,7 @@
   - 「已放棄的方案」的分類亂了：「多語言」底下前兩項是鏡頭銜接與短鏡頭的部位框，「方向」底下混了平滑視窗、`region_pick_margin`、INT8 量化；日期也不依序。重排一次，每項確實壓成一行。
   - 「尚未完成的後續工作」有過時與重複的項目：「公開前決定 git 歷史」看起來已過時（公開的儲存庫從 1.0.0 的單一 commit 開始）；Ollama 8B 在待解決第 8 項、後續工作與 DEVELOPMENT 各寫一次；「3D 素材降低快慢門檻」一項把新舊內容疊在一起，應改寫成現況。
   - DEVELOPMENT 的專案結構樹有錯位（`.github/`、`CONTRIBUTING.md` 兩行插在 `scripts/` 的清單中間，`.github/workflows/` 一行只寫了 `windows.yml`）。
-- **D7 `pose` 選配的 torch 來源寫死成 CPU 版**（`[tool.uv.sources]`）：有 CUDA 的使用者照 README 安裝會拿到 CPU 版，要自己改 `pyproject.toml`。骨架模式在動漫上幾乎沒用、GPU 路徑也沒實際跑過（後續工作），可以考慮直接標成不維護，或把它移出主程式，減少要維護的面。
+- **D7（2026-11-12 已做：新增 `pose-cuda` 選配項目）`pose` 選配的 torch 來源寫死成 CPU 版**（`[tool.uv.sources]`）：有 CUDA 的使用者照 README 安裝會拿到 CPU 版，要自己改 `pyproject.toml`。骨架模式在動漫上幾乎沒用、GPU 路徑也沒實際跑過（後續工作），可以考慮直接標成不維護，或把它移出主程式，減少要維護的面。
 
 **建議的順序**
 
@@ -284,6 +284,13 @@
 - **批次處理與預覽編輯器擴充（2026-11-05 整理）**：批次產生一次一支依序處理，`webui` 只能上傳、不能指定伺服器上的資料夾（桌面模式 `app` 可以，見 2026-11-05）；CLI `batch` 可支援 `--save-analysis` 以便事後快速重跑 `render`；預覽播放器的幅度、頂點／底點與「上下顛倒」都可以只作用在框選的點（2026-11-12 起），但整個鏡頭的「反轉」按鈕與鏡頭表的反轉仍以鏡頭為單位。
 
 ## 開發紀錄（最近）
+
+- [x] **骨架模式的 CUDA 版 PyTorch：新增 `pose-cuda` 選配項目（2026-11-12，D7；沒有改程式，沒有跑驗證分數）**
+  - 問題：`pyproject.toml` 把 torch／torchvision 的來源固定在 CPU 索引，有 NVIDIA 顯示卡的使用者要自己刪掉 `[tool.uv.sources]` 與 `[[tool.uv.index]]`；維護者在 testhost 上也要每次改副本的 `pyproject.toml`（`whl/cpu` → `whl/cu130`）。
+  - 修改：新增 `pose-cuda` extra（相依與 `pose` 相同），兩者以 `[tool.uv] conflicts` 宣告互斥，torch／torchvision 的來源依 extra 選（`pose` → CPU 索引、`pose-cuda` → `whl/cu130`）；`uv lock` 重新鎖定。`./set-env.sh --pose-cuda`、README（中英）、DEVELOPMENT 已更新。
+  - 驗證：`uv lock --check` 通過；一般安裝與 `--extra gui`（Windows 版用的）匯出的套件與版本和修改前完全相同（只多了少數既有套件的檔案雜湊）；`uv sync --frozen --dry-run --extra pose` 仍是 CPU 版（torch 2.15.0+cpu），`--extra pose-cuda` 解成 torch 2.14.1+cu130 加 22 個套件（含 nvidia-*）；兩個同時要求時 uv 報錯。**沒有實際安裝或在 CUDA 上跑過骨架模式**（約 2.5 GB；之前的「骨架模式的 GPU 設定未在 CUDA 上實際跑過」仍然成立）。
+  - Docker：照 CLAUDE.md 的規則重新建置預設映像檔（沒有 pose），建置成功、`--help` 與 `cache info` 可執行，測完已刪除映像；`WITH_POSE=1` 的映像沒有建（會下載 CPU 版 torch）。Windows 免安裝版的建置沒有在 CI 外跑，但 `uv export --frozen --extra gui` 的輸出已確認不變。
+  - 影響：`uv.lock` 多約 760 行（CUDA 套件與雜湊）。Docker 的 `WITH_POSE=1` 仍用 `pose`（CPU）。維護者在 testhost 上改用 `uv sync --extra pose-cuda`，不必再改 `pyproject.toml`（維護者的私人規則 CLAUDE.md 第 4.1 節還寫著舊做法，需要自己改；這個檔案不在儲存庫中）。
 
 - [x] **整理 scripts/：維護中的工具與一次性實驗分開（2026-11-12，D5；不動主程式與輸出）**
   - `git mv` 把 43 個一次性實驗腳本移到 `scripts/experiments/`（附 README：不維護、可能已無法執行）；留在 `scripts/` 的 10 個是仍在用的工具：`check_history`、`detect_viewer`、`flow_dump`、`make_synthetic`、`param_sweep`、`rescore_run`、`scene_diag`、`score_external`、`sign_model`、`two_cues`，加上 `remote_validate.ps1`。腳本內 docstring 的 `scripts/<名稱>.py` 用法全部改成新路徑；PLAN、CHANGELOG 與歸檔裡 2026-11-12 以前寫的舊路徑沒有改（DEVELOPMENT 的結構樹與 experiments 的 README 說明對應）。
