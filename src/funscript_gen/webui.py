@@ -627,13 +627,14 @@ def register_media(path: str | Path) -> str:
 
 def preview(video: Path, script: Funscript, reference: Funscript | None = None, scene_list=None,
             start_ms: float = 0.0, play: bool = False, checks: list[int] | None = None,
-            regions: dict[int, dict] | None = None, axes: dict[str, Funscript] | None = None) -> str:
+            regions: dict[int, dict] | None = None, axes: dict[str, Funscript] | None = None,
+            unsure: list[int] | None = None) -> str:
     try:
         fps = probe(video).fps
     except Exception:  # noqa: BLE001 - only used for frame stepping
         fps = 30.0
     return iframe(player_html(register_media(video), script, reference, fps=fps, scene_list=scene_list,
-                              start_ms=start_ms, play=play, checks=checks, regions=regions, axes=axes),
+                              start_ms=start_ms, play=play, checks=checks, unsure=unsure, regions=regions, axes=axes),
                   height=880 + AXIS_STRIP_PX * len(axes or {}))
 
 
@@ -1088,7 +1089,7 @@ class Job:
 
 def job_outputs(job: Job, start_ms: float = 0.0, play: bool = False):
     """(output file, summary, plot, scene table, player) for the job's current script."""
-    from funscript_gen.report import plot_result, possibly_inverted, scene_headers, scene_rows
+    from funscript_gen.report import plot_result, possibly_inverted, scene_headers, scene_rows, unsure_scenes
 
     script = job.result.funscript
     script.save(job.out_path)
@@ -1098,6 +1099,9 @@ def job_outputs(job: Job, start_ms: float = 0.0, play: bool = False):
     suspects = possibly_inverted(job.result)
     if suspects:
         lines.append(t("web.run.suspects", scenes=', '.join(map(str, suspects))))
+    unsure = unsure_scenes(job.result)
+    if unsure:
+        lines.append(t("web.run.unsure", scenes=', '.join(map(str, unsure))))
     if job.edited:
         lines.append(t("web.run.hand_edited"))
     if job.manual:
@@ -1114,7 +1118,7 @@ def job_outputs(job: Job, start_ms: float = 0.0, play: bool = False):
                        wiggle=format(WIGGLE, ".0f"), f1_clean=format(w.f1, ".2f")))
     fig = plot_result(job.result, job.reference)
     player = preview(job.video, script, job.reference, job.scene_list(), start_ms, play, suspects,
-                     scene_regions(job.result.plans))
+                     scene_regions(job.result.plans), unsure=unsure)
     return (str(job.out_path), "\n\n".join(lines), fig,
             gr.update(value=scene_rows(job.result), headers=scene_headers()), player)
 

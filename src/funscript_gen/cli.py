@@ -140,6 +140,12 @@ def _report(result: PipelineResult, opts, output: Path, debug: bool) -> None:
         which = f"scenes {nums.replace(',', ', ')}" if len(suspects) > 1 else f"scene {nums}"
         console.print(f"  [yellow]{which} may be upside down[/] (the reasons are in the notes below; check them, "
                       f"--flip-scenes {nums} flips them)")
+    from funscript_gen.report import unsure_scenes
+
+    unsure = unsure_scenes(result)
+    if unsure:
+        console.print(f"  [yellow]scenes {', '.join(map(str, unsure))} have no evidence for their direction[/] "
+                      f"(about half of such scenes were upside down in validation: check them first)")
     missing = set(opts.flip_scenes) - {p.scene.index for p in result.plans}
     if missing:
         console.print(f"  [yellow]--flip-scenes: no scene {', '.join(map(str, sorted(missing)))}[/]")

@@ -175,3 +175,11 @@ def test_viewer_page_holds_every_axis_of_every_script():
     assert doc.count("</script>") == 1  # the name cannot end the script
     assert "拖曳平移" in doc and "@@" not in doc
     assert viewer_height(sets) > viewer_height(sets[:1]) > viewer_height([])
+
+
+def test_the_player_gets_the_scenes_without_direction_evidence():
+    from funscript_gen.export.funscript import Action, Funscript
+
+    fs = Funscript([Action(0, 0), Action(500, 100)])
+    html_ = player_html("v.mp4", fs, scene_list=[(0.0, 0, False), (1000.0, 1, False)], checks=[0], unsure=[1])
+    assert '"check":true,"unsure":false' in html_ and '"check":false,"unsure":true' in html_

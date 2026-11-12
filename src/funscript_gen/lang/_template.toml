@@ -588,8 +588,8 @@ name = ""
 # zh-TW: （<k>PageUp</k><k>PageDown</k>）
 # en: (<k>PageUp</k><k>PageDown</k>)
 "preview.scene_keys" = ""
-# zh-TW: 跳到下一個可能高低相反、還沒反轉的鏡頭（底色標示）並播放
-# en: Jump to the next scene that may be upside down and is not flipped yet (shaded) and play it
+# zh-TW: 跳到下一個可能高低相反或方向沒有證據、還沒反轉的鏡頭（底色標示）並播放
+# en: Jump to the next scene that may be upside down or has no evidence for its direction, and is not flipped yet (shaded), and play it
 "preview.nextcheck_title" = ""
 # zh-TW: 下一個待確認（<k>N</k>）
 # en: Next to check (<k>N</k>)
@@ -1028,6 +1028,32 @@ name = ""
 # zh-TW: **{n}** 個動作點，
 # en: **{n}** actions, 
 "web.run.actions" = ""
+
+# --- report ---
+# zh-TW: 方向把握
+# en: Direction confidence
+"report.col.direction" = ""
+# zh-TW: 高
+# en: High
+"report.conf.high" = ""
+# zh-TW: 中
+# en: Medium
+"report.conf.medium" = ""
+# zh-TW: 低（沒有證據）
+# en: Low (no evidence)
+"report.conf.low" = ""
+
+# --- web ---
+# zh-TW: ℹ️ 鏡頭 {scenes} 的高低方向沒有任何證據可判斷（驗證中這類鏡頭約一半是反的），預覽中以底色標示；建議優先檢查，相反的話按「反轉」
+# en: ℹ️ Scenes {scenes} have no evidence at all for their direction (about half of such scenes were upside down in validation), and the preview shades them; check them first, and press “Flip” for those that are upside down
+"web.run.unsure" = ""
+
+# --- preview ---
+# zh-TW: 　待確認：方向沒有證據
+# en:   To check: no evidence for the direction
+"preview.js.unsure" = ""
+
+# --- web ---
 # zh-TW: ⚠️ 鏡頭 {scenes} 可能高低相反（原因見鏡頭表的備註，預覽中以底色標示）；按預覽的「下一個待確認」逐一跳過去看，相反的話按「反轉」
 # en: ⚠️ Scenes {scenes} may be upside down (the reason is in the scene table's note, and the preview shades them); press “Next to check” in the preview to go through them, and “Flip” for those that are
 "web.run.suspects" = ""

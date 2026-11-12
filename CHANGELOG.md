@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 逐鏡頭的方向把握（commit: `Show how sure each scene's direction is and mark the ones without evidence`）
+- 目的：專案審視 A1：方向錯是整個鏡頭翻反，修正成本在找出是哪幾個，但沒有證據的鏡頭沒有被標出來。
+- 修改：`report.direction_confidence` 依既有證據分高／中／低（無證據的鏡頭在 85 段上只有 47% 方向對，其餘 75–100%）；鏡頭表加「方向把握」欄；Web UI、CLI 摘要與預覽標出「低」的鏡頭並納入「下一個待確認」；語言包、README（中英）同步。
+- 驗證：`uv run pytest` 通過（新增 3 項）；不動輸出，沒有跑驗證分數。預覽的瀏覽器顯示未驗證。屬 MINOR（新功能，鏡頭表多一欄）。
+
 ## 2026-11-12 — 連不上 AI 時改為不用 AI 並說明（commit: `Go on without the AI when its server cannot be reached`）
 - 目的：專案審視 C1：沒有 AI 後端的使用者會卡在每個呼叫的重試，結果只在摘要看到一行失敗數。
 - 修改：`pipeline.ai_unreachable` 開始前試連（5 秒逾時，只有連線失敗算連不上）；連不上整個流程當作 `--no-ai`，說明由 CLI 與 Web UI 顯示；語言包新增 `pipe.ai_unreachable`；README（中英）加「AI 是選用的」；ARCHITECTURE 加註。

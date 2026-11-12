@@ -89,3 +89,20 @@ def test_debug_data_records_the_flip():
     col = SCENE_COLUMNS.index(FLIP_COLUMN)
     assert [r[col] for r in scene_rows(result)] == ["⇅ 已反轉", "-"]
     json.dumps(debug_data(result))
+
+
+def test_direction_confidence_follows_the_evidence():
+    from funscript_gen.report import direction_confidence, unsure_scenes
+
+    def plan(k, **kw):
+        p = _plan(k, [(100, 0), (0, 400)])
+        for name, value in kw.items():
+            setattr(p, name, value)
+        return p
+
+    plans = [plan(0, part_sign=0.5), plan(1, asym=0.45), plan(2, asym_flipped=True), plan(3, asym=0.25),
+             plan(4, sign_margin=0.6), plan(5), plan(6, asym=0.1, sign_margin=0.2, flipped=True), plan(7, skip=True),
+             plan(8, mode="pose"), _plan(9, [])]
+    assert [direction_confidence(p) for p in plans] == ["high", "high", "high", "medium", "medium", "low", "low", "", "", ""]
+    assert unsure_scenes(PipelineResult(Funscript(), plans)) == [5]  # 6 was flipped by hand: no need to look again
+    assert unsure_scenes(PipelineResult(Funscript(), [plan(5, sign_doubt="sound")])) == []  # already marked

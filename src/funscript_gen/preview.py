@@ -123,7 +123,7 @@ const DATA = __DATA__;
 const I18N = __I18N__;  // the language pack's preview.js.* texts
 function T(key, p) { let s = I18N[key] || key; for (const k in p || {}) s = s.split("{" + k + "}").join(p[k]); return s; }
 const acts = DATA.actions, axes = DATA.axes, ref = DATA.reference, scenes = DATA.scenes, sceneList = DATA.scene_list;
-const checks = sceneList.filter(x => x.check && !x.flipped);  // possibly upside down, not flipped since
+const checks = sceneList.filter(x => (x.check || x.unsure) && !x.flipped);  // possibly upside down or no evidence for the direction, not flipped since
 const hasRegions = sceneList.some(x => x.region);
 const video = document.getElementById("video");
 const tl = document.getElementById("timeline"), ov = document.getElementById("overview");
@@ -357,7 +357,7 @@ function frame() {
   document.getElementById("icount").textContent = acts.length;
   const sc = sceneAt(t);
   document.getElementById("iscene").textContent = sc === null ? "-" : sc.i + (sc.flipped ? T("preview.js.flipped") : "");
-  document.getElementById("icheck").textContent = sc !== null && checks.includes(sc) ? T("preview.js.check") : "";
+  document.getElementById("icheck").textContent = sc !== null && checks.includes(sc) ? T(sc.check ? "preview.js.check" : "preview.js.unsure") : "";
   document.getElementById("iscale").textContent =
     scaled && scaled.at === dirty && scaled.key === target().key ? ` ×${scaled.factor.toFixed(2)}` : "";
   drawTimeline(t); drawAxes(t); drawOverview(t); drawRegions(t);
@@ -855,11 +855,12 @@ def player_html(
     start_ms: float = 0.0,
     play: bool = False,
     checks: list[int] | None = None,
+    unsure: list[int] | None = None,
     regions: dict[int, dict] | None = None,
     axes: dict[str, Funscript] | None = None,
 ) -> str:
     """`scene_list`: (start ms, number, flipped) per scene, shown under the player and drawn as cuts when
-    `scene_starts_ms` is not given. `checks`: numbers of the scenes to check by hand (possibly upside down), shaded
+    `scene_starts_ms` is not given. `checks`: numbers of the scenes to check by hand (possibly upside down), `unsure`: those whose direction has no evidence, shaded
     while not flipped, with a button to jump from one to the next. `start_ms` / `play`: where to resume when the
     player is rebuilt. `regions`: per scene number, the region its motion was analysed in, drawn over the video
     (see scene_regions). `axes`: the other axes of a multi-axis script by id (L1, R1, ...), drawn as strips under the
@@ -870,7 +871,7 @@ def player_html(
         "actions": _actions(script),
         "reference": _actions(reference),
         "scenes": [round(s) for s in (scene_starts_ms or []) if s > 0],
-        "scene_list": [{"at": round(s), "i": i, "flipped": bool(f), "check": i in set(checks or []),
+        "scene_list": [{"at": round(s), "i": i, "flipped": bool(f), "check": i in set(checks or []), "unsure": i in set(unsure or []),
                         "region": (regions or {}).get(i)} for s, i, f in sorted(scene_list or [])],
         "axes": [{"id": a, "label": axis_label(a), "actions": _actions(fs)} for a, fs in (axes or {}).items()],
         "main_label": f"{MAIN_AXIS} {axis_label(MAIN_AXIS)}",
