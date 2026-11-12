@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import os
 import platform
 import shlex
@@ -486,14 +487,53 @@ def comparison(merged: dict, base: dict, manifest: dict | None = None, configs: 
             up = sum(_delta(new[c].get("f1"), old[c].get("f1")) > 0.005 for c in cs)
             down = sum(_delta(new[c].get("f1"), old[c].get("f1")) < -0.005 for c in cs)
             lines.append(f"  {g} ({len(cs)}): " + ", ".join(parts) + f"; F1 up {up}, down {down}")
+            ci = []
+            for m in ("f1", "f1_upright", "r100"):
+                b = bootstrap_delta({c: _delta(new[c].get(m), old[c].get(m)) for c in cs})
+                if b:
+                    ci.append(f"Δ{HEADS[m]} {_signed(b[0])} [{_signed(b[1])}, {_signed(b[2])}]")
+            if ci:
+                lines.append("      95% interval over source series: " + ", ".join(ci)
+                             + ("  (includes 0: not a reliable change)" if ci and _includes_zero(ci[0]) else ""))
         lines.append("")
     return "\n".join(lines)
+
+
+def series_of(clip: str) -> str:
+    """The source series of a clip alias: its leading letters (A01 → A, AF02 → AF)."""
+    m = re.match(r"[A-Za-z]+", clip)
+    return m.group(0) if m else clip
+
+
+def bootstrap_delta(deltas: dict[str, float], n: int = 2000, seed: int = 0) -> tuple[float, float, float, int] | None:
+    """Mean change per clip with a 95% bootstrap interval, resampling whole source series (clips of one series are not
+    independent: their scripts and sources are alike). None when fewer than 3 series have a change."""
+    by_series: dict[str, list[float]] = {}
+    for c, d in deltas.items():
+        if math.isfinite(d):
+            by_series.setdefault(series_of(c), []).append(d)
+    if len(by_series) < 3:
+        return None
+    groups = list(by_series.values())
+    rng = np.random.default_rng(seed)
+    means = []
+    for _ in range(n):
+        picked = [groups[i] for i in rng.integers(0, len(groups), len(groups))]
+        means.append(float(np.mean([d for g in picked for d in g])))
+    lo, hi = np.percentile(means, [2.5, 97.5])
+    return float(np.mean([d for g in groups for d in g])), float(lo), float(hi), len(groups)
 
 
 def _delta(a, b) -> float:
     if a is None or b is None:
         return float("nan")
     return float(a) - float(b)
+
+
+def _includes_zero(text: str) -> bool:
+    """Whether the first 'Δname +mean [lo, hi]' item of comparison's interval line has an interval around 0."""
+    lo, hi = (float(x) for x in text[text.index("[") + 1:text.index("]")].split(","))
+    return lo <= 0 <= hi
 
 
 def _signed(v: float) -> str:

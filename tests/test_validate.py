@@ -173,3 +173,19 @@ def test_score_skips_stretches_with_no_flow_and_no_part_boxes(tmp_path):
     assert got["f1"] > got["f1_noign"] and got["ignored_s"] == 4
     off = score(tmp_path / "ref.funscript", tmp_path / "out.funscript", tmp_path / "debug.json")
     assert off["f1"] == got["f1_noign"] and off["ignored_s"] == 0
+
+
+def test_bootstrap_resamples_source_series():
+    assert validate.series_of("AF02") == "AF" and validate.series_of("B03") == "B"
+    assert validate.bootstrap_delta({"A01": 0.1, "B01": 0.1}) is None  # two series: too few
+    mean, lo, hi, n = validate.bootstrap_delta({"A01": 0.1, "A02": 0.1, "B01": 0.1, "C01": 0.1})
+    assert n == 3 and (mean, lo, hi) == pytest.approx((0.1, 0.1, 0.1))
+    mean, lo, hi, _ = validate.bootstrap_delta({f"{s}01": d for s, d in zip("ABCDEF", (0.3, -0.2, 0.1, -0.1, 0.0, 0.2))})
+    assert lo < 0 < hi
+
+
+def test_comparison_prints_an_interval_over_series():
+    clips = {f"{s}01": {"f1": 0.5, "f1_strokes": 0.5, "r100": 0.4, "r500": 0.4, "f1_upright": 0.5, "sha": "x"} for s in "ABCD"}
+    new = {"default": {"args": [], "clips": {c: dict(v, f1=0.6, sha="y") for c, v in clips.items()}}}
+    text = validate.comparison(new, {"default": {"args": [], "clips": clips}}, None)
+    assert "95% interval over source series" in text and "ΔF1 +0.100 [+0.100, +0.100]" in text

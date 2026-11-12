@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — compare-runs 加上 95% 區間（commit: `Add bootstrap intervals over source series to compare-runs`）
+- 目的：專案審視 B2：決定常依 ±0.005 的差異，卻沒有誤差範圍。
+- 修改：`validate.py` 新增 `bootstrap_delta`，`comparison` 在每個分組下印 F1、`F1u`、`r` 變化的 95% 區間（以來源系列重抽樣）；README（中英）改 `user` 設定組的說法；DEVELOPMENT、PLAN 記錄。
+- 驗證：`uv run pytest` 360 項通過（新增 2 項）。`--no-ai` 在 dev ΔF1 −0.056 [−0.097, −0.019]，在 dev2、holdout2 區間含 0。屬 PATCH。
+
 ## 2026-11-12 — 以完整重跑換掉驗證表（commit: `Replace the validation table with a full 85-clip rerun`）
 - 目的：專案審視 B1／B4：驗證表混用新舊定義與日期，也不知道 AI 到底貢獻多少。
 - 修改：DEVELOPMENT 的「目前的驗證結果」換成現行程式對 85 段 × default／user／noai 的同源表；舊表移到歸檔；PLAN 記錄結果。沒有改程式。
