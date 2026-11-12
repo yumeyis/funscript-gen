@@ -136,6 +136,7 @@ uv run funscript-gen validate final -c default --clips holdout --purpose "確認
 - 比較程式修改前後要用同一份 AI 快取各跑一次（見下面「AI」）。
 - `compare-runs --baseline` 在每個分組下多印一行「95% interval over source series」：F1、`F1u`、`r` 變化的平均與 95% 區間，以來源系列（代號的前綴字母）為單位重抽樣（同一系列的素材不獨立），少於 3 個系列時不印。區間含 0 時不能當成有差異。這個區間只反映素材的抽樣，不含同一素材重跑的雜訊（AI 回答、GPU 光流）：同一份程式重跑兩次的雜訊下限還沒量。
 - 表中 `1st 1/4` 欄是「依預覽的待確認順序（有反向證據的、信心由低到高）檢查，前四分之一的鏡頭中找到幾個方向錯的鏡頭／全部方向錯的鏡頭數」（隨機順序期望值是四分之一）。2026-11-12 在 78 段上：default 70／210（33%，holdout2 51／161），`--no-ai` 64／235；也就是現在的信心順序只比隨機好一點，要找出所有方向錯的鏡頭幾乎得全部看過（`fix_checks` 在各段的 JSON 裡）。
+- **換 AI 模型、提示詞或 schema 前先跑 `scripts/ai_regress.py`**：`uv run python scripts/ai_regress.py out/runs/<基準> --clips dev2 --model <模型>` 用基準執行存下的分析當參考答案，重新切出同樣的關鍵幀、問新的模型，列出每個欄位（人數、動作、軸、部位、區域框 IoU ≥ 0.5、龜頭是否可見等）的一致率。沒有改模型時應該是 100%（回答來自快取，也順便檢查場景切分與快取）。一致率低的欄位就是會讓分數改變的地方，大多數欄位都一致才值得跑完整的驗證（提示詞說法改變單段就會差 0.3，見 PLAN）。一致率到多少算可以，還沒有標準（未驗證）：沒有換過模型，所以沒有實際的對照數字。
 - 第二台測試主機 testhost 是維護者自己的 Windows 電腦，用法與 CPU 使用率限制寫在維護者的私人工作規則中，不在本儲存庫。
 
 ### 評分
@@ -283,6 +284,7 @@ src/funscript_gen/
   signal/             訊號後處理、聲音（audio.py：撞擊聲的起點與相位）
   export/             funscript 讀寫
 scripts/                維護中的開發工具（`tests/test_scripts.py` 檢查語法與這份清單，CI 用 ruff 檢查）
+  ai_regress.py         換 AI 模型、提示詞或 schema 前的便宜檢查：對一次執行的鏡頭重新問 AI，和存下的回答逐欄比對一致率（見「驗證」）
   check_history.py      發布前的檢查：掃描整個 git 歷史有沒有真實名稱、金鑰、非 noreply 的信箱
   detect_viewer.py      偵測模型檢視器，用法見「開發環境與測試」
   flow_dump.py          把每幀的粗略光流場存成檔案，供離線實驗

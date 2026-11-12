@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — AI 的回歸檢查腳本（commit: `Add a script that compares the AI's answers with the saved ones`）
+- 目的：專案審視 B6：換模型或提示詞時沒有便宜的檢查方式。
+- 修改：新增 `scripts/ai_regress.py`（對一次執行的鏡頭重新問 AI，逐欄比一致率）；DEVELOPMENT、測試。
+- 驗證：同一個模型下 11 個鏡頭所有欄位 100%（自我檢查）；沒有換過模型。不動輸出，屬 PATCH。
+
 ## 2026-11-12 — 存下的分析以受限的 unpickler 載入（commit: `Load saved analyses with a restricted unpickler`）
 - 目的：專案審視 D1：`.analysis.pkl` 載入時可以執行任意程式碼。
 - 修改：`load_analysis` 只接受 numpy、路徑與程式自己的資料類別；SECURITY.md、README（中英）的警告改寫；`tests/test_analysis_file.py`。格式不變。
