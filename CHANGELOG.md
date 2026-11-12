@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — CI：型別檢查、Python 版本矩陣、Docker 建置（commit: `Add type checking, a Python version matrix and a Docker build to CI`）
+- 目的：專案審視 D2。
+- 修改：`pyproject.toml` 加 `[tool.mypy]`；`tests.yml` 加 mypy、docker job 與 Python 3.11／3.13 的矩陣；`evaluate.py` 補型別（行為不變）；DEVELOPMENT、PLAN。
+- 驗證：本機 3.11、3.13 各 432 項通過；mypy 通過；Docker 映像可建置並執行 `--help`。CI 本身尚未在 GitHub 上跑過。屬 PATCH。
+
 ## 2026-11-12 — 上傳暫存檔自動清除、取消不等 AI 回答（commit: `Clean up uploaded videos and cancel without waiting for the AI`）
 - 目的：專案審視 C4 的另外兩項小問題。
 - 修改：Web UI 的 Gradio 暫存檔 2 天後自動刪除；`pipeline._run_all` 每 0.5 秒輪詢，取消時不等執行中的 AI 請求；README（中英）、docker/README（中英）、測試。

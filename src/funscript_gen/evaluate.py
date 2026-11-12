@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from funscript_gen.export.funscript import Funscript
+from funscript_gen.export.funscript import Action, Funscript
 
 # Hand-made scripts often draw small wiggles (a few units, faster than 6 Hz) on top of the strokes; every one
 # counts as a turning point. Scores "ignoring wiggles" first drop turning points closer than this to the last kept one.
@@ -71,12 +71,18 @@ def simple_extrema(fs: Funscript, ratio: float = SIMPLIFY_RATIO,
     at = np.array([a.at for a in fs.actions], dtype=float)
     pos = np.array([a.pos for a in fs.actions], dtype=float)
     idx, kind = _extrema_idx(pos)
-    t0, t1, k, v = [], [], [], []
+    t0: list[float] = []
+    t1: list[float] = []
+    k: list = []
+    v: list[float] = []
     for i, kd in zip(idx, kind):
         if k and k[-1] == kd and v[-1] == pos[i]:  # the other end of the hold
             t1[-1] = at[i]
         else:
-            t0.append(at[i]), t1.append(at[i]), k.append(kd), v.append(pos[i])
+            t0.append(at[i])
+            t1.append(at[i])
+            k.append(kd)
+            v.append(pos[i])
     i = 0
     while vibration and i < len(v) - 2:
         j = i
@@ -108,14 +114,16 @@ def drop_wiggles(fs: Funscript, min_stroke: float = WIGGLE) -> Funscript:
     acts = fs.actions
     if min_stroke <= 0 or len(acts) < 3:
         return fs
-    keep, ext, up = [acts[0]], None, None
+    keep = [acts[0]]
+    ext: Action | None = None
+    up: bool | None = None
     for a in acts[1:]:
         if up is None:
             if abs(a.pos - keep[-1].pos) >= min_stroke:
                 up, ext = a.pos > keep[-1].pos, a
-        elif (a.pos >= ext.pos) if up else (a.pos <= ext.pos):
+        elif ext is not None and ((a.pos >= ext.pos) if up else (a.pos <= ext.pos)):
             ext = a
-        elif abs(a.pos - ext.pos) >= min_stroke:
+        elif ext is not None and abs(a.pos - ext.pos) >= min_stroke:
             keep.append(ext)
             up, ext = not up, a
     if ext is not None:

@@ -77,6 +77,15 @@ path = "src/funscript_gen/__init__.py"
 packages = ["src/funscript_gen"]
 
 # Lint (CI runs `uvx ruff@0.17.4 check`): only real errors for now (syntax errors, unused or undefined names).
+# Type checking (CI: `uvx mypy@1.18.2`): only the modules that are plain functions over arrays and dataclasses. The
+# pipeline, direction and web UI modules keep many Optional fields that are filled step by step, which a checker
+# cannot follow without a rewrite.
+[tool.mypy]
+files = ["src/funscript_gen/options.py", "src/funscript_gen/evaluate.py", "src/funscript_gen/signal",
+         "src/funscript_gen/export", "src/funscript_gen/cache.py"]
+ignore_missing_imports = true
+follow_imports = "silent"
+
 [tool.ruff]
 extend-exclude = ["scripts/experiments"]  # one-off experiment scripts, not maintained (see its README)
 

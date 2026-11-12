@@ -71,7 +71,7 @@
 **D. 工程**
 
 - **D1 `.analysis.pkl` 是 pickle，卻被列為公開介面**：載入別人給的檔案等於執行任意程式碼，目前只有 `save_analysis` 的 docstring 提醒，README 的 `render` 範例與 SECURITY.md 都沒寫；`VideoAnalysis`／`ScenePlan` 一改欄位就要手動升 `ANALYSIS_FORMAT`，忘了升會在 render 時才出錯。建議改成 npz（陣列）＋ JSON（其餘欄位）並明確寫出版本；改之前先在 README 與 SECURITY.md 加上警告。屬於格式變更，要配合版本號（見 DEVELOPMENT 的表）。
-- **D2 CI 沒有靜態檢查**：本機有 `.ruff_cache` 但 `pyproject.toml` 沒有 ruff 設定，`tests.yml` 只跑 pytest。加上 ruff（先只開錯誤類規則）與型別檢查（可先只檢查 `options.py`、`signal/`、`evaluate.py` 這些純函式模組）。CI 也只測一個 Python 版本（`requires-python >= 3.11` 沒有上限，uv 自己選），至少測 3.11 與最新版；Docker 映像檔沒有在 CI 建置（現在靠人工記得重建）。
+- **D2（2026-11-12 已做：ruff、mypy 檢查純函式模組、Python 3.11／3.13 矩陣、Docker 建置；mypy 沒擴到 pipeline／direction／webui）CI 沒有靜態檢查**：本機有 `.ruff_cache` 但 `pyproject.toml` 沒有 ruff 設定，`tests.yml` 只跑 pytest。加上 ruff（先只開錯誤類規則）與型別檢查（可先只檢查 `options.py`、`signal/`、`evaluate.py` 這些純函式模組）。CI 也只測一個 Python 版本（`requires-python >= 3.11` 沒有上限，uv 自己選），至少測 3.11 與最新版；Docker 映像檔沒有在 CI 建置（現在靠人工記得重建）。
 - **D3（2026-11-12 已做：方向判斷搬到 `direction.py`、頁面搬到 `webui_layout.py`；`webui.py` 仍有約 1,500 行處理函式）兩個過大的模組**：`webui.py` 2,006 行，其中 `build()` 單一函式 391 行；`pipeline.py` 1,281 行，同時放了分析的排程、方向規則（`flip_by_parts`、`flip_by_asymmetry`、分段對齊）與存檔。建議把方向判斷搬到獨立模組（`direction.py`，純函式、吃分析結果），`webui.py` 依分頁拆開。這兩處也是每次修改最常動到、最容易互相影響的地方；搬移時用 `--baseline` 確認逐點相同。
 - **D4 AI 快取（2026-11-12 已做：原子寫入、壞檔視為沒有快取、`funscript-gen cache info／clear`；Web UI「輸出」分頁沒有對應按鈕，未做）**：`ResponseCache.put` 直接 `write_text`，不是先寫暫存檔再換名（部位框快取有做）；兩個程序同時跑或中途被中斷時可能留下半個 JSON，下次 `get` 會丟 `JSONDecodeError`。快取也沒有大小上限或清除指令（目前 AI 86 MB、部位框 59 MB，只會增加），部位框以影片路徑為鍵，搬動影片就失效並留下舊項目。建議：原子寫入、讀到壞檔當作沒有快取、加 `funscript-gen cache info／clear`（Web UI「輸出」分頁也放一個）。
 - **D5（2026-11-12 已做：10 個維護中的工具留在 `scripts/`，其餘 43 個移到 `scripts/experiments/`，ruff 與語法測試）`scripts/` 有 54 個一次性實驗腳本**：沒有測試覆蓋，依賴 `pipeline` 的內部函式，D3 的重構後多半會壞（目前是否都還能執行未逐一確認）。建議分成 `scripts/`（仍在用的工具：`check_history`、`detect_viewer`、`flow_dump`、`rescore_run`、`score_external`、`param_sweep`、`remote_validate.ps1`、`make_synthetic`）與 `scripts/experiments/`（結論已寫進 PLAN 的一次性實驗，標明不保證能執行），前者加一個匯入的冒煙測試。
@@ -285,6 +285,11 @@
 
 ## 開發紀錄（最近）
 
+- [x] **CI 加強：型別檢查、Python 版本矩陣、Docker 建置（2026-11-12，D2；不動輸出）**
+  - mypy（`[tool.mypy]`，CI 跑 `uvx mypy@1.18.2`）檢查 `options.py`、`evaluate.py`、`signal/`、`export/`、`cache.py`：原本只有 `evaluate.py` 有 7 個錯誤（沒標型別的空串列、`Action | None` 的屬性），已修（標型別、用 `ext is not None` 取代隱含假設，行為不變）。`direction.py` 有 9 個錯誤，都是欄位為 `Optional` 卻直接用（`ScenePlan` 的欄位逐步填入），要檢查整個流程得先改資料結構，沒做。
+  - Python 版本：本機分別用 3.11 與 3.13（`uv run --python`，獨立環境）跑完整測試，各 432 項通過；CI 的 pytest 矩陣改成 ubuntu 的 3.11、3.12、3.13 與 windows 的 3.12。沒測 3.14。
+  - Docker：新增 `docker` job，建置 `docker/Dockerfile` 並執行 `--help`（本機已用同樣的指令確認映像可建置、可執行）。`WITH_POSE=1` 的映像沒有納入。
+  - 這些 CI job 的結果要等推送後才知道（沒推送，使用者要求才推）。
 - [x] **C4 的另外兩項：上傳暫存檔自動清除、取消不再等 AI 回答（2026-11-12；不動輸出）**
   - 暫存檔：`gr.Blocks(delete_cache=(3600, 172800))`（`webui_layout.UPLOAD_CLEANUP`），每小時刪除建立超過 2 天的上傳檔；用 `delete_cache=(2, 3)` 的小伺服器實測：上傳 5 位元組的檔案，8 秒後從暫存資料夾消失。代價：超過 2 天的上傳影片要重新上傳才能再產生。README 與 docker/README（中英）的說明已改。
   - 取消：`_run_all` 改用 `wait(timeout=0.5)` 輪詢，AI 階段的 `tick.poll`（進度回呼，取消時會丟例外）每 0.5 秒呼叫一次；例外時不再等執行中的請求做完（`shutdown(wait=False)`），已送出的請求在背景結束、回答仍進快取。測試用 1 秒的慢項目，在 0.8 秒內停止。

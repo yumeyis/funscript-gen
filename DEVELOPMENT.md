@@ -96,7 +96,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\smoke-test
 - 預發布版的版本號用 Python（PEP 440）的寫法 `1.1.0rc1`，標籤是 `v1.1.0rc1`（`windows.yml` 要求標籤等於 `v` + `__version__`），Release 標成 pre-release。
 - 發布步驟：
   1. 一個 `Release vX.Y.Z` commit：改 `__version__`，在 CHANGELOG 加上版本標題，`uv run pytest` 通過。
-  2. 推送到 `main`，確認 `tests.yml` 的**每個 job**（ubuntu 與 windows）都成功：用 `gh run view <id> --json conclusion,jobs` 或不經管線的 `gh run watch <id> --exit-status`，不要把它接到 `tail`（結束碼會被吃掉，只看到通過的那個 job）。可以先單獨推送功能 commit，讓 Windows 的測試在 Release commit 之前跑完。
+  2. 推送到 `main`，確認 `tests.yml` 的**每個 job**（lint、docker、pytest 的每個組合）都成功：用 `gh run view <id> --json conclusion,jobs` 或不經管線的 `gh run watch <id> --exit-status`，不要把它接到 `tail`（結束碼會被吃掉，只看到通過的那個 job）。可以先單獨推送功能 commit，讓 Windows 的測試在 Release commit 之前跑完。
   3. `git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`：`windows.yml` 建置 zip 並建立**草稿** Release。儲存庫的規則不允許刪除標籤，推送後無法重打，所以第 2 步沒有全綠就不要打標籤（v1.1.0rc3 就因此作廢，改發 rc4）。`windows.yml` 的冒煙測試偶爾會因為 runner 上出現 `AppData\Mozilla` 而失敗，與程式無關，`gh run rerun <id> --failed` 即可。
   4. 檢查草稿的 zip、`.sha256` 與自動產生的說明（補上使用者看得到的重點，中英文），再發布。
 - 已發布的標籤不移動、不刪除；發布後發現問題就出新的 PATCH 版。
@@ -295,7 +295,7 @@ scripts/                維護中的開發工具（`tests/test_scripts.py` 檢�
   experiments/          一次性的實驗腳本（部位框、小行程、鏡頭移動、深度、微調模型等），結果寫在 PLAN 與歸檔；不維護，可能已無法執行（說明見該資料夾的 README）；2026-11-12 以前的 PLAN、CHANGELOG 與歸檔寫的 `scripts/<名稱>.py` 現在在這裡
 tests/                  單元測試
 packaging/windows/      Windows 免安裝版的建置腳本、啟動程式原始碼、冒煙測試、zip 內的說明（README.txt 英文、README.zh.txt 繁體中文）
-.github/                 issue／PR 範本、Dependabot；workflows/：tests.yml（Linux 與 Windows 跑單元測試）、windows.yml（建置 Windows 免安裝版、草稿 Release）
+.github/                 issue／PR 範本、Dependabot；workflows/：tests.yml（ruff、mypy、Docker 建置，單元測試跑 Linux 的 Python 3.11／3.12／3.13 與 Windows 的 3.12）、windows.yml（建置 Windows 免安裝版、草稿 Release）
 CONTRIBUTING.md、SECURITY.md  貢獻說明（含貢獻的授權）與安全性政策（中英雙語）
 docker/                 Dockerfile、docker-compose.yaml（只有 funscript-gen）、docker-compose.ollama.yaml（加上 Ollama）、entrypoint.sh、使用說明
 docs/archive/           歸檔的開發紀錄（PLAN-archive.md）
