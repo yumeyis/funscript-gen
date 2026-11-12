@@ -385,6 +385,45 @@ def ai_check(
     console.print(f"annotated frame: {out}")
 
 
+cache_app = typer.Typer(no_args_is_help=True, help="The caches (AI answers, part boxes): what they hold, and clearing them")
+app.add_typer(cache_app, name="cache")
+
+
+@cache_app.command("info")
+def cache_info() -> None:
+    """List the cache folders with their number of files and size."""
+    from funscript_gen import cache
+
+    rows = cache.usage()
+    console.print(f"cache folder: {cache.root()}")
+    if not rows:
+        console.print("  (empty)")
+    for u in rows:
+        note = "" if u.clearable else "  (not cleared by `cache clear`)"
+        console.print(f"  {u.name:12} {u.files:7} files  {cache.human(u.size):>9}{note}")
+
+
+@cache_app.command("clear")
+def cache_clear(
+    names: Annotated[Optional[list[str]], typer.Argument(help="ai, parts, poses or all (default: all)")] = None,
+    older_than: Annotated[Optional[float], typer.Option(help="Only files not changed for this many days")] = None,
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Do not ask")] = False,
+) -> None:
+    """Delete cached AI answers, part boxes and skeletons (they are made again when needed; the AI's answers then
+    cost its time and may differ). The downloaded models are not touched."""
+    from funscript_gen import cache
+
+    chosen = list(cache.CLEARABLE) if not names or "all" in names else names
+    bad = [n for n in chosen if n not in cache.CLEARABLE]
+    if bad:
+        raise typer.BadParameter(f"{', '.join(bad)}: choose from {', '.join(cache.CLEARABLE)} or all")
+    what = f"{', '.join(chosen)}" + (f" older than {older_than:g} days" if older_than is not None else "")
+    if not yes and not typer.confirm(f"Delete the cached {what} in {cache.root()}?"):
+        raise typer.Exit(1)
+    files, size = cache.clear(chosen, older_than)
+    console.print(f"deleted {files} files, {cache.human(size)}")
+
+
 lang_app = typer.Typer(no_args_is_help=True, help="Language packs (the .toml files in lang/)")
 app.add_typer(lang_app, name="lang")
 

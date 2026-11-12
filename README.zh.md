@@ -275,6 +275,10 @@ uv run funscript-gen compare reference.funscript video.funscript
 # 抽幾張畫面送給 AI，看它的判斷（會輸出標註了區域的圖片 out/ai-check.jpg）
 uv run funscript-gen ai-check video.mp4 --at 60
 
+# 快取（AI 的回答、部位框）：看有多大、清除（下載的模型不會動；AI 的回答清掉後重新要會花 AI 的時間，答案也可能略有不同）
+uv run funscript-gen cache info
+uv run funscript-gen cache clear parts --older-than 30
+
 # 影片資訊
 uv run funscript-gen info video.mp4
 

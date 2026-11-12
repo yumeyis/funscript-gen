@@ -48,7 +48,7 @@ uv run python scripts/detect_viewer.py --port 7862 --share-lan   # 區網內的�
 - **設定只有一個來源**：所有使用者設定定義在 `options.py` 的 `OPTIONS` 表中，CLI 的 `generate`／`render` 參數、Web UI「產生」分頁的表單、記住的設定、設定組（`PRESETS`）與輸出檔 metadata 都由它產生。新增設定只要在表中加一筆，`stage` 標明它屬於分析還是 render 階段。訊號參數集中在 `SignalParams`，AI 設定集中在 `config.Settings`。
 - **分析與 render 分開**：`analyze_video`（鏡頭、AI、光流、部位框、聲音；耗時）的結果可以存檔，`render`（訊號 → 方向 → funscript）便宜、可重複。分析設定改變時才要重新分析；Web UI 沿用上次的分析、CLI 的 `render`、驗證執行器的 `--replay` 都靠這個分界。
 - **可追溯的輸出**：輸出檔的 metadata（`funscript_gen`）記錄版本、程式碼雜湊、git commit、AI 模型與全部設定（`version.py`）。
-- **快取**：AI 回應以請求內容為鍵存在 `~/.cache/funscript-gen/ai/`；部位框以影片路徑、大小與修改時間為鍵存在 `~/.cache/funscript-gen/parts/`。
+- **快取**：AI 回應以請求內容為鍵存在 `~/.cache/funscript-gen/ai/`；部位框以影片路徑、大小與修改時間為鍵存在 `~/.cache/funscript-gen/parts/`。 `funscript-gen cache info` 列出各資料夾的檔案數與大小，`cache clear [ai|parts|poses|all] [--older-than 天數]` 清除（會先詢問，`-y` 略過；只清可以重做的快取，下載的模型不動）。AI 的快取寫入是原子的（先寫暫存檔再換名），讀到壞檔當作沒有快取。
 - **檔案位置集中在 `paths.py`**：`.env`、`.webui-*.json` 預設在工作目錄，Web UI 的輸出在 `out/webui/`，快取在 `~/.cache/funscript-gen/`。設了 `FUNSCRIPT_GEN_HOME` 時全部改到該資料夾（`.env`、`out/`、`cache/`、`tmp/`），`funscript_gen/__init__.py` 也把 Hugging Face、Gradio、Matplotlib 的快取導進去（Windows 免安裝版用這個機制）。新增寫入檔案的地方要經過 `paths.py`。
 - **多語言**：使用者看得到的文字都在語言包（`src/funscript_gen/lang/*.toml`，`[meta]` 加上 `[texts]` 的 `"key" = "文字"`），程式用 `i18n.t("key", 參數=值)` 取用，`zh-TW.toml` 是原稿、缺的文字退回它。語言包也從外部資料夾讀取（`FUNSCRIPT_GEN_LANG_DIR`，再來是工作目錄的 `lang/`），同代碼的外部檔案取代內建的；語言依序由 `--lang`、`FUNSCRIPT_GEN_LANG`、Web UI 記住的選擇（`.webui-last.json` 的 `lang`）、系統語言、英文決定。Web UI 的元件用 `webui.ui()` 建立並登記（文字以 `Late` 延遲查表），切換語言時一次 `gr.update` 全部更新，不必重新整理；預覽播放器、分析備註在產生當下就定下語言。`funscript-gen lang template` 由 zh-TW 與 en 產生 `_template.toml`，`lang check` 檢查語言包。程式中用名稱找的表格欄位用不隨語言改變的代號（`report.SCENE_COLUMNS`、`webui.PREVIEW_COLUMNS`），顯示的標題另查語言包。`tests/test_i18n.py` 檢查兩個語言包的 key 與 `{參數}` 一致、範本是最新的、程式要的 key 都存在、程式碼裡沒有殘留的中文字串；`tests/conftest.py` 把測試固定在 zh-TW。
 - **本機路徑只在桌面模式開放**：`webui.LOCAL_FILES`（`app` 設為 True）關閉時，「產生」「批次」「預覽」的本機路徑會被拒絕，因為 `webui` 可能開放給區網其他電腦，不能讓它們讀伺服器上的任意檔案。桌面模式用路徑框取代三個分頁的上傳元件（`path_row`）：框外的列（`.fg-drop`，id `drop-<區域>`）是拖放區，選檔按鈕呼叫 pywebview 的原生對話框（`app.file_picker`，kind 為 video／videos／script／folder）。視窗的拖放只有 Python 端知道檔案路徑（WebView2 的 `pywebviewFullPath`）：`app.listen_for_drops` 在 `document` 掛 `drop` 處理器，把路徑交給頁面的 `fgDropped`（`webui.UI_JS`），它記得放在哪個區域，把 `{zone, paths, n}` 寫進隱藏的 `#fg-inbox`；要用 `.change` 觸發（程式設的 `input` 事件 Gradio 不會處理），伺服器端的 `drop_arrived` → `dropped` 決定各框的內容（影片與 funscript 依副檔名分類、批次加到清單、預覽的「自動帶入同名的檔案」用 `sibling`）。選檔按鈕、在框內按 Enter 都走同一個 `dropped`。`NATIVE_DIALOGS` 在建頁面前由 `app.run` 決定（視窗是之後才建的）。
@@ -269,6 +269,7 @@ src/funscript_gen/
   report.py           訊號圖、鏡頭表、除錯資料（CLI 與 Web UI 共用）
   preview.py          預覽播放器（自成一體的 HTML／JS；多軸腳本的軸列）與工具分頁的多軸檢視頁
   multiaxis.py        多軸腳本：從檔名與內容辨識（每軸一檔／一檔多軸）、合併、分割、帶入同資料夾的軸檔、備份與寫檔（預覽與「工具」分頁共用）
+  cache.py            快取資料夾的用量與清除（`funscript-gen cache info／clear`；只清 ai、parts、poses，不動下載的模型）
   outputs.py          Web UI 輸出資料夾的保留天數、清理與「存到影片旁邊」設定
   ai/                 視覺語言模型 provider（OpenAI 相容、Ollama 原生）、提示詞與 schema、回應快取、候選區域（regions.py）
   video/              解碼（精確時間戳）、鏡頭切分

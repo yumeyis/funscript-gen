@@ -275,6 +275,10 @@ uv run funscript-gen compare reference.funscript video.funscript
 # Send a few frames to the AI and see what it decides (writes an image with the regions marked, out/ai-check.jpg)
 uv run funscript-gen ai-check video.mp4 --at 60
 
+# Caches (the AI's answers, the part boxes): see how big they are, and clear them (downloaded models are left alone; asking the AI again costs its time and the answers may differ slightly)
+uv run funscript-gen cache info
+uv run funscript-gen cache clear parts --older-than 30
+
 # Video information
 uv run funscript-gen info video.mp4
 

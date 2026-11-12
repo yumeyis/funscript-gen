@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 快取的用量與清除指令（commit: `Add cache info and cache clear commands`）
+- 目的：專案審視 D4：快取沒有大小上限也沒有清除方式，搬動影片後部位框會留下舊項目。
+- 修改：新增 `cache.py` 與 CLI `cache info`／`cache clear`（只清 ai、parts、poses，可 `--older-than`，會先詢問）；README（中英）、DEVELOPMENT、PLAN。
+- 驗證：`uv run pytest` 通過（新增 3 項）；對本機實際快取只執行了 `cache info`，沒有清除。屬 MINOR（新指令）。
+
 ## 2026-11-12 — 預覽播放器的「上下顛倒」（commit: `Add an Upside down tool to the preview player for a stretch of a scene`）
 - 目的：專案審視 A3：長鏡頭只有一段方向相反時，只能整個鏡頭反轉。
 - 修改：`preview.py` 新增 `mirrorScene` 與「上下顛倒」按鈕、`M` 鍵（作用在選取的點，沒選時是目前鏡頭）；語言包、README（中英）、PLAN。

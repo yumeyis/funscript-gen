@@ -73,7 +73,7 @@
 - **D1 `.analysis.pkl` 是 pickle，卻被列為公開介面**：載入別人給的檔案等於執行任意程式碼，目前只有 `save_analysis` 的 docstring 提醒，README 的 `render` 範例與 SECURITY.md 都沒寫；`VideoAnalysis`／`ScenePlan` 一改欄位就要手動升 `ANALYSIS_FORMAT`，忘了升會在 render 時才出錯。建議改成 npz（陣列）＋ JSON（其餘欄位）並明確寫出版本；改之前先在 README 與 SECURITY.md 加上警告。屬於格式變更，要配合版本號（見 DEVELOPMENT 的表）。
 - **D2 CI 沒有靜態檢查**：本機有 `.ruff_cache` 但 `pyproject.toml` 沒有 ruff 設定，`tests.yml` 只跑 pytest。加上 ruff（先只開錯誤類規則）與型別檢查（可先只檢查 `options.py`、`signal/`、`evaluate.py` 這些純函式模組）。CI 也只測一個 Python 版本（`requires-python >= 3.11` 沒有上限，uv 自己選），至少測 3.11 與最新版；Docker 映像檔沒有在 CI 建置（現在靠人工記得重建）。
 - **D3 兩個過大的模組**：`webui.py` 2,006 行，其中 `build()` 單一函式 391 行；`pipeline.py` 1,281 行，同時放了分析的排程、方向規則（`flip_by_parts`、`flip_by_asymmetry`、分段對齊）與存檔。建議把方向判斷搬到獨立模組（`direction.py`，純函式、吃分析結果），`webui.py` 依分頁拆開。這兩處也是每次修改最常動到、最容易互相影響的地方；搬移時用 `--baseline` 確認逐點相同。
-- **D4 AI 快取**：`ResponseCache.put` 直接 `write_text`，不是先寫暫存檔再換名（部位框快取有做）；兩個程序同時跑或中途被中斷時可能留下半個 JSON，下次 `get` 會丟 `JSONDecodeError`。快取也沒有大小上限或清除指令（目前 AI 86 MB、部位框 59 MB，只會增加），部位框以影片路徑為鍵，搬動影片就失效並留下舊項目。建議：原子寫入、讀到壞檔當作沒有快取、加 `funscript-gen cache info／clear`（Web UI「輸出」分頁也放一個）。
+- **D4 AI 快取（2026-11-12 已做：原子寫入、壞檔視為沒有快取、`funscript-gen cache info／clear`；Web UI「輸出」分頁沒有對應按鈕，未做）**：`ResponseCache.put` 直接 `write_text`，不是先寫暫存檔再換名（部位框快取有做）；兩個程序同時跑或中途被中斷時可能留下半個 JSON，下次 `get` 會丟 `JSONDecodeError`。快取也沒有大小上限或清除指令（目前 AI 86 MB、部位框 59 MB，只會增加），部位框以影片路徑為鍵，搬動影片就失效並留下舊項目。建議：原子寫入、讀到壞檔當作沒有快取、加 `funscript-gen cache info／clear`（Web UI「輸出」分頁也放一個）。
 - **D5 `scripts/` 有 54 個一次性實驗腳本**：沒有測試覆蓋，依賴 `pipeline` 的內部函式，D3 的重構後多半會壞（目前是否都還能執行未逐一確認）。建議分成 `scripts/`（仍在用的工具：`check_history`、`detect_viewer`、`flow_dump`、`rescore_run`、`score_external`、`param_sweep`、`remote_validate.ps1`、`make_synthetic`）與 `scripts/experiments/`（結論已寫進 PLAN 的一次性實驗，標明不保證能執行），前者加一個匯入的冒煙測試。
 - **D6 文件本身**（2026-11-12 已做：2026-11-08 以前的開發紀錄移到歸檔，PLAN 從 957 行降到約 330 行；刪掉過時的「公開前決定 git 歷史」與重複的「Ollama 上的 8B」；DEVELOPMENT 的結構樹已修。還沒做：「已放棄的方案」重新分類、「3D 素材降低快慢門檻」改寫成現況）：
   - PLAN.md 957 行、約 3 萬 token，超過一次讀檔的上限，「給下一個 AI session 看」的目的已經打折。「開發紀錄（最近）」中 2026-11-09 以前、已反映在程式碼的條目應移到歸檔。
@@ -284,6 +284,12 @@
 - **批次處理與預覽編輯器擴充（2026-11-05 整理）**：批次產生一次一支依序處理，`webui` 只能上傳、不能指定伺服器上的資料夾（桌面模式 `app` 可以，見 2026-11-05）；CLI `batch` 可支援 `--save-analysis` 以便事後快速重跑 `render`；預覽播放器的幅度、頂點／底點與「上下顛倒」都可以只作用在框選的點（2026-11-12 起），但整個鏡頭的「反轉」按鈕與鏡頭表的反轉仍以鏡頭為單位。
 
 ## 開發紀錄（最近）
+
+- [x] **快取的用量與清除指令（2026-11-12，D4 的後半；不動分析與輸出，沒有跑驗證分數）**
+  - `cache.py`：`usage()` 列出快取資料夾每個子資料夾的檔案數與大小，`clear(names, older_than_days)` 只清 `ai`、`parts`、`poses`（其他名稱 `ValueError`），可只清超過 N 天沒改的檔案；資料夾本身保留；下載的模型（`huggingface`）與視窗資料只列出、不清。CLI：`funscript-gen cache info`、`cache clear [名稱…|all] [--older-than 天數] [-y]`（沒有 `-y` 先詢問）。`FUNSCRIPT_GEN_HOME` 時改看 `<home>/cache`，所以 Windows 免安裝版也能用 `funscript-gen.exe cache …`。
+  - 這台本機的實際用量（`cache info`，只讀）：ai 21,260 個檔 4.3 MB、parts 8,292 個檔 35.4 MB、poses 3 個檔；沒有清除（AI 的快取是驗證可重現的前提，見 2026-11-12 的完整重跑）。
+  - 新增 3 個測試（用量與標記、只清可清的與 `--older-than`、CLI 的詢問與拒絕）。README（中英）的 CLI 範例、DEVELOPMENT 的快取說明與專案結構已更新。
+  - 未做：Web UI 的按鈕、部位框快取在影片搬動後留下的舊項目不會自動辨識（只能用 `--older-than`）、沒有大小上限或自動清理。
 
 - [x] **預覽播放器的「上下顛倒」：只反轉長鏡頭中的一段（2026-11-12，A3；不動自動輸出，沒有跑驗證分數）**
   - 做法：播放器的編輯模式本來就能用滑鼠框選多個動作點，幅度、頂點／底點也已經只作用在選取的點（沒選時是目前鏡頭）；新增同一個作用範圍的「上下顛倒」按鈕與 `M` 鍵（`preview.py` 的 `mirrorScene`）：選取的點（至少 2 個、位置不全相同）以它們自己的最低與最高為準鏡像，`pos' = 最低 + 最高 − pos`，會開啟編輯並可 `Ctrl+Z` 復原；結果是一般的手動編輯，用「儲存編輯」寫進輸出。沒選取時作用在目前鏡頭，等於客戶端版的整個鏡頭反轉（和下方的「反轉」按鈕不同：那個是伺服器端、記在 `Job.manual`）。
