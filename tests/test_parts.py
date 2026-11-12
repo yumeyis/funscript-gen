@@ -3,7 +3,8 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from funscript_gen.pipeline import PipelineOptions, ScenePlan, collect_parts, flip_by_asymmetry, flip_by_parts
+from funscript_gen.direction import flip_by_asymmetry, flip_by_parts
+from funscript_gen.pipeline import PipelineOptions, ScenePlan, collect_parts
 from funscript_gen.signal.process import analyze
 from funscript_gen.tracking import parts
 from funscript_gen.tracking.flow import MIN_AMPLITUDE_PX

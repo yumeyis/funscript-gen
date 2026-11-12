@@ -72,7 +72,7 @@
 
 - **D1 `.analysis.pkl` 是 pickle，卻被列為公開介面**：載入別人給的檔案等於執行任意程式碼，目前只有 `save_analysis` 的 docstring 提醒，README 的 `render` 範例與 SECURITY.md 都沒寫；`VideoAnalysis`／`ScenePlan` 一改欄位就要手動升 `ANALYSIS_FORMAT`，忘了升會在 render 時才出錯。建議改成 npz（陣列）＋ JSON（其餘欄位）並明確寫出版本；改之前先在 README 與 SECURITY.md 加上警告。屬於格式變更，要配合版本號（見 DEVELOPMENT 的表）。
 - **D2 CI 沒有靜態檢查**：本機有 `.ruff_cache` 但 `pyproject.toml` 沒有 ruff 設定，`tests.yml` 只跑 pytest。加上 ruff（先只開錯誤類規則）與型別檢查（可先只檢查 `options.py`、`signal/`、`evaluate.py` 這些純函式模組）。CI 也只測一個 Python 版本（`requires-python >= 3.11` 沒有上限，uv 自己選），至少測 3.11 與最新版；Docker 映像檔沒有在 CI 建置（現在靠人工記得重建）。
-- **D3 兩個過大的模組**：`webui.py` 2,006 行，其中 `build()` 單一函式 391 行；`pipeline.py` 1,281 行，同時放了分析的排程、方向規則（`flip_by_parts`、`flip_by_asymmetry`、分段對齊）與存檔。建議把方向判斷搬到獨立模組（`direction.py`，純函式、吃分析結果），`webui.py` 依分頁拆開。這兩處也是每次修改最常動到、最容易互相影響的地方；搬移時用 `--baseline` 確認逐點相同。
+- **D3（2026-11-12 第一步已做：方向判斷搬到 `direction.py`；`webui.py` 見後續紀錄）兩個過大的模組**：`webui.py` 2,006 行，其中 `build()` 單一函式 391 行；`pipeline.py` 1,281 行，同時放了分析的排程、方向規則（`flip_by_parts`、`flip_by_asymmetry`、分段對齊）與存檔。建議把方向判斷搬到獨立模組（`direction.py`，純函式、吃分析結果），`webui.py` 依分頁拆開。這兩處也是每次修改最常動到、最容易互相影響的地方；搬移時用 `--baseline` 確認逐點相同。
 - **D4 AI 快取（2026-11-12 已做：原子寫入、壞檔視為沒有快取、`funscript-gen cache info／clear`；Web UI「輸出」分頁沒有對應按鈕，未做）**：`ResponseCache.put` 直接 `write_text`，不是先寫暫存檔再換名（部位框快取有做）；兩個程序同時跑或中途被中斷時可能留下半個 JSON，下次 `get` 會丟 `JSONDecodeError`。快取也沒有大小上限或清除指令（目前 AI 86 MB、部位框 59 MB，只會增加），部位框以影片路徑為鍵，搬動影片就失效並留下舊項目。建議：原子寫入、讀到壞檔當作沒有快取、加 `funscript-gen cache info／clear`（Web UI「輸出」分頁也放一個）。
 - **D5（2026-11-12 已做：10 個維護中的工具留在 `scripts/`，其餘 43 個移到 `scripts/experiments/`，ruff 與語法測試）`scripts/` 有 54 個一次性實驗腳本**：沒有測試覆蓋，依賴 `pipeline` 的內部函式，D3 的重構後多半會壞（目前是否都還能執行未逐一確認）。建議分成 `scripts/`（仍在用的工具：`check_history`、`detect_viewer`、`flow_dump`、`rescore_run`、`score_external`、`param_sweep`、`remote_validate.ps1`、`make_synthetic`）與 `scripts/experiments/`（結論已寫進 PLAN 的一次性實驗，標明不保證能執行），前者加一個匯入的冒煙測試。
 - **D6 文件本身**（2026-11-12 已做：2026-11-08 以前的開發紀錄移到歸檔，PLAN 從 957 行降到約 330 行；刪掉過時的「公開前決定 git 歷史」與重複的「Ollama 上的 8B」；DEVELOPMENT 的結構樹已修。還沒做：「已放棄的方案」重新分類、「3D 素材降低快慢門檻」改寫成現況）：
@@ -284,6 +284,12 @@
 - **批次處理與預覽編輯器擴充（2026-11-05 整理）**：批次產生一次一支依序處理，`webui` 只能上傳、不能指定伺服器上的資料夾（桌面模式 `app` 可以，見 2026-11-05）；CLI `batch` 可支援 `--save-analysis` 以便事後快速重跑 `render`；預覽播放器的幅度、頂點／底點與「上下顛倒」都可以只作用在框選的點（2026-11-12 起），但整個鏡頭的「反轉」按鈕與鏡頭表的反轉仍以鏡頭為單位。
 
 ## 開發紀錄（最近）
+
+- [x] **方向判斷搬出 pipeline.py：新增 direction.py（2026-11-12，D3 第一步；純搬移，輸出逐點相同）**
+  - 搬移（原樣剪下，沒有改邏輯）：`align_chunks`、`flip_by_asymmetry`、`flip_by_parts`、`_cosine`、`_anchor_weight`、`SOUND_NOTE_MIN`、`motion_size`、`flipped_scenes`、`toggle_flip`、`carry_flips`。`pipeline.py` 1,361 → 1,098 行，`direction.py` 263 行。
+  - 類別（`ScenePlan`、`PipelineOptions`、`VideoAnalysis`、`PipelineResult`）**留在 `pipeline.py`**：存下的分析檔（pickle）以 `funscript_gen.pipeline.ScenePlan` 的路徑記錄類別，搬走會讓所有舊的 `.analysis.pkl`（包括 `out/runs/` 的）讀不出來；`direction.py` 只在 `TYPE_CHECKING` 下匯入它們做標註，所以沒有循環匯入。`pipeline.py` 匯入 direction 的函式；`webui.py`、測試與 scripts 改成從 `direction` 匯入。
+  - 驗證：`uv run pytest` 425 項通過；`validate d3-pipeline --replay out/runs/full-1112 --baseline out/runs/full-1112`（default、user、noai × 78 段，用存下的分析重新 render）**234／234 個輸出的動作逐點相同**。
+  - 未做：`PartScan`／`collect_parts`（部位框排程）與 `_analyze` 還在 pipeline.py。
 
 - [x] **骨架模式的 CUDA 版 PyTorch：新增 `pose-cuda` 選配項目（2026-11-12，D7；沒有改程式，沒有跑驗證分數）**
   - 問題：`pyproject.toml` 把 torch／torchvision 的來源固定在 CPU 索引，有 NVIDIA 顯示卡的使用者要自己刪掉 `[tool.uv.sources]` 與 `[[tool.uv.index]]`；維護者在 testhost 上也要每次改副本的 `pyproject.toml`（`whl/cpu` → `whl/cu130`）。

@@ -261,6 +261,7 @@ src/funscript_gen/
   lang/               語言包：zh-TW.toml（原稿）、en.toml、_template.toml（範本）
   options.py          所有使用者設定的表：CLI 參數、Web UI 表單、設定組與 metadata 都由它產生
   batch.py            批次產生：找影片、決定輸出檔名、依序產生（CLI batch 與 Web UI「批次」分頁共用）
+  direction.py        行程方向的判斷：長鏡頭分段對齊、部位框、快慢不對稱與聲音，以及手動反轉（`toggle_flip`、`carry_flips`）；改 `ScenePlan` 的欄位，類別本身在 pipeline.py（存下的分析檔以那裡的路徑記錄類別）
   pipeline.py         整體流程：analyze_video（鏡頭 → AI，同時計算各鏡頭的光流 → 部位框、聲音）→ render（訊號 → 方向 → funscript）
   evaluate.py         與參考腳本比較
   validate.py         驗證執行器與執行結果的比較

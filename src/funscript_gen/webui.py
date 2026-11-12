@@ -29,8 +29,9 @@ from funscript_gen.options import (
     BY_NAME, GROUPS, PRESETS, UI_OPTIONS, OptionError, analysis_key, group_title, preset_label, resolve,
 )
 from funscript_gen.options import build as build_options
+from funscript_gen.direction import carry_flips, flipped_scenes, toggle_flip
 from funscript_gen.pipeline import (
-    PipelineOptions, PipelineResult, carry_flips, flipped_scenes, generate, refinalize, render, toggle_flip,
+    PipelineOptions, PipelineResult, generate, refinalize, render,
 )
 from funscript_gen.preview import AXIS_STRIP_PX, axes_viewer_html, iframe, player_html, scene_regions, viewer_height
 from funscript_gen.report import FLIP_COLUMN

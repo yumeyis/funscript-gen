@@ -19,7 +19,8 @@ from stroke_size import find  # (scripts/ is on the path when run as a script; i
 from funscript_gen.cli import parse_generate_args
 from funscript_gen.export.funscript import Funscript
 from funscript_gen.options import build, for_analysis
-from funscript_gen.pipeline import _cosine, render
+from funscript_gen.direction import _cosine
+from funscript_gen.pipeline import render
 from funscript_gen.validate import clips, load_manifest
 
 MIN_R = 0.3

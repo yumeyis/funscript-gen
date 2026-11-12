@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from funscript_gen.export.funscript import Action, Funscript
-from funscript_gen.pipeline import PipelineOptions, PipelineResult, ScenePlan, finalize, refinalize, toggle_flip
+from funscript_gen.direction import toggle_flip
+from funscript_gen.pipeline import PipelineOptions, PipelineResult, ScenePlan, finalize, refinalize
 from funscript_gen.signal.process import ProcessedSignal
 from funscript_gen.video.scenes import Scene
 
@@ -109,7 +110,7 @@ def test_direction_confidence_follows_the_evidence():
 
 
 def test_carry_flips_keeps_the_direction_chosen_by_hand():
-    from funscript_gen.pipeline import carry_flips
+    from funscript_gen.direction import carry_flips
 
     t = np.arange(0, 4000, 100.0)
     wave = 50 + 40 * np.sin(2 * np.pi * t / 1000)

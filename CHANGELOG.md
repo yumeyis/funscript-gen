@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 方向判斷搬到 direction.py（commit: `Move the direction checks out of pipeline.py into direction.py`）
+- 目的：專案審視 D3：`pipeline.py` 過大，方向規則與流程排程混在一起。
+- 修改：新增 `direction.py`（方向判斷、手動反轉）；類別留在 `pipeline.py` 以免舊的分析檔失效；匯入處與測試更新；DEVELOPMENT、PLAN。
+- 驗證：`uv run pytest` 425 項通過；用存下的分析重新 render 85→78 段 × 3 個設定，234／234 個輸出逐點相同。屬 PATCH（內部重構）。
+
 ## 2026-11-12 — 骨架模式的 CUDA 版 PyTorch（commit: `Add a pose-cuda extra for the CUDA build of PyTorch`）
 - 目的：專案審視 D7：`pose` 的 torch 來源寫死成 CPU 版，有 NVIDIA 顯示卡的使用者要自己改 `pyproject.toml`。
 - 修改：新增 `pose-cuda` extra（與 `pose` 互斥，torch 來源依 extra 選），`uv.lock` 重新鎖定；`set-env.sh --pose-cuda`；README（中英）、DEVELOPMENT、PLAN。

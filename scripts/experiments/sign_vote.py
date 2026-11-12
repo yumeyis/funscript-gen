@@ -40,7 +40,8 @@ from funscript_gen.cli import parse_generate_args  # noqa: E402
 from funscript_gen.evaluate import compare  # noqa: E402
 from funscript_gen.export.funscript import Funscript  # noqa: E402
 from funscript_gen.options import build, for_analysis  # noqa: E402
-from funscript_gen.pipeline import _cosine, load_analysis, refinalize, render, sample_rate  # noqa: E402
+from funscript_gen.direction import _cosine  # noqa: E402
+from funscript_gen.pipeline import load_analysis, refinalize, render, sample_rate  # noqa: E402
 from funscript_gen.signal.process import fall_rise_asymmetry  # noqa: E402
 from funscript_gen.tracking.parts import distance_sign, penis_vulva_distance  # noqa: E402
 from funscript_gen.validate import clips, load_manifest  # noqa: E402

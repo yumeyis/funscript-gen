@@ -2,7 +2,8 @@ import cv2
 import numpy as np
 import pytest
 
-from funscript_gen.pipeline import PipelineOptions, ScenePlan, _scene_signal, align_chunks
+from funscript_gen.direction import align_chunks
+from funscript_gen.pipeline import PipelineOptions, ScenePlan, _scene_signal
 from funscript_gen.tracking.flow import FlowTracker
 from funscript_gen.video.scenes import Scene, cut_strength, detect_scenes, frame_diffs, split_scenes
 
@@ -160,7 +161,7 @@ def _asym_tracker(rise_s: float, fall_s: float, seconds: float = 8.0, fps: float
 
 
 def test_asym_sign_flips_a_scene_that_rises_faster_than_it_falls():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     for on in (False, True):
         opts = PipelineOptions(asym_sign=on)
@@ -179,7 +180,7 @@ def test_asym_sign_flips_a_scene_that_rises_faster_than_it_falls():
 
 
 def test_a_24_fps_video_is_measured_in_its_own_frames():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
     from funscript_gen.signal.process import fall_rise_asymmetry
     from funscript_gen.tracking.flow import integrate
 
@@ -193,7 +194,7 @@ def test_a_24_fps_video_is_measured_in_its_own_frames():
 
 
 def test_asym_sign_leaves_scenes_with_an_ai_direction_alone():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     flow, height = _asym_tracker(0.15, 0.45)
     opts = PipelineOptions(asym_sign=True)
@@ -204,7 +205,7 @@ def test_asym_sign_leaves_scenes_with_an_ai_direction_alone():
 
 
 def test_asym_sign_judges_linked_chunks_of_a_shot_together():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     for continued in (True, False):
         opts = PipelineOptions(asym_sign=True)
@@ -222,7 +223,7 @@ def test_asym_sign_judges_linked_chunks_of_a_shot_together():
 
 
 def test_asym_sign_judges_the_output_direction_when_inverted():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     # --invert mirrors the whole output, so "rises faster" must be judged after it: a scene that rises fast before
     # the invert falls fast in the output (keep it), one that falls fast before it rises fast in the output (flip it)
@@ -245,7 +246,7 @@ def _clicks_at(times_ms: np.ndarray, seconds: float = 8.0) -> tuple[np.ndarray, 
 
 
 def test_asym_sign_needs_less_asymmetry_when_the_sound_hits_at_the_highs():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     highs = np.arange(0.25, 7.9, 0.6) * 1000  # rises take 0.25 s, falls 0.35 s
     cases = (  # (clicks, asym_audio, asym_sign, flipped, hinted)
@@ -269,7 +270,7 @@ def test_asym_sign_needs_less_asymmetry_when_the_sound_hits_at_the_highs():
 
 
 def test_asym_sign_uses_the_lower_threshold_when_the_sound_does_not_object():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     # Rises take 0.25 s, falls 0.35 s (asym between the two thresholds). Onsets every 0.37 s have no fixed place in
     # the 0.6 s strokes (music, no impacts): the sound neither backs nor vetoes, so the lower threshold applies;
@@ -290,7 +291,7 @@ def test_asym_sign_uses_the_lower_threshold_when_the_sound_does_not_object():
 
 
 def test_sound_backed_asym_sign_judges_the_output_when_inverted():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     # rises take 0.35 s, falls 0.25 s: inverted, the output rises fast and the clicks at the lows are at its highs
     lows = np.arange(0.35 + 0.25, 7.9, 0.6) * 1000
@@ -339,7 +340,7 @@ def test_align_chunks_links_sub_roi_chunk_and_anchors_on_wider_motion():
 
 
 def test_asym_sign_interpolates_threshold_linearly_with_negative_audio_phase():
-    from funscript_gen.pipeline import flip_by_asymmetry
+    from funscript_gen.direction import flip_by_asymmetry
 
     # Rises take 0.25 s, falls 0.35 s -> asym ~ 0.34 (below 0.50 alone, above ~0.27 when audio_sign ~ -0.22).
     # Shifting clicks produces -0.30 < audio_sign < -0.15, which the old step function at -0.30 missed

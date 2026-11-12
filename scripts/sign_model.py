@@ -19,7 +19,8 @@ import numpy as np
 from funscript_gen.cli import parse_generate_args
 from funscript_gen.export.funscript import Funscript
 from funscript_gen.options import build, for_analysis
-from funscript_gen.pipeline import _cosine, load_analysis, render_signals
+from funscript_gen.direction import _cosine
+from funscript_gen.pipeline import load_analysis, render_signals
 from funscript_gen.signal.audio import onset_phase
 from funscript_gen.signal.process import fall_rise_asymmetry
 from funscript_gen.tracking.parts import distance_sign, penis_vulva_distance
