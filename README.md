@@ -63,7 +63,7 @@ The motion in the picture first has to be assigned "which way is the push in". T
 | Batch | Process several videos at once (the web UI's Batch tab, CLI `batch`); when one fails the next one continues; the CLI skips videos that already have a script, so running it again after an interruption carries on |
 | Preview player | Like OpenFunscripter: position bar, an action timeline that scrolls with playback (the reference script can be overlaid), a speed heat map, keyboard control, slower/faster playback; draws the region analysed in each scene over the video; can flip a scene, enlarge or shrink one scene's strokes, set a scene's tops or bottoms to given positions, and edit actions directly; every axis of a multi-axis script (one file per axis, or one file with several axes) gets its own strip under the timeline |
 | Multi-axis script tool | The Tools tab: merges the files of the axes into one file, or splits a file with several axes into one file per axis, recognized automatically and shown first; the desktop app can fill in the axis files of the same folder, write directly (keeping a `.backup` or overwriting the original) or save elsewhere |
-| Presets | `--preset` and the web UI's "Preset": `default` is the default values, `user` is the author's web UI settings (Hybrid, keep rests, add points on long strokes), which score best in validation |
+| Presets | `--preset` and the web UI's "Preset": `default` is the default values, `user` is the author's web UI settings (Hybrid, keep rests, add points on long strokes); its output follows hand-made scripts more closely on scenes whose direction is right, and its overall score is close to the default |
 | Fast recompute | When only the output settings change for the same video, the last analysis is reused and the web UI finishes in about a second; on the CLI save the analysis with `generate --save-analysis` and recompute with other settings using `render` |
 | Records how it was made | The output file records the program version, the AI model and all settings, so it can be reproduced |
 | Comparison with hand-made scripts | With a reference script, `compare` or the web UI's reference script computes how well the turning points match (F1) and the correlation |
@@ -238,7 +238,7 @@ The keyboard needs the player to be clicked once first. The colours of the heat 
 # Generate a script (output <video>.funscript by default)
 uv run funscript-gen generate video.mp4
 
-# Presets: user = the author's web UI settings (best validation scores); the arguments after it override the preset
+# Presets: user = the author's web UI settings ; the arguments after it override the preset
 uv run funscript-gen generate video.mp4 --preset user
 uv run funscript-gen generate video.mp4 --preset user --no-curve
 
@@ -253,6 +253,7 @@ uv run funscript-gen generate video.mp4 --no-part-sign --no-asym-sign
 
 # Save the analysis, then recompute with other output settings (no decoding or AI calls again; changing an analysis setting is refused)
 uv run funscript-gen generate video.mp4 --save-analysis video.analysis.pkl
+# Note: .analysis.pkl is a pickle file; open only files you made yourself, since a file from someone else can run arbitrary code when loaded
 uv run funscript-gen render video.analysis.pkl -o video-40-90.funscript --range-low 40 --range-high 90
 
 # Faster: optical flow on a 320-wide picture (about twice as fast, see the speed under "Known issues")

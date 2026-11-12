@@ -63,7 +63,7 @@
 | 批次產生 | 一次處理多支影片（Web UI「批次」分頁、CLI `batch`），某一支失敗時繼續下一支；CLI 會略過已經有腳本的影片，中斷後重跑就接著做 |
 | 預覽播放器 | 類似 OpenFunscripter：位置條、隨播放捲動的動作時間軸（可疊加參考腳本）、速度熱度圖、鍵盤操作、放慢／加快播放；在影片上畫出每個鏡頭分析的區域；可反轉鏡頭、放大或縮小單一鏡頭的行程幅度、把鏡頭的頂點或底點設成指定位置，也可以直接編輯動作點；多軸腳本（每軸一個檔案或一個檔案含多軸）的每個軸各顯示一條時間軸 |
 | 多軸腳本工具 | 「工具」分頁：各軸檔案合併成一個檔案、一個含多軸的檔案分割成每個軸一個檔案，自動判斷並先預覽；桌面模式可自動帶入同資料夾的軸檔、直接輸出（保留 `.backup` 或覆蓋原檔）或另存 |
-| 設定組 | `--preset`、Web UI「設定組」：`default` 是預設值，`user` 是作者在 Web UI 用的設定（Hybrid、保留停頓、長行程補點），驗證分數最好 |
+| 設定組 | `--preset`、Web UI「設定組」：`default` 是預設值，`user` 是作者在 Web UI 用的設定（Hybrid、保留停頓、長行程補點）；`user` 的輸出在方向都對的鏡頭上較貼近人工腳本，整體分數和預設相近 |
 | 快速重算 | 對同一支影片只改輸出設定時沿用上次的分析，Web UI 約一秒完成；CLI 用 `generate --save-analysis` 存下分析，再用 `render` 換設定重算 |
 | 記錄產生方式 | 輸出檔中記錄程式版本、AI 模型與全部設定，可以照著重新產生 |
 | 和人工腳本比較 | 有參考腳本時，`compare` 或 Web UI 的「參考腳本」計算轉折點的吻合程度（F1）與相關係數 |
@@ -238,7 +238,7 @@ uv run funscript-gen clean-webui --all                 # 全部刪除
 # 產生腳本（預設輸出 <影片>.funscript）
 uv run funscript-gen generate video.mp4
 
-# 設定組：user = 作者在 Web UI 用的設定（驗證分數最好）；後面的參數會覆寫設定組
+# 設定組：user = 作者在 Web UI 用的設定；後面的參數會覆寫設定組
 uv run funscript-gen generate video.mp4 --preset user
 uv run funscript-gen generate video.mp4 --preset user --no-curve
 
@@ -253,6 +253,7 @@ uv run funscript-gen generate video.mp4 --no-part-sign --no-asym-sign
 
 # 存下分析，之後換輸出設定重算（不必重新解碼與呼叫 AI；改分析設定會被拒絕）
 uv run funscript-gen generate video.mp4 --save-analysis video.analysis.pkl
+# 注意：.analysis.pkl 是 pickle 檔，只開啟自己產生的檔案；別人給的檔案可能在載入時執行任意程式碼
 uv run funscript-gen render video.analysis.pkl -o video-40-90.funscript --range-low 40 --range-high 90
 
 # 較快：光流在 320 寬的畫面上計算（約快 2 倍，見「已知問題」的速度）

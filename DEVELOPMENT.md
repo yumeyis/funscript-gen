@@ -114,8 +114,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\smoke-test
 | `dev` | 16 段：原本的 13 段，加上 2026-11-01 從 holdout 移來的 G03、G04、G06 | 方向規則與門檻在這批上調整 |
 | `test` | 第三批 12 段 | 沒有用來調規則，但已用於一些決定 |
 | `holdout` | 2026-11-01 加入的其餘 10 段 | 只在修改完成、要確認時跑；不得依它的分數選擇規則、門檻或設定 |
+| `dev2` | 22 段：2026-11-07 新增的 47 段（34 個沒調過規則的來源系列）中依來源系列分出的一半 | 可以用來調整 |
+| `holdout2` | 25 段：另一半 | 規則與 `holdout` 相同，只在最後確認 |
 
-不加 `--clips` 時只跑 dev、test；`--clips holdout` 跑保留組，`all` 跑全部。
+不加 `--clips` 時只跑 dev、test（`default_clips`）；`--clips holdout`、`dev2`、`holdout2` 各跑該組，`all` 跑全部。
 
 ```bash
 uv run funscript-gen validate base -c default -c user                    # 產生並評分，結果在 out/runs/base/
@@ -288,8 +290,6 @@ src/funscript_gen/
   signal/             訊號後處理、聲音（audio.py：撞擊聲的起點與相位）
   export/             funscript 讀寫
 scripts/                實驗與診斷用的腳本（`detect_viewer.py` 是偵測模型檢視器，用法見「開發環境與測試」；離線評估的紀錄見 docs/archive/PLAN-archive.md）；`check_history.py` 是發布前的檢查：掃描整個 git 歷史有沒有真實名稱、金鑰、非 noreply 的信箱
-CONTRIBUTING.md、SECURITY.md  貢獻說明（含貢獻的授權）與安全性政策（中英雙語）
-.github/                 issue／PR 範本、Dependabot、tests.yml（Linux 與 Windows 跑單元測試）
   flow_dump.py          把每幀的粗略光流場存成檔案，供離線實驗
   scene_diag.py         逐鏡頭診斷：相關、轉折點密度、時間差、節奏與備註
   sign_model.py         以存下的分析比較方向判斷的規則（留一支影片交叉驗證）
@@ -300,7 +300,8 @@ CONTRIBUTING.md、SECURITY.md  貢獻說明（含貢獻的授權）與安全性�
   其他                  部位框（anime_det_dump、censor_*）、小行程（small_strokes）、鏡頭移動（camera_motion）等的一次性評估
 tests/                  單元測試
 packaging/windows/      Windows 免安裝版的建置腳本、啟動程式原始碼、冒煙測試、zip 內的說明（README.txt 英文、README.zh.txt 繁體中文）
-.github/workflows/      GitHub Actions：windows.yml（建置 Windows 免安裝版、草稿 Release）
+.github/                 issue／PR 範本、Dependabot；workflows/：tests.yml（Linux 與 Windows 跑單元測試）、windows.yml（建置 Windows 免安裝版、草稿 Release）
+CONTRIBUTING.md、SECURITY.md  貢獻說明（含貢獻的授權）與安全性政策（中英雙語）
 docker/                 Dockerfile、docker-compose.yaml（只有 funscript-gen）、docker-compose.ollama.yaml（加上 Ollama）、entrypoint.sh、使用說明
 docs/archive/           歸檔的開發紀錄（PLAN-archive.md）
 LICENSE                 PolyForm Noncommercial 1.0.0 授權條款

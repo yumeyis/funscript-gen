@@ -153,3 +153,13 @@ def test_choice_probs_continue_the_answer_and_cache(tmp_path):
     assert seen[0]["messages"][-1] == {"role": "assistant", "content": answer_prefix(answer, "contact_part")}
     # a token that starts several choices says nothing about which one
     assert choice_shares({"a": 0.5, "b": 0.5}, ("ab", "ac", "b")) == {"ab": 0.0, "ac": 0.0, "b": 0.5}
+
+
+def test_cache_damaged_file_is_a_miss_and_put_leaves_no_temp_files(tmp_path):
+    cache = ResponseCache(tmp_path)
+    key = ResponseCache.key("m", "p", {}, [])
+    (tmp_path / f"{key}.json").write_text('{"half": ', encoding="utf-8")
+    assert cache.get(key) is None
+    cache.put(key, {"a": 1})
+    assert cache.get(key) == {"a": 1}
+    assert [f.name for f in tmp_path.iterdir()] == [f"{key}.json"]

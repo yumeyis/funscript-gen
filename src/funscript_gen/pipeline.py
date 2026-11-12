@@ -250,7 +250,8 @@ ANALYSIS_FORMAT = 1  # bump when VideoAnalysis or ScenePlan change so that old s
 
 
 def save_analysis(analysis: VideoAnalysis, path: str | Path) -> None:
-    """Pickle the analysis without the key frames (only the AI needed them). Only load files you made yourself."""
+    """Pickle the analysis without the key frames (only the AI needed them). A pickle can run code when loaded, so only
+    load files you made yourself (README and SECURITY.md say so)."""
     import pickle
 
     from funscript_gen.version import provenance

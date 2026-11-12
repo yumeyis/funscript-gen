@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 快取原子寫入與文件修正（commit: `Make the AI cache atomic and fix review findings in the docs`）
+- 目的：處理專案審視中小而確定的問題。
+- 修改：`ai/cache.py` 原子寫入、壞檔視為沒有快取（附測試）；README／SECURITY 加上 pickle 警告；README 刪掉不符數字的「驗證分數最好」；DEVELOPMENT 補分組表並修正結構樹。
+- 驗證：`uv run pytest` 通過；沒有改偵測與輸出，未跑驗證分數。屬 PATCH。
+
 ## 2026-11-12 — 專案審視：缺點與改進方向（commit: `Add a project review to PLAN: weaknesses and directions`）
 - 目的：使用者要求審視整個專案，把需要改善的缺點與改進方向寫進 PLAN。
 - 修改：只改文件。PLAN.md 新增「專案審視：缺點與改進方向（2026-11-12）」一節（方向的選擇、評估方法、使用門檻與產品、工程共 24 項與建議的順序）與開發紀錄條目；沒有改程式。

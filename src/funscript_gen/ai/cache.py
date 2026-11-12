@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import threading
 from pathlib import Path
 
 from funscript_gen.paths import cache_dir
@@ -30,10 +32,20 @@ class ResponseCache:
         if not self.enabled:
             return None
         path = self.directory / f"{key}.json"
-        return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            return None
+        except (OSError, ValueError):  # a half-written or damaged file counts as a miss and is asked for again
+            return None
 
     def put(self, key: str, value: dict) -> None:
         if not self.enabled:
             return
         self.directory.mkdir(parents=True, exist_ok=True)
-        (self.directory / f"{key}.json").write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+        path = self.directory / f"{key}.json"
+        # Written under a name of its own and renamed, so a run that is interrupted or another process that reads at the
+        # same time never sees half a file.
+        tmp = path.with_name(f"{key}.{os.getpid()}.{threading.get_ident()}.tmp")
+        tmp.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, path)
