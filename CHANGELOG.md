@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 重新產生時保留手動反轉（commit: `Keep the scenes flipped by hand when generating again`）
+- 目的：專案審視 A2：手動反轉是使用者最花時間的修正，重新產生就消失。
+- 修改：`pipeline.carry_flips`；`webui.run` 沿用分析時保留反轉、重新分析時依輸出方向對應；語言包 `web.run.flips_kept`；README（中英）、PLAN。
+- 驗證：`uv run pytest` 通過（新增 2 項單元與整合測試）；沒有改自動輸出，沒有跑驗證分數；重新分析時的對應沒有用真實影片驗證。屬 MINOR（行為改變：以前一定丟掉）。
+
 ## 2026-11-12 — 移出驗證的 3D 動畫系列（commit: `Remove the 3D animation series from the validation set`）
 - 目的：使用者要求移除該系列，以後不用它驗證。
 - 修改：`validation.toml` 移除 7 段（現在 dev 13、test 11、holdout 7、dev2 22、holdout2 25，共 78 段）、`ignore_low_flow` 清空；DEVELOPMENT 的分組與驗證表、README 的段數、`report.py` 的方向把握統計改用 78 段的數字；PLAN 記錄與影響。`valid/` 中的檔案已刪除（不在 git 中）。

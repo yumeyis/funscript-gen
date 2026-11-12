@@ -106,3 +106,29 @@ def test_direction_confidence_follows_the_evidence():
     assert [direction_confidence(p) for p in plans] == ["high", "high", "high", "medium", "medium", "low", "low", "", "", ""]
     assert unsure_scenes(PipelineResult(Funscript(), plans)) == [5]  # 6 was flipped by hand: no need to look again
     assert unsure_scenes(PipelineResult(Funscript(), [plan(5, sign_doubt="sound")])) == []  # already marked
+
+
+def test_carry_flips_keeps_the_direction_chosen_by_hand():
+    from funscript_gen.pipeline import carry_flips
+
+    t = np.arange(0, 4000, 100.0)
+    wave = 50 + 40 * np.sin(2 * np.pi * t / 1000)
+    old = PipelineResult(Funscript([Action(int(a), int(p)) for a, p in zip(t, wave)]),
+                         [_plan(0, [(100, 0)], t_ms=[0.0], flipped=True)])
+    old.plans[0].scene = Scene(0, 0.0, 4000.0)
+    old.plans[0].signal.actions = [Action(0, 0)]
+
+    def new_result(values, scenes):
+        res = PipelineResult(Funscript([Action(int(a), int(p)) for a, p in zip(t, values)]), [])
+        for k, (s, e) in enumerate(scenes):
+            p = _plan(k, [(100, 0)])
+            p.scene = Scene(k, s, e)
+            res.plans.append(p)
+        return res
+
+    # the new run has the scene cut in two; the first half now runs against the old output, the second along with it
+    mixed = np.where(t < 2000, 100 - wave, wave)
+    assert carry_flips(old, {0}, new_result(mixed, [(0.0, 2000.0), (2000.0, 4000.0)])) == [0]
+    assert carry_flips(old, {0}, new_result(wave, [(0.0, 4000.0)])) == []  # already the same way
+    assert carry_flips(old, set(), new_result(100 - wave, [(0.0, 4000.0)])) == []  # nothing was flipped by hand
+    assert carry_flips(old, {7}, new_result(100 - wave, [(0.0, 4000.0)])) == []  # no such old scene

@@ -689,3 +689,37 @@ def test_run_lines_say_when_the_run_went_without_the_ai():
     result = PipelineResult(Funscript([]), [], ai_notice="no AI today")
     assert any("no AI today" in line for line in webui.run_lines(result, 1.0))
     assert not any("no AI" in line for line in webui.run_lines(PipelineResult(Funscript([]), []), 1.0))
+
+
+def test_generating_again_keeps_the_scenes_flipped_by_hand(tmp_path, monkeypatch):
+    from test_parallel import _clip
+
+    from funscript_gen import webui as ui
+
+    monkeypatch.setattr(ui, "OUTPUT_DIR", tmp_path / "out")
+    monkeypatch.setattr(ui, "_cleanup_file", tmp_path / "cleanup.json")
+    _clip(tmp_path / "c.mp4", seconds=3.0)
+    form = {n: ui.BY_NAME[n].default for n in ui.FORM_NAMES} | {"use_ai": False, "asym_audio": False, "flow_workers": 1}
+
+    def press(previous, **changes):
+        values = [(form | changes)[n] for n in ui.FORM_NAMES]
+        out = ui.run(str(tmp_path / "c.mp4"), "", None, previous, *values, progress=lambda *a, **k: None)
+        return out[-2], out[1]
+
+    first, _ = press(None)
+    flippable = [p.scene.index for p in first.result.plans if p.signal is not None and len(p.signal.actions)]
+    ui.flip_scene(first, flippable[0])
+    assert first.manual == {flippable[0]}
+    flipped_before = [a.pos for a in first.result.funscript.actions]
+
+    again, summary = press(first, dwell=True)  # the same analysis, other output settings
+    assert again.manual == {flippable[0]} and "沿用上次手動反轉的鏡頭" in summary
+    assert [p.scene.index for p in again.result.plans if p.flipped] == [flippable[0]]
+
+    # analysed again: the flip stays only where the new automatic output runs against the old one (a flip kept by
+    # the correlation test, whatever the scene numbering)
+    fresh, _ = press(first, flow_width=320)
+    for k in fresh.manual:
+        assert fresh.result.plans[k].flipped
+    assert fresh.manual <= {p.scene.index for p in fresh.result.plans}
+    assert flipped_before  # the first script had actions

@@ -380,7 +380,7 @@ The CLI messages, the web UI, the desktop app and the preview player come in Tra
 - When a download link is clicked in the window of the desktop mode (the Windows build's `FunscriptGen.exe`), the file goes to the user's "Downloads" folder; to keep it beside the video use the option in the Settings tab, or "Open the output folder" in the Output tab.
 - "Cancel" stops at the next progress update (during the AI analysis, after the next answer comes back).
 - The preview player only supports formats the browser can play (H.264 MP4 is recommended); a preview's link stops working after the server restarts. After editing actions press "Save edits": when generating again, edits that are not saved yet are lost ("Flip" keeps them).
-- Generating again from the last analysis does not keep the scenes flipped by hand the last time.
+- Generating again keeps the scenes you flipped by hand the last time: with the last analysis reused, the flipped scenes stay as they were; when an analysis setting changed and the scenes or the directions may differ, a scene is flipped again only if the new output still runs against the direction you chose (matched by output direction, not by scene number). Edits that were not saved are still lost.
 - The player's own texts, and the analysis notes in the scene table, are made when the preview or the analysis is made, so after the language is changed they stay in the old language until the next one.
 
 **Other**

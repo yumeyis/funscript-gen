@@ -1057,6 +1057,9 @@ name = ""
 # zh-TW: ⚠️ 鏡頭 {scenes} 可能高低相反（原因見鏡頭表的備註，預覽中以底色標示）；按預覽的「下一個待確認」逐一跳過去看，相反的話按「反轉」
 # en: ⚠️ Scenes {scenes} may be upside down (the reason is in the scene table's note, and the preview shades them); press “Next to check” in the preview to go through them, and “Flip” for those that are
 "web.run.suspects" = ""
+# zh-TW: 沿用上次手動反轉的鏡頭：{list}（重新產生後仍相反的才會反轉；換了分析設定時依輸出方向對應，不是依鏡頭編號）
+# en: Kept the scenes flipped by hand last time: {list} (after generating again, only those that still run the other way are flipped; when an analysis setting changed they are matched by output direction, not by scene number)
+"web.run.flips_kept" = ""
 # zh-TW: 手動反轉的鏡頭：{list}（CLI 對應參數：`--flip-scenes {nums}`）
 # en: Scenes flipped by hand: {list} (the CLI option: `--flip-scenes {nums}`)
 "web.run.manual_flips" = ""

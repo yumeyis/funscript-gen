@@ -1050,6 +1050,33 @@ def refinalize(result: PipelineResult, opts: PipelineOptions) -> None:
     result.funscript = Funscript(actions=finalize(result.plans, opts), metadata=meta).normalized()
 
 
+def carry_flips(old: PipelineResult, manual: set[int], new: PipelineResult) -> list[int]:
+    """Numbers of the scenes of `new` to flip so that the direction a person chose by hand in `old` stays: where a new
+    scene mostly lies in a scene of `old` flipped by hand (`manual`, by number) and its output runs against the old
+    one there (correlation below -0.3 on a 50 ms grid), it is flipped. Other settings can give other scenes, other
+    regions and another automatic direction, so the old flips are not repeated by number; the old output is what they
+    are kept against (hand edits included)."""
+    spans = [(p.scene.start_ms, p.scene.end_ms) for p in old.plans if p.scene.index in manual]
+    oa, na = old.funscript.actions, new.funscript.actions
+    if not spans or len(oa) < 2 or len(na) < 2:
+        return []
+    ot, ov = np.array([a.at for a in oa], float), np.array([a.pos for a in oa], float)
+    nt, nv = np.array([a.at for a in na], float), np.array([a.pos for a in na], float)
+    out = []
+    for p in new.plans:
+        s, e = p.scene.start_ms, p.scene.end_ms
+        if p.skip or p.rest or p.signal is None or not len(p.signal.actions) or e <= s:
+            continue
+        inside = sum(max(0.0, min(e, b) - max(s, a)) for a, b in spans)
+        grid = np.arange(s, e, 50.0)
+        if inside < 0.5 * (e - s) or len(grid) < 4:
+            continue
+        x, y = np.interp(grid, ot, ov), np.interp(grid, nt, nv)
+        if x.std() > 0 and y.std() > 0 and float(np.corrcoef(x, y)[0, 1]) < -0.3:
+            out.append(p.scene.index)
+    return out
+
+
 def toggle_flip(plan: ScenePlan) -> None:
     plan.flipped = not plan.flipped
     note = tr("pipe.manual_flip")

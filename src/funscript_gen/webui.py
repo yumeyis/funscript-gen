@@ -10,7 +10,7 @@ import re
 import secrets
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from urllib.parse import quote
 
@@ -30,7 +30,7 @@ from funscript_gen.options import (
 )
 from funscript_gen.options import build as build_options
 from funscript_gen.pipeline import (
-    PipelineOptions, PipelineResult, flipped_scenes, generate, refinalize, render, toggle_flip,
+    PipelineOptions, PipelineResult, carry_flips, flipped_scenes, generate, refinalize, render, toggle_flip,
 )
 from funscript_gen.preview import AXIS_STRIP_PX, axes_viewer_html, iframe, player_html, scene_regions, viewer_height
 from funscript_gen.report import FLIP_COLUMN
@@ -1292,12 +1292,22 @@ def run(video_path, local_path, reference_file, previous, *values, progress=None
 
     t0 = time.monotonic()
     _cancel.clear()
+    kept: set[int] = set()  # scenes of the new script flipped by hand before and still flipped
     try:
         if analysis is not None:
             progress(0.5, desc=t("web.progress.reuse"))
-            result = render(analysis, opts)
+            # the same scenes: the flips made by hand go on top of the ones the settings ask for
+            kept = set(previous.manual)
+            result = render(analysis, replace(opts, flip_scenes=tuple(sorted(set(opts.flip_scenes) ^ kept))))
         else:
             result = generate(video, opts, progress=on_progress)
+            if isinstance(previous, Job) and previous.manual and previous.video == video:
+                kept = set(carry_flips(previous.result, previous.manual, result))
+                for plan in result.plans:
+                    if plan.scene.index in kept:
+                        toggle_flip(plan)
+                if kept:
+                    refinalize(result, opts)
     except Cancelled:
         raise gr.Error(t("web.err.cancelled"))
     except DeviceError as e:  # a GPU that the check found but that did not load
@@ -1322,7 +1332,9 @@ def run(video_path, local_path, reference_file, previous, *values, progress=None
             lines.append(t("web.run.ref_unreadable", e=e))
 
     copy_to = beside_copy(video, lines) if local is not None else None
-    job = Job(video, result, opts, out_path, reference, lines, copy_to=copy_to, local=local is not None)
+    if kept:
+        lines.append(t("web.run.flips_kept", list=", ".join(map(str, sorted(kept)))))
+    job = Job(video, result, opts, out_path, reference, lines, manual=kept, copy_to=copy_to, local=local is not None)
     return (*job_outputs(job), job, gr.update())
 
 
