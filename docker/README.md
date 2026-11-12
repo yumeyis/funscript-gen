@@ -100,7 +100,7 @@ Only `/data` in the container needs to be kept, and it maps to `docker/data/` on
 | `data/lang/` | Language packs you add yourself (`.toml`, optional; make the template with `docker compose exec funscript-gen funscript-gen lang template /data/lang/_template.toml`) |
 | `data/.cache/funscript-gen/` | Cache of the AI's answers and the part boxes (can be deleted) |
 | `data/.cache/huggingface/` | The part detection model (downloaded on first use, about 43 MB) |
-| `data/tmp/` | Temporary files of videos uploaded to the web UI (not cleaned up automatically; can simply be deleted) |
+| `data/tmp/` | Temporary files of videos uploaded to the web UI (deleted after 2 days; can also simply be deleted) |
 
 `docker/data/`, `docker/videos/`, `docker/ollama/` and `docker/.env` are all listed in the project's `.gitignore`.
 

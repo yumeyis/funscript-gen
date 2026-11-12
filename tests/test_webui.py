@@ -723,3 +723,11 @@ def test_generating_again_keeps_the_scenes_flipped_by_hand(tmp_path, monkeypatch
         assert fresh.result.plans[k].flipped
     assert fresh.manual <= {p.scene.index for p in fresh.result.plans}
     assert flipped_before  # the first script had actions
+
+
+def test_uploaded_videos_are_cleaned_up_by_gradio():
+    from funscript_gen import webui as ui
+    from funscript_gen.webui_layout import UPLOAD_CLEANUP
+
+    assert ui.build().delete_cache == UPLOAD_CLEANUP
+    assert UPLOAD_CLEANUP[1] >= 86400  # not while a job on the upload is still running

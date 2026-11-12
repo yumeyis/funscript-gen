@@ -100,7 +100,7 @@ docker compose run --rm funscript-gen generate /videos/a.mp4
 | `data/lang/` | 自己加入的語言包（`.toml`，選用；範本見專案的 `lang/_template.toml`，用 `docker compose exec funscript-gen funscript-gen lang template /data/lang/_template.toml` 產生） |
 | `data/.cache/funscript-gen/` | AI 回答與部位框的快取（可刪除） |
 | `data/.cache/huggingface/` | 部位框偵測模型（第一次使用時下載，約 43 MB） |
-| `data/tmp/` | Web UI 上傳的影片暫存檔（不會自動清除，可以直接刪除） |
+| `data/tmp/` | Web UI 上傳的影片暫存檔（2 天後自動刪除，也可以直接刪除） |
 
 `docker/data/`、`docker/videos/`、`docker/ollama/` 與 `docker/.env` 都已列在專案的 `.gitignore`。
 

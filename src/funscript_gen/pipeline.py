@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import threading
 from collections.abc import Callable
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed, wait
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Literal
@@ -284,18 +284,32 @@ class PipelineResult:
     ai_notice: str | None = None  # VideoAnalysis.ai_notice
 
 
+POLL_S = 0.5  # how often a waiting _run_all calls the tick's `poll`
+
+
 def _run_all(workers: int, fn: Callable, items: list, tick: Callable[[], None] | None = None) -> list:
     """`fn` over `items` on a thread pool, results in order. `tick()` runs in this thread after each item and may
-    raise to stop: the items not started yet are dropped (the running ones finish first)."""
+    raise to stop: the items not started yet are dropped, and the running ones are left to finish in the background
+    (their answers still reach the cache). A `tick.poll()` (optional attribute) also runs every POLL_S seconds while
+    waiting, so that a cancel does not wait for the slowest running item."""
     pool = ThreadPoolExecutor(max_workers=workers)
+    poll = getattr(tick, "poll", None)
+    finished = False
     try:
         futures = [pool.submit(fn, item) for item in items]
-        for _ in as_completed(futures):
-            if tick:
-                tick()
-        return [f.result() for f in futures]
+        pending = set(futures)
+        while pending:
+            done, pending = wait(pending, timeout=POLL_S if poll else None, return_when=FIRST_COMPLETED)
+            for _ in done:
+                if tick:
+                    tick()
+            if not done and poll:
+                poll()
+        results = [f.result() for f in futures]
+        finished = True
+        return results
     finally:
-        pool.shutdown(wait=True, cancel_futures=True)
+        pool.shutdown(wait=finished, cancel_futures=True)
 
 
 def _analyze_scenes(
@@ -537,8 +551,13 @@ def plan_scenes(scenes: list[Scene], opts: PipelineOptions, progress: Callable[[
     def tick() -> None:
         nonlocal calls
         calls += 1
+        poll()
+
+    def poll() -> None:  # the same progress again: the callback may raise to cancel (also while an AI call is running)
         if progress:
             progress(min(1.0, calls / max(1, steps * len(scenes))))
+
+    tick.poll = poll  # type: ignore[attr-defined]
 
     if opts.use_ai and scenes:
         settings = opts.ai_settings or Settings()

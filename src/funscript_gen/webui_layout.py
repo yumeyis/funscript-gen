@@ -142,6 +142,9 @@ def settings_form(after: dict | None = None, groups=None) -> tuple[dict, list]:
 LANGUAGE_LABEL = "語言 / Language"  # the one text that is not translated: it has to be findable in any language
 
 
+UPLOAD_CLEANUP = (3600, 2 * 86400)  # (check every, delete files older than) seconds
+
+
 def build() -> gr.Blocks:
     from funscript_gen.webui import (
         apply_language, ask_clear, ask_ollama_clear, backend_changed, backend_choices, batch_columns,
@@ -157,7 +160,8 @@ def build() -> gr.Blocks:
     )
     settings = current_settings()
     _translated.clear()
-    with gr.Blocks(title="funscript-gen") as demo:
+    # Uploaded videos are copied into Gradio's temp folder; delete what is older than 2 days (checked hourly).
+    with gr.Blocks(title="funscript-gen", delete_cache=UPLOAD_CLEANUP) as demo:
         gr.Markdown("# funscript-gen")
         with gr.Tabs() as tabs:
             with ui(gr.Tab, label=L("web.tab.gen"), id="gen"):

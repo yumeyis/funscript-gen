@@ -171,6 +171,28 @@ def test_the_ai_step_reports_progress_and_can_be_stopped(monkeypatch):
         pipeline._run_all(2, slow, list(range(20)), tick)
     assert len(calls) < 8  # the queued items were dropped
 
+    # a cancel raised from the poll stops at once instead of waiting for the slow running items
+    def very_slow(item):
+        time.sleep(1.0)
+        return item
+
+    polls = []
+
+    def tick2():
+        pass
+
+    def poll():
+        polls.append(1)
+        if len(polls) == 2:
+            raise Stop
+
+    tick2.poll = poll
+    monkeypatch.setattr(pipeline, "POLL_S", 0.05)
+    start = time.monotonic()
+    with pytest.raises(Stop):
+        pipeline._run_all(2, very_slow, list(range(4)), tick2)
+    assert time.monotonic() - start < 0.8
+
     shares = []
     monkeypatch.setattr(pipeline, "_analyze_scenes",
                         lambda scenes, workers, focus, settings, tick=None: [tick() or (None, None) for _ in scenes])
