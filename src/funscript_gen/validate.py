@@ -328,11 +328,42 @@ def replay_one(clip: Clip, args: list[str], out: Path, source: Path) -> None:
     out.with_suffix(".debug.json").write_text(json.dumps(debug_data(result)), encoding="utf-8")
 
 
+HOLDOUT_LOG = "holdout-log.md"
+_LOG_HEAD = """# Uses of the held-out validation clips
+
+Every validation run that scores clips of a `holdout*` group is added here by `funscript-gen validate` (the purpose is
+`--purpose`). Each look at held-out scores leaks a little into the decisions made from them, so the count is the
+point: confirm a change once at the end, and put new clips into the held-out groups first. Runs before 2026-11-12
+were not recorded (the development logs in PLAN.md and docs/archive/PLAN-archive.md mention them).
+
+| date | run | groups: clips | purpose |
+| --- | --- | --- | --- |
+"""
+
+
+def record_holdout_use(manifest: dict, selected: list[Clip], run_name: str, purpose: str, directory: Path) -> int | None:
+    """Append this run to the held-out log next to the manifest when it scores clips of a `holdout*` group (once per
+    run name: --resume does not add another line). Returns the number of uses in the log, None for other runs."""
+    held = {g: [c.name for c in selected if c.name in names]
+            for g, names in manifest.get("groups", {}).items() if g.startswith("holdout")}
+    held = {g: cs for g, cs in held.items() if cs}
+    if not held:
+        return None
+    log = directory / HOLDOUT_LOG
+    text = log.read_text(encoding="utf-8") if log.exists() else _LOG_HEAD
+    if f"| {run_name} |" not in text:
+        what = "; ".join(f"{g}: {' '.join(cs)}" for g, cs in held.items())
+        purpose = " ".join(purpose.split()).replace("|", "/") or "(not given)"
+        text += f"| {datetime.now().date().isoformat()} | {run_name} | {what} | {purpose} |\n"
+        log.write_text(text, encoding="utf-8")
+    return sum(line.startswith("| 20") for line in text.splitlines())
+
+
 def run_validation(
     name: str, configs: list[str], selection: str = "", jobs: int = 3, flow_workers: int = 4,
     extra: str = "", resume: bool = False, code: Path | None = None, manifest_path: Path = MANIFEST,
     runs_dir: Path = RUNS_DIR, say: Callable[[str], None] = print, save_analysis: bool = True,
-    replay: Path | None = None,
+    replay: Path | None = None, purpose: str = "",
 ) -> Run:
     """Generate every selected clip with every config (`jobs` processes at a time) and score it. With `replay`, render
     the analyses saved by that run instead (in this process, with the code of this checkout)."""
@@ -343,6 +374,9 @@ def run_validation(
     run = Run(runs_dir / name)
     if (run.path / "results.json").exists() and not resume:
         raise ValueError(f"{run.path} exists: use --resume to add to it, or another name")
+    uses = record_holdout_use(manifest, todo_clips, name, purpose, manifest_path.parent)
+    if uses is not None:
+        say(f"held-out clips: use number {uses} recorded in {manifest_path.parent / HOLDOUT_LOG} (confirm at the end only)")
     if replay is not None and code is not None:
         raise ValueError("--code does not apply to --replay (it renders in this process): run the replay from that "
                          "checkout, e.g. cd into the worktree and pass absolute run paths")

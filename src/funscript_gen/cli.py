@@ -574,6 +574,7 @@ def validate(
         help="Run the funscript_gen package in this directory (e.g. a git worktree's src) instead of this one")] = None,
     manifest: Annotated[Path, typer.Option(help="Clips, groups and configs")] = Path("validation.toml"),
     runs_dir: Annotated[Path, typer.Option(help="Where runs are kept")] = Path("out/runs"),
+    purpose: Annotated[str, typer.Option(help="Why held-out (holdout*) clips are scored: written to holdout-log.md")] = "",
 ) -> None:
     """Generate the validation clips with configs from validation.toml and score them against their scripts."""
     from funscript_gen.validate import comparison, load_manifest, load_runs, run_validation, summary
@@ -581,7 +582,8 @@ def validate(
     configs = config or ["default"]
     try:
         run = run_validation(name, configs, clips, jobs, flow_workers, extra, resume, code, manifest, runs_dir,
-                             say=console.print, save_analysis=save_analysis and replay is None, replay=replay)
+                             say=console.print, save_analysis=save_analysis and replay is None, replay=replay,
+                             purpose=purpose)
     except ValueError as e:
         raise typer.BadParameter(str(e))
     m = load_manifest(manifest)

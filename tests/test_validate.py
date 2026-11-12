@@ -203,3 +203,18 @@ def test_review_cost_counts_the_checks_until_every_direction_is_right():
     assert validate.review_cost([sc("high", 0.9, 0.8)]) == {"fix_n": 0, "fix_checks": 0, "fix_top": 0, "review_n": 1}
     assert validate._found([{"fix_top": 1, "fix_n": 2, "review_n": 6}, {"fix_top": 0, "fix_n": 3, "review_n": 3}]) == "1/5"
     assert validate._found({}) == "-"
+
+
+def test_scoring_held_out_clips_is_logged_once_per_run(tmp_path):
+    m = _manifest(tmp_path)
+    m["groups"]["holdout"] = ["b2"]
+    a1, b2 = (validate.Clip(n, g, tmp_path / f"{n}.mp4", tmp_path / f"{n}.funscript") for n, g in (("a1", "dev"), ("b2", "holdout")))
+    assert validate.record_holdout_use(m, [a1], "r0", "", tmp_path) is None  # no held-out clip: nothing recorded
+    assert not (tmp_path / validate.HOLDOUT_LOG).exists()
+    assert validate.record_holdout_use(m, [a1, b2], "r1", "confirm the | change", tmp_path) == 1
+    assert validate.record_holdout_use(m, [b2], "r1", "", tmp_path) == 1  # --resume of the same run: no new line
+    assert validate.record_holdout_use(m, [b2], "r2", "", tmp_path) == 2
+    lines = (tmp_path / validate.HOLDOUT_LOG).read_text(encoding="utf-8").splitlines()
+    rows = [ln for ln in lines if ln.startswith("| 20")]
+    assert len(rows) == 2
+    assert "| r1 | holdout: b2 | confirm the / change |" in rows[0] and rows[1].endswith("| (not given) |")

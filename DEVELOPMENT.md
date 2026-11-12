@@ -118,6 +118,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\smoke-test
 | `dev2` | 22 段：2026-11-07 新增的 47 段（34 個沒調過規則的來源系列）中依來源系列分出的一半 | 可以用來調整 |
 | `holdout2` | 25 段：另一半 | 規則與 `holdout` 相同，只在最後確認 |
 
+跑到 `holdout`／`holdout2` 的素材時（包括 `--replay`），`validate` 會在 `holdout-log.md`（提交的檔案，只有代號）加一筆：日期、執行名稱、素材、`--purpose` 寫的目的；`--resume` 同一個執行不重複記。每看一次保留組的分數就洩漏一點，次數要看得見，新增素材時優先補保留組。2026-11-12 以前的使用沒有記錄（見 PLAN）。
+
 不加 `--clips` 時只跑 dev、test（`default_clips`）；`--clips holdout`、`dev2`、`holdout2` 各跑該組，`all` 跑全部。
 
 ```bash
@@ -125,7 +127,7 @@ uv run funscript-gen validate base -c default -c user                    # 產�
 uv run funscript-gen validate new -c default --baseline out/runs/base     # 改程式後和基準比較
 uv run funscript-gen compare-runs out/runs/new --baseline out/runs/base --scenes B03   # 逐鏡頭明細
 uv run funscript-gen validate shape -c user --replay out/runs/base        # 只改 render 階段：用存下的分析重算，幾秒鐘
-uv run funscript-gen validate final -c default --clips holdout            # 保留組：只在修改完成時確認
+uv run funscript-gen validate final -c default --clips holdout --purpose "確認 X"  # 保留組：只在修改完成時確認，會記到 holdout-log.md
 ```
 
 - 執行器把程式碼複製到 `out/runs/<名稱>/code/` 再跑，所以執行中可以繼續修改；中斷後加 `--resume` 接著跑。要跑修改前的程式，用 `--code` 指向修改前的 git worktree 的 `src`。
