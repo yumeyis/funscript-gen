@@ -4,22 +4,20 @@
 clips_dir = "valid"
 # What `validate` runs when --clips is not given.
 default_clips = ["dev", "test"]
-# Clips scored without their scenes of very weak flow and no part boxes (the 3D series, whose scripts follow the music
-# there); see validate.ignore_spans.
-ignore_low_flow = ["G01", "G02", "G03", "G04", "G05", "G06", "G07"]
+# Clips scored without their scenes of very weak flow and no part boxes (a series whose scripts follow the music there);
+# see validate.ignore_spans.
+ignore_low_flow = []  # was the 3D series G01-G07, removed 2026-11-12 (the mechanism stays for such a series)
 
 [groups]
 # The direction rules and thresholds (--asym-sign, --part-sign, ...) were tuned on the first 13 clips.
 dev = ["A02", "B01", "C01", "D01", "A04", "E01", "A03", "A01",
-       "B02", "B03", "F01", "E02", "D02",
-       # moved from holdout 2026-11-01 to work on clips cut into many short scenes
-       "G03", "G04", "G06"]
+       "B02", "B03", "F01", "E02", "D02"]
 # Added 2026-10-30; no rule was tuned on them (the --scene-center and camera-motion checks did look at them).
-test = ["B04", "H01", "H02", "I01", "G01", "J01", "A05", "A06", "A07", "K01", "D03", "L01"]
+test = ["B04", "H01", "H02", "I01", "J01", "A05", "A06", "A07", "K01", "D03", "L01"]
 # Added 2026-11-01 and held out: run only to confirm a change at the end (`--clips holdout`), never to choose rules,
 # thresholds or settings. Not in default_clips, so everyday runs do not show their scores.
-# G03, G04, G06 were moved to dev after the first look.
-holdout = ["A08", "C02", "C03", "D04", "D05", "G02", "G05", "G07", "M01", "N01"]
+# (The 3D series G, 7 clips, was in dev, test and holdout until 2026-11-12 and was removed.)
+holdout = ["A08", "C02", "C03", "D04", "D05", "M01", "N01"]
 
 # Added 2026-11-07: 47 more clips from 34 more series, none seen before. Split by series (alternating, in the order
 # A B C P Q ... Z AA ... AW; fixed before any score was looked at): dev2 may be used to work on, holdout2 is for

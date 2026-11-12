@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 移出驗證的 3D 動畫系列（commit: `Remove the 3D animation series from the validation set`）
+- 目的：使用者要求移除該系列，以後不用它驗證。
+- 修改：`validation.toml` 移除 7 段（現在 dev 13、test 11、holdout 7、dev2 22、holdout2 25，共 78 段）、`ignore_low_flow` 清空；DEVELOPMENT 的分組與驗證表、README 的段數、`report.py` 的方向把握統計改用 78 段的數字；PLAN 記錄與影響。`valid/` 中的檔案已刪除（不在 git 中）。
+- 驗證：數字由同一份執行結果排除該系列重算，沒有重跑；預設 F1 dev 0.887、test 0.794、全部 0.735。程式與輸出沒有改。屬 PATCH。
+
 ## 2026-11-12 — 逐鏡頭的方向把握（commit: `Show how sure each scene's direction is and mark the ones without evidence`）
 - 目的：專案審視 A1：方向錯是整個鏡頭翻反，修正成本在找出是哪幾個，但沒有證據的鏡頭沒有被標出來。
 - 修改：`report.direction_confidence` 依既有證據分高／中／低（無證據的鏡頭在 85 段上只有 47% 方向對，其餘 75–100%）；鏡頭表加「方向把握」欄；Web UI、CLI 摘要與預覽標出「低」的鏡頭並納入「下一個待確認」；語言包、README（中英）同步。

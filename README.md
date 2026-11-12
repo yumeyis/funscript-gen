@@ -73,7 +73,7 @@ The CLI and the web UI have exactly the same settings.
 
 ### Accuracy
 
-On 85 anime videos that come with hand-made scripts, the turning-point match (F1, 1 = identical) varies a lot with the material: about 0.8 for the sources used while tuning the program, and about 0.67 on average for the 47 new sources that were never used. Short single-scene videos are almost the same as the hand-made script (0.90–0.99); long multi-scene videos are worse, mainly because the high/low direction is judged wrongly and because scenes without a clear rhythm miss many strokes (see "Known issues"). For the detailed numbers see [DEVELOPMENT.md](DEVELOPMENT.md#目前的驗證結果).
+On 78 anime videos that come with hand-made scripts, the turning-point match (F1, 1 = identical) varies a lot with the material: about 0.8 for the sources used while tuning the program, and about 0.67 on average for the 47 new sources that were never used. Short single-scene videos are almost the same as the hand-made script (0.90–0.99); long multi-scene videos are worse, mainly because the high/low direction is judged wrongly and because scenes without a clear rhythm miss many strokes (see "Known issues"). For the detailed numbers see [DEVELOPMENT.md](DEVELOPMENT.md#目前的驗證結果).
 
 ---
 

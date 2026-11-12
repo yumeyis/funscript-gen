@@ -41,10 +41,11 @@ def possibly_inverted(result: PipelineResult) -> list[int]:
 
 
 # How sure the output's direction (up = high or down = high) is, from the evidence the checks found. Measured on the
-# 85 validation clips (default settings, scenes with |r| >= 0.3 against the hand-made script, 1,050 scenes): scenes the
-# part check or the asymmetry check turned, or with an asymmetry of 0.4 or more, had the right direction in 94% /
-# 100% / 88%; an asymmetry of 0.2-0.4 or a clear flow pattern (sign margin >= 0.4) in 83% / 75%; no evidence at all in
-# 47% (260 scenes, a quarter of them), which is chance. The same in each group of clips (tuned on or not).
+# 78 validation clips (default settings, scenes with |r| >= 0.3 against the hand-made script, 813 scenes): scenes the
+# part check or the asymmetry check turned, or with an asymmetry of 0.4 or more, had the right direction in 92%; an
+# asymmetry of 0.2-0.4 or a clear flow pattern (sign margin >= 0.4) in 79%; no evidence at all in 50% (212 scenes, a
+# quarter of them), which is chance. Nearly all of those scenes are in the clips of sources never tuned on (171 of 212
+# in holdout2).
 STRONG_ASYM = 0.4
 WEAK_ASYM = 0.2
 CLEAR_MARGIN = 0.4
