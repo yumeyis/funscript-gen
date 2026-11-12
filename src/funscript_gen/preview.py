@@ -90,6 +90,8 @@ body.editing #bar { cursor: ns-resize; }
     <span title="@@preview.scale_title@@">@@preview.scale@@
       <button class="small" id="scaledown">−</button><button class="small" id="scaleup">+</button>
       @@preview.scale_keys@@<b id="iscale"></b></span>
+    <span title="@@preview.mirror_title@@">
+      <button class="small" id="mirror">@@preview.mirror@@</button> @@preview.mirror_keys@@</span>
     <span title="@@preview.peaks_title@@">
       @@preview.top@@ <input type="number" id="topval" min="0" max="100" value="100"> <button class="small" id="settop">@@preview.set@@</button>
       @@preview.bottom@@ <input type="number" id="botval" min="0" max="100" value="0"> <button class="small" id="setbot">@@preview.set@@</button></span>
@@ -114,6 +116,7 @@ body.editing #bar { cursor: ns-resize; }
     <span>@@preview.help.size@@</span>
     <span>@@preview.help.peaks@@</span>
     <span>@@preview.help.scope@@</span>
+    <span>@@preview.help.mirror@@</span>
     <span>@@preview.help.undo@@</span>
     <span>@@preview.help.save@@</span>
   </div>
@@ -555,6 +558,20 @@ function scaleScene(up) {
   edited(); scaled.at = dirty;
 }
 
+// Upside down: the positions of the selected actions (or of the scene playing) mirrored within their own lowest and
+// highest, so a stretch of a scene that runs the other way (the direction changes in the middle of a long scene) can be
+// turned over without flipping the whole scene. The ends do not meet the actions outside any more where the stretch
+// began or ended in the middle of a stroke; the others are the user's to adjust.
+function mirrorScene() {
+  const { idx } = target();
+  if (idx.length < 2) return;
+  const ps = idx.map(k => acts[k].pos), total = Math.min(...ps) + Math.max(...ps);
+  if (Math.min(...ps) === Math.max(...ps)) return;
+  setEditing(true); snapshot();
+  idx.forEach(k => { acts[k].pos = total - acts[k].pos; });
+  edited();
+}
+
 // Tops and bottoms: the points nearest each crest and trough of the curve through the actions. A run of equal
 // positions counts as one point; the first and last action are one when they end a stroke.
 function turns(pos) {  // 1 at a top, -1 at a bottom, 0 between
@@ -641,13 +658,14 @@ document.addEventListener("keydown", e => {
   else if (e.key === "PageUp" || e.key === "PageDown") { e.preventDefault(); jumpScene(e.key === "PageDown"); }
   else if (e.key === "-" || e.key === "_") { e.preventDefault(); scaleScene(false); }
   else if (e.key === "+" || e.key === "=") { e.preventDefault(); scaleScene(true); }
+  else if (e.key === "m" || e.key === "M") { if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); mirrorScene(); } }
   else if (e.key === "[" || e.key === "]") { e.preventDefault(); stepRate(e.key === "]"); }
   else if ((e.key === "r" || e.key === "R") && hasRegions) { e.preventDefault(); roiOn.checked = !roiOn.checked; }
   else if (e.key === "." || e.key === ",") { video.pause(); video.currentTime = Math.max(0, video.currentTime + (e.key === "." ? 1 : -1) / DATA.fps); }
 });
 for (const [id, f] of [["scaledown", () => scaleScene(false)], ["scaleup", () => scaleScene(true)],
                        ["prevscene", () => jumpScene(false)], ["nextscene", () => jumpScene(true)],
-                       ["settop", () => levelScene(true)], ["setbot", () => levelScene(false)],
+                       ["mirror", mirrorScene], ["settop", () => levelScene(true)], ["setbot", () => levelScene(false)],
                        ["slower", () => stepRate(false)], ["faster", () => stepRate(true)]]) {
   const b = document.getElementById(id);
   b.addEventListener("click", () => { f(); b.blur(); });  // keep the space key for play / pause

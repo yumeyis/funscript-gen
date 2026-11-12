@@ -609,6 +609,18 @@ name = ""
 # zh-TW: （<k>-</k><k>+</k>）
 # en: (<k>-</k><k>+</k>)
 "preview.scale_keys" = ""
+# zh-TW: 上下顛倒
+# en: Upside down
+"preview.mirror" = ""
+# zh-TW: 把目前鏡頭（編輯時選取了多個點則只改這些點）的高低顛倒，以它自己的最低與最高為準（會開啟編輯；Ctrl+Z 復原）。長鏡頭只有一段方向相反時，先用滑鼠框選那一段
+# en: Turn the current scene (or only the selected actions, when several are selected while editing) upside down, within its own lowest and highest position (turns editing on; Ctrl+Z undoes). When only a stretch of a long scene runs the other way, drag a box over that stretch first
+"preview.mirror_title" = ""
+# zh-TW: （<k>M</k>）
+# en: (<k>M</k>)
+"preview.mirror_keys" = ""
+# zh-TW: 只有一段相反：框選那一段後按「上下顛倒」或 <k>M</k>
+# en: Only one stretch is upside down: drag a box over it, then press “Upside down” or <k>M</k>
+"preview.help.mirror" = ""
 # zh-TW: 把目前鏡頭（編輯時選取了多個點則只改這些點）每個波峰（頂點）或波谷（底點）的動作點設成指定的位置，中間的點依比例跟著移動（會開啟編輯；Ctrl+Z 復原）
 # en: Set the actions at every peak (top) or valley (bottom) of the current scene (only the selected points if several are selected) to the given position; the points between move in proportion (turns editing on; Ctrl+Z undoes)
 "preview.peaks_title" = ""

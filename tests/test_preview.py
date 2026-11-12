@@ -183,3 +183,25 @@ def test_the_player_gets_the_scenes_without_direction_evidence():
     fs = Funscript([Action(0, 0), Action(500, 100)])
     html_ = player_html("v.mp4", fs, scene_list=[(0.0, 0, False), (1000.0, 1, False)], checks=[0], unsure=[1])
     assert '"check":true,"unsure":false' in html_ and '"check":false,"unsure":true' in html_
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_upside_down_mirrors_the_selected_actions_within_their_own_range():
+    doc = player_html("/media/abc", Funscript([Action(0, 0)]))
+    fn = re.search(r"function mirrorScene\(.*?\n}\n", doc, re.S).group(0)
+    script = f"""
+    let acts = [{{at: 0, pos: 10}}, {{at: 1, pos: 90}}, {{at: 2, pos: 30}}, {{at: 3, pos: 70}}, {{at: 4, pos: 5}}];
+    let idx = [1, 2, 3], edits = 0, editing = false, snaps = 0;
+    const target = () => ({{idx}}), setEditing = on => {{ editing = on; }}, snapshot = () => {{ snaps++; }},
+          edited = () => {{ edits++; }};
+    {fn}
+    mirrorScene();
+    const first = acts.map(a => a.pos);
+    idx = [0]; mirrorScene();  // one action: nothing to turn
+    idx = [2, 4]; acts[2].pos = 40; acts[4].pos = 40; mirrorScene();  // all equal: nothing to turn
+    console.log(JSON.stringify([first, acts.map(a => a.pos), edits, snaps, editing]));
+    """
+    out = json.loads(subprocess.run(["node", "-e", script], capture_output=True, text=True, check=True).stdout)
+    # 90, 30, 70 lie within 30..90: mirrored around 60 they become 30, 90, 50; the ends outside stay
+    assert out[0] == [10, 30, 90, 50, 5]
+    assert out[1] == [10, 30, 40, 50, 40] and out[2] == 1 and out[3] == 1 and out[4] is True
