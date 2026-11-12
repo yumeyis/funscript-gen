@@ -10,7 +10,8 @@ folder uninstalls it.
 Requirements: Windows 10 or 11 (64-bit). The graphical interface uses the Microsoft Edge WebView2 that comes with the
 system (built in on Windows 11; on Windows 10, when it is missing, the program opens the default browser instead).
 The AI analysis needs a separate vLLM or Ollama server; on first use go to the Settings tab and enter the endpoint
-and the model.
+and the model. The AI is optional: when no AI server can be reached, the program runs without it (the whole picture
+is the analysis region) and says so in the result, so you can try it before setting a server up.
 
 
 Graphical interface

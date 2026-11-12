@@ -9,6 +9,8 @@ funscript-gen Windows 免安裝版
 需求：Windows 10 或 11（64 位元）。圖形介面使用系統內建的 Microsoft Edge WebView2
 （Windows 11 已內建；Windows 10 若沒有，程式會改用預設瀏覽器開啟）。
 AI 分析需要另外架設的 vLLM 或 Ollama 伺服器，第一次使用請到「設定」分頁填寫端點與模型。
+AI 是選用的：連不上 AI 伺服器時，程式會改為不用 AI（整個畫面當作分析區域）並在結果中說明，所以沒有伺服器也
+可以先試用；之後再架設也不遲。
 
 
 圖形介面
