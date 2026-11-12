@@ -193,3 +193,15 @@ def test_blas_runs_on_one_thread_unless_the_user_sets_it():
     # the flow workers run in parallel; BLAS threads on every core only spin-wait against them
     assert _blas_env({}) == "1"
     assert _blas_env({"OPENBLAS_NUM_THREADS": "4"}) == "4"
+
+
+def test_a_run_without_an_ai_server_goes_on_without_it_and_says_so(tmp_path):
+    from funscript_gen.config import Settings
+    from funscript_gen.pipeline import render
+
+    _clip(tmp_path / "c.mp4", seconds=3.0)
+    opts = PipelineOptions(part_sign=False, ai_settings=Settings(vllm_base_url="http://127.0.0.1:1/v1"))
+    result = generate(tmp_path / "c.mp4", opts)
+    assert result.ai_notice and "AI" in result.ai_notice
+    assert result.analysis.key["use_ai"] is False  # asking for the AI again analyses the video again
+    assert render(result.analysis, opts).ai_notice == result.ai_notice

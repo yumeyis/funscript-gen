@@ -163,3 +163,29 @@ def test_cache_damaged_file_is_a_miss_and_put_leaves_no_temp_files(tmp_path):
     cache.put(key, {"a": 1})
     assert cache.get(key) == {"a": 1}
     assert [f.name for f in tmp_path.iterdir()] == [f"{key}.json"]
+
+
+def test_unreachable_ai_is_told_from_an_answer_of_any_kind(monkeypatch):
+    import httpx
+    import openai
+
+    from funscript_gen import config
+    from funscript_gen.pipeline import PipelineOptions, ai_unreachable
+
+    closed = config.Settings(vllm_base_url="http://127.0.0.1:1/v1")  # nobody listens on port 1
+    assert ai_unreachable(PipelineOptions(ai_settings=closed))
+
+    class Server:
+        def __init__(self, error):
+            self.error = error
+
+        def list_models(self):
+            if self.error:
+                raise self.error
+            return ["m"]
+
+    request = httpx.Request("GET", "http://x/v1/models")
+    not_found = openai.NotFoundError("no model list", response=httpx.Response(404, request=request), body=None)
+    for error in (None, not_found):  # a server that answers, even with an error status, is reachable
+        monkeypatch.setattr(config, "make_provider", lambda s, use_cache=True, e=error: Server(e))
+        assert ai_unreachable(PipelineOptions()) is None

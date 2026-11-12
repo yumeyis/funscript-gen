@@ -85,7 +85,7 @@ flowchart TB
 
     subgraph AIBOX["AI：每個鏡頭依序呼叫，鏡頭之間同時送出（--ai-workers，預設 8）；回應快取在 ~/.cache/funscript-gen/ai/"]
         direction TB
-        A1["<b>場景分析</b>（每鏡頭 1 次；--no-ai 時略過、分析整個畫面）<br/>人數、兩個人的框、互動區域"]:::aiOpt
+        A1["<b>場景分析</b>（每鏡頭 1 次；--no-ai 時略過、分析整個畫面；開始前先試連一次 AI 伺服器，連不上就整個流程當作 --no-ai 並在摘要說明）<br/>人數、兩個人的框、互動區域"]:::aiOpt
         A1H["<b>目標區域分析</b>（--focus hybrid，預設關；多 1 次）<br/>每張關鍵幀看不看得清楚主動部位、目標部位與接觸部位的框、主動部位方向"]:::aiOpt
         A1C["<b>手和口</b>（--contact-pick，預設開；Hybrid 判成 hand／mouth 的鏡頭）<br/>接觸部位的機率（接續快取的回答、只產生 1 個 token）<br/>前兩名是手和口、第二名 ≥ --contact-min-prob（0.1）時<br/>再請 AI 框出手、口與主動部位（多 1 次）"]:::aiOpt
         A2["<b>行程範圍</b>（--stroke-range，預設開；1 次）<br/>看不看得到前端、完整的主動部位"]:::aiOpt

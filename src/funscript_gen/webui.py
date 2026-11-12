@@ -1232,6 +1232,8 @@ def run_lines(result: PipelineResult, elapsed: float, reused: bool = False) -> l
     skipped = [p for p in result.plans if p.skip]
     if skipped:
         lines.append(t("web.run.skipped", n=len(skipped)))
+    if result.ai_notice:
+        lines.append("⚠️ " + result.ai_notice)
     errors = [p for p in result.plans if p.error]
     if errors:
         lines.append(t("web.run.ai_errors", n=len(errors)))

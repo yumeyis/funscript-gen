@@ -126,6 +126,8 @@ def _report(result: PipelineResult, opts, output: Path, debug: bool) -> None:
     """Save the script and list what was done per scene (generate, render)."""
     result.funscript.save(output)
     console.print(f"wrote [bold]{output}[/] — {len(result.funscript.actions)} actions, {len(result.plans)} scenes")
+    if result.ai_notice:
+        console.print(f"[yellow]{result.ai_notice}[/]")
     if result.flow_device is not None:
         console.print(f"  optical flow ran on {result.flow_device}")
     if result.part_device is not None:

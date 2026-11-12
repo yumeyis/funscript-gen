@@ -227,6 +227,7 @@ class VideoAnalysis:
     part_device: str | None = None
     parts_error: str | None = None  # the part detector could not be loaded
     flow_device: str | None = None  # "CPU", or "OpenCL: <GPU>" (None: no optical flow)
+    ai_notice: str | None = None  # the AI was asked for but unreachable, so the run went without it (text of that time)
 
     def serves(self, video: str | Path, key: dict) -> bool:
         """Whether rendering this analysis gives what a full run of `video` with settings `key` would. Without the
@@ -279,6 +280,7 @@ class PipelineResult:
     part_device: str | None = None  # onnxruntime provider the part check ran on (None: it did not run)
     analysis: VideoAnalysis | None = None  # what the script was rendered from
     flow_device: str | None = None  # VideoAnalysis.flow_device
+    ai_notice: str | None = None  # VideoAnalysis.ai_notice
 
 
 def _run_all(workers: int, fn: Callable, items: list, tick: Callable[[], None] | None = None) -> list:
@@ -1072,6 +1074,14 @@ def analyze_video(video: str | Path, opts: PipelineOptions | None = None, progre
     report = progress or (lambda phase, t: None)
     st = video.stat()
     devices.check(opts)  # a step set to gpu without one: stop before the scene cut
+    ai_notice = None
+    if opts.use_ai:
+        # Without a server every call would fail after its retries (about 3 s each, three calls per scene) and the
+        # scenes would end up analysed as whole pictures anyway: find out first and say so.
+        unreachable = ai_unreachable(opts)
+        if unreachable:
+            opts = replace(opts, use_ai=False)  # the analysis then records use_ai=False: asking again retries the AI
+            ai_notice = tr("pipe.ai_unreachable", error=unreachable)
     flow_gpu = opts.mode != "pose" and devices.use_gpu("flow", opts)
     scenes = detect_scenes(video, threshold=opts.scene_threshold, on_frame=lambda t: report("scenes", t))
     # The part check's detection runs alongside the flow and the AI: B03 on the CPU 158 -> 119 s (81 s without it).
@@ -1089,7 +1099,25 @@ def analyze_video(video: str | Path, opts: PipelineOptions | None = None, progre
     envelope = onset_envelope(video)
     flow_device = None if opts.mode == "pose" else f"OpenCL: {devices.opencl_gpu()}" if flow_gpu else "CPU"
     return VideoAnalysis(video, analysis_key(values_of(opts)), plans, envelope, (st.st_size, st.st_mtime_ns),
-                         device, error, flow_device)
+                         device, error, flow_device, ai_notice)
+
+
+def ai_unreachable(opts: PipelineOptions) -> str | None:
+    """Why the AI server cannot be reached (a failed connection or a timeout), or None. An answer of any kind, even an
+    error status such as a server without a model list, counts as reachable: the calls themselves tell more."""
+    from funscript_gen.ai.base import ProviderError
+    from funscript_gen.config import Settings, make_provider
+
+    settings = (opts.ai_settings or Settings()).model_copy(update={"vllm_timeout_s": 5.0, "vllm_concurrency": 1})
+    try:
+        make_provider(settings, use_cache=False).list_models()
+    except ProviderError as e:
+        return str(e)
+    except Exception as e:  # noqa: BLE001 - only a failed connection counts, whatever else it is
+        import openai
+
+        return str(e) if isinstance(e, openai.APIConnectionError) else None
+    return None
 
 
 def _pieces(lo: float, hi: float | None, end_ms: float) -> list[tuple[float, float | None]]:
@@ -1263,7 +1291,8 @@ def render(analysis: VideoAnalysis, opts: PipelineOptions | None = None) -> Pipe
         },
     ).normalized()
     return PipelineResult(script, plans, part_device=analysis.part_device if opts.part_sign else None,
-                          analysis=analysis, flow_device=analysis.flow_device)
+                          analysis=analysis, flow_device=analysis.flow_device,
+                          ai_notice=getattr(analysis, "ai_notice", None))
 
 
 

@@ -115,6 +115,8 @@ It goes through: checking [uv](https://docs.astral.sh/uv/) (it can be installed 
 
 vLLM is recommended (fast, and handles several requests at once); with only one graphics card, or for a simple installation, use [Ollama](#with-ollama).
 
+**The AI is optional**: when you would rather not set one up, turn off "Use the AI" in the web UI or add `--no-ai`; the whole picture is then the analysis region and the rest of the pipeline is the same. On the clips the author tuned the program on, the accuracy without the AI is clearly lower; on new sources that were not used for tuning, the measured difference was not clear (see the validation results in DEVELOPMENT.md). To try the program first, you can start without the AI.
+
 #### With vLLM
 
 Start vLLM on another host with a GPU (version 0.11 or later; the options below are for two 16 GB graphics cards):
@@ -358,7 +360,7 @@ The CLI messages, the web UI, the desktop app and the preview player come in Tra
 
 **AI**
 - **Running the same video again may give slightly different results**: the AI's answers can differ when several requests are handled at once (answers are cached, so they are the same from the second time).
-- **When the AI refuses or the connection fails** the whole picture is analysed instead, and the accuracy may drop.
+- **When the AI refuses or the connection fails** the whole picture is analysed instead, and the accuracy may drop. When the AI server cannot be reached before the run starts, the whole run goes without the AI and says so (in the summary in the web UI, in the terminal on the CLI); generating again after the backend is up uses the AI again.
 - **Hybrid is only slightly better than the general mode**, but takes about twice the AI time.
 - **Following the one that moves more when the hand and the mouth both touch** (`--contact-pick`) is on the whole a tie, and a few scenes get worse; when a scene seems to follow the wrong one, generate again with `--no-contact-pick` and compare.
 - **The check for minors currently has no effect**; it does not skip any scene.

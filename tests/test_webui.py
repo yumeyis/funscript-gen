@@ -679,3 +679,13 @@ def test_the_tools_tab_is_wired_in_both_modes(local, tmp_path, monkeypatch):
     # after the work the files box is cleared, and nothing reads the processed files again
     clear = next(f for f in demo.fns.values() if f.fn is not None and f.fn.__name__ == "tool_cleared")
     assert len(clear.outputs) == 7 and clear.inputs == []
+
+
+def test_run_lines_say_when_the_run_went_without_the_ai():
+    from funscript_gen import webui
+    from funscript_gen.export.funscript import Funscript
+    from funscript_gen.pipeline import PipelineResult
+
+    result = PipelineResult(Funscript([]), [], ai_notice="no AI today")
+    assert any("no AI today" in line for line in webui.run_lines(result, 1.0))
+    assert not any("no AI" in line for line in webui.run_lines(PipelineResult(Funscript([]), []), 1.0))
