@@ -189,3 +189,17 @@ def test_comparison_prints_an_interval_over_series():
     new = {"default": {"args": [], "clips": {c: dict(v, f1=0.6, sha="y") for c, v in clips.items()}}}
     text = validate.comparison(new, {"default": {"args": [], "clips": clips}}, None)
     assert "95% interval over source series" in text and "ΔF1 +0.100 [+0.100, +0.100]" in text
+
+
+def test_review_cost_counts_the_checks_until_every_direction_is_right():
+    def sc(conf, margin, r, marked=False):
+        return {"confidence": conf, "sign_margin": margin, "r": r, "marked": marked}
+
+    scenes = [sc("high", 0.9, 0.8), sc("low", 0.1, 0.5), sc("low", 0.3, -0.6), sc("medium", 0.5, -0.5),
+              sc("high", 0.7, 0.4, marked=True), sc("", None, 0.9), sc("high", 0.9, -0.1)]
+    # order: the marked one, then low by weak margin (0.1, 0.3), medium, high; the scene without confidence is left out
+    # and |r| < 0.3 is not a clear direction. Wrong ones: the low 0.3 (position 3) and the medium (position 4).
+    assert validate.review_cost(scenes) == {"fix_n": 2, "fix_checks": 4, "fix_top": 0, "review_n": 6}
+    assert validate.review_cost([sc("high", 0.9, 0.8)]) == {"fix_n": 0, "fix_checks": 0, "fix_top": 0, "review_n": 1}
+    assert validate._found([{"fix_top": 1, "fix_n": 2, "review_n": 6}, {"fix_top": 0, "fix_n": 3, "review_n": 3}]) == "1/5"
+    assert validate._found({}) == "-"

@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 待確認依證據排序與檢查量指標（commit: `Order the next-to-check queue by evidence and score the review effort`）
+- 目的：專案審視 A1 剩下的兩項。
+- 修改：預覽的「下一個待確認」先走有反向證據的鏡頭、再走沒有證據的；`validate` 的表多一欄 `1st 1/4`（依待確認順序，前四分之一找到幾個方向錯的鏡頭）；測試。
+- 驗證：`uv run pytest` 通過；`--replay` 重算 78 段：default 找到 70／210（33%，隨機是 25%），所以信心順序只比隨機好一點（見 PLAN）。輸出不變，屬 PATCH。
+
 ## 2026-11-12 — 頁面搬到 webui_layout.py（commit: `Move the web UI page layout out of webui.py into webui_layout.py`）
 - 目的：專案審視 D3：`webui.py` 2,067 行，其中 `build()` 單一函式 391 行。
 - 修改：新增 `webui_layout.py`（頁面、CSS／JS、路徑框、設定表單）；處理函式與狀態留在 `webui.py`，頁面在建立時才取用，名稱在 `webui.py` 末尾重新匯出；DEVELOPMENT、PLAN。

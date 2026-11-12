@@ -94,6 +94,16 @@ def test_player_marks_the_scenes_to_check():
     assert 'id="nextcheck"' in player_html("/media/abc", Funscript([Action(0, 0)]))  # hidden without checks (JS)
 
 
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_next_check_goes_through_the_scenes_with_evidence_first():
+    doc = player_html("/media/abc", Funscript([Action(0, 0)]), scene_list=[(i * 1000.0, i, False) for i in range(5)],
+                      checks=[3], unsure=[1, 2, 4])
+    q = re.search(r"const queue = .*?\n", doc).group(0)
+    out = subprocess.run(["node", "-e", f"const checks = {json.dumps(_data(doc)['scene_list'])}.filter(x => x.check || x.unsure);{q}"
+                          "console.log(JSON.stringify(queue.map(x => x.i)))"], capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == [3, 1, 2, 4]
+
+
 def test_scene_regions_name_the_flow_region_of_each_scene():
     t = np.arange(0, 3000, 33.0)
     sig = analyze(t, np.sin(t / 300))

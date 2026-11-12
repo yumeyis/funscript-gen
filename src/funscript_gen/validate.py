@@ -154,6 +154,7 @@ def scene_scores(ref: Funscript, pred: Funscript, scenes: list[dict]) -> list[di
             "ref_tps": len(inside) / dur, "out_tps": int(((pt >= s) & (pt < e)).sum()) / dur, "near_150": near,
             "tempo_hz": sc.get("tempo_hz"), "flipped": sc.get("flipped"), "sign_margin": sc.get("sign_margin"),
             "asym": sc.get("asym"), "audio_sign": sc.get("audio_sign"), "part_sign": sc.get("part_sign"),
+            "confidence": sc.get("confidence") or "", "marked": bool((sc.get("asym_hint") or sc.get("sign_doubt")) and not sc.get("flipped")),
             "note": sc.get("note") or "",
         })
     return rows
@@ -166,6 +167,22 @@ def direction_tally(scenes: list[dict]) -> dict:
     dur = sum(s["end_ms"] - s["start_ms"] for s in moving)
     mean_r = sum(s["r"] * (s["end_ms"] - s["start_ms"]) for s in moving) / dur if dur else float("nan")
     return {"sign_ok": sum(s["r"] > 0 for s in clear), "sign_n": len(clear), "scene_r": mean_r}
+
+
+def review_cost(scenes: list[dict]) -> dict:
+    """How many scenes a user has to look at to get every direction right when going through them in the order the
+    preview offers (scenes marked as possibly upside down, then confidence low to high, weak flow pattern first):
+    `fix_n` scenes with the wrong direction (|r| >= SIGN_MIN_R, r < 0), `fix_checks` the position of the last of
+    them in that order (0 when none; going through everything but the last few is the usual case), `fix_top` how
+    many of them are among the first quarter of the scenes (a random order finds a quarter), `review_n` the scenes
+    that can be upside down at all."""
+    rows = [s for s in scenes if s.get("confidence")]
+    tier = {"low": 1, "medium": 2, "high": 3}
+    rows.sort(key=lambda s: (0 if s.get("marked") else tier[s["confidence"]], abs(s.get("sign_margin") or 0.0)))
+    wrong = [k for k, s in enumerate(rows, 1) if s["r"] is not None and math.isfinite(s["r"]) and abs(s["r"]) >= SIGN_MIN_R and s["r"] < 0]
+    quarter = -(-len(rows) // 4)
+    return {"fix_n": len(wrong), "fix_checks": wrong[-1] if wrong else 0, "fix_top": sum(k <= quarter for k in wrong),
+            "review_n": len(rows)}
 
 
 # Scenes with a flow signal weaker than this (standard deviation) and no part boxes are stretches the picture does not
@@ -212,7 +229,7 @@ def score(reference: Path, output: Path, debug: Path | None = None, ignore_low_f
     if scenes_raw is not None:
         scenes = scene_scores(ref, pred, scenes_raw)
         up = compare(ref, upright(pred, scenes), ignore=spans)
-        out |= direction_tally(scenes) | {"f1_upright": up.f1, "r_upright": up.correlation, "scenes": scenes}
+        out |= direction_tally(scenes) | review_cost(scenes) | {"f1_upright": up.f1, "r_upright": up.correlation, "scenes": scenes}
     return _clean(out)
 
 
@@ -447,19 +464,28 @@ def summary(merged: dict, manifest: dict | None = None, configs: list[str] | Non
         entry = merged[cfg]
         names = sorted(entry["clips"], key=lambda c: (rank.get(c, len(rank)), c))
         lines.append(f"== {cfg}  {' '.join(entry['args']) or '(defaults)'}")
-        lines.append(f"{'clip':10}" + "".join(f"{HEADS[m]:>7}" for m in METRICS) + "  sign ok/n  actions    sec")
+        lines.append(f"{'clip':10}" + "".join(f"{HEADS[m]:>7}" for m in METRICS) + "  sign ok/n  1st 1/4  actions    sec")
         for c in names:
             v = entry["clips"][c]
             sign = f"{v.get('sign_ok', '-')}/{v.get('sign_n', '-')}"
             lines.append(f"{c:10}" + "".join(_fmt(v.get(m), 7) for m in METRICS)
-                         + f"  {sign:>9}  {v.get('actions', 0):7}  {v.get('seconds', 0):5.0f}")
+                         + f"  {sign:>9}  {_found(v):>6}  {v.get('actions', 0):7}  {v.get('seconds', 0):5.0f}")
         for g, cs in _groups(manifest, names).items():
             vals = [entry["clips"][c] for c in cs]
             ok, n = sum(v.get("sign_ok", 0) for v in vals), sum(v.get("sign_n", 0) for v in vals)
             lines.append(f"{'mean ' + g:10}" + "".join(_fmt(_mean(v.get(m) for v in vals), 7) for m in METRICS)
-                         + f"  {f'{ok}/{n}':>9}  ({len(cs)} clips)")
+                         + f"  {f'{ok}/{n}':>9}  {_found(vals):>6}  ({len(cs)} clips)")
         lines.append("")
     return "\n".join(lines)
+
+
+def _found(v) -> str:
+    """"found/wrong": wrong-direction scenes among the first quarter of the review order (see review_cost), for a clip
+    result or the sum over a list of them."""
+    vals = v if isinstance(v, list) else [v]
+    if not any("review_n" in x for x in vals):
+        return "-"
+    return f"{sum(x.get('fix_top', 0) for x in vals)}/{sum(x.get('fix_n', 0) for x in vals)}"
 
 
 def comparison(merged: dict, base: dict, manifest: dict | None = None, configs: list[str] | None = None) -> str:

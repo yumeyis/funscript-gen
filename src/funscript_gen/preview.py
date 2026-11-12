@@ -152,10 +152,11 @@ function sceneEnd(s) {
   const k = sceneList.indexOf(s);
   return k + 1 < sceneList.length ? sceneList[k + 1].at : duration();
 }
-function nextCheck() {  // the next scene to check after the one playing, wrapping around
-  if (!checks.length) return;
-  const t = video.currentTime * 1000, cur = sceneAt(t);
-  const s = checks.find(x => x.at > t && x !== cur) || checks[0];
+const queue = [...checks.filter(x => x.check), ...checks.filter(x => !x.check)];  // scenes with evidence against the direction first, then those with none
+function nextCheck() {  // the next scene in the queue after the one playing (the first when it is not in it), wrapping around
+  if (!queue.length) return;
+  const k = queue.indexOf(sceneAt(video.currentTime * 1000));
+  const s = queue[(k + 1) % queue.length];
   video.currentTime = s.at / 1000;
   video.play().catch(() => {});
 }
