@@ -276,15 +276,19 @@ src/funscript_gen/
   tracking/           光流、動漫部位框（parts.py）、骨架偵測與兩人相對位移（選配）
   signal/             訊號後處理、聲音（audio.py：撞擊聲的起點與相位）
   export/             funscript 讀寫
-scripts/                實驗與診斷用的腳本（`detect_viewer.py` 是偵測模型檢視器，用法見「開發環境與測試」；離線評估的紀錄見 docs/archive/PLAN-archive.md）；`check_history.py` 是發布前的檢查：掃描整個 git 歷史有沒有真實名稱、金鑰、非 noreply 的信箱
+scripts/                維護中的開發工具（`tests/test_scripts.py` 檢查語法與這份清單，CI 用 ruff 檢查）
+  check_history.py      發布前的檢查：掃描整個 git 歷史有沒有真實名稱、金鑰、非 noreply 的信箱
+  detect_viewer.py      偵測模型檢視器，用法見「開發環境與測試」
   flow_dump.py          把每幀的粗略光流場存成檔案，供離線實驗
+  make_synthetic.py     骨架模式的火柴人合成影片（需要 --extra pose）
+  param_sweep.py        render 階段參數的一次一個掃描（用存下的分析，離線）
+  remote_validate.ps1   在第二台測試主機上以 CPU 使用率上限執行驗證
+  rescore_run.py        用目前的評分方式重算舊的執行結果
   scene_diag.py         逐鏡頭診斷：相關、轉折點密度、時間差、節奏與備註
+  score_external.py     用驗證的評分方式評分其他工具的輸出，寫成 compare-runs 能讀的執行目錄
   sign_model.py         以存下的分析比較方向判斷的規則（留一支影片交叉驗證）
   two_cues.py           逐鏡頭比較兩個執行（例如有 AI 與不用 AI）的方向與相關
-  score_external.py     用驗證的評分方式評分其他工具的輸出，寫成 compare-runs 能讀的執行目錄
-  make_synthetic.py     骨架模式的火柴人合成影片（需要 --extra pose）
-  remote_validate.ps1  在第二台測試主機上以 CPU 使用率上限執行驗證
-  其他                  部位框（anime_det_dump、censor_*）、小行程（small_strokes）、鏡頭移動（camera_motion）等的一次性評估
+  experiments/          一次性的實驗腳本（部位框、小行程、鏡頭移動、深度、微調模型等），結果寫在 PLAN 與歸檔；不維護，可能已無法執行（說明見該資料夾的 README）；2026-11-12 以前的 PLAN、CHANGELOG 與歸檔寫的 `scripts/<名稱>.py` 現在在這裡
 tests/                  單元測試
 packaging/windows/      Windows 免安裝版的建置腳本、啟動程式原始碼、冒煙測試、zip 內的說明（README.txt 英文、README.zh.txt 繁體中文）
 .github/                 issue／PR 範本、Dependabot；workflows/：tests.yml（Linux 與 Windows 跑單元測試）、windows.yml（建置 Windows 免安裝版、草稿 Release）

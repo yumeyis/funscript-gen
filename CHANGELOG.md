@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 整理 scripts/（commit: `Move the one-off experiment scripts to scripts/experiments`）
+- 目的：專案審視 D5：54 個沒有測試的一次性腳本混在維護中的工具裡，重構後多半會壞。
+- 修改：43 個實驗腳本移到 `scripts/experiments/`（附 README）；`param_sweep.py`、`sign_vote.py` 修正路徑與匯入；scripts 的 ruff 發現清掉，CI 的 lint 加上 `scripts`；新增 `tests/test_scripts.py`；DEVELOPMENT、THIRD_PARTY_NOTICES 更新。
+- 驗證：`uv run pytest` 通過；沒有逐一執行腳本。屬 PATCH。
+
 ## 2026-11-12 — 快取的用量與清除指令（commit: `Add cache info and cache clear commands`）
 - 目的：專案審視 D4：快取沒有大小上限也沒有清除方式，搬動影片後部位框會留下舊項目。
 - 修改：新增 `cache.py` 與 CLI `cache info`／`cache clear`（只清 ai、parts、poses，可 `--older-than`，會先詢問）；README（中英）、DEVELOPMENT、PLAN。

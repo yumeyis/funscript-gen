@@ -50,7 +50,7 @@ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
    - **Usage**: Hosted separately by the user on a vLLM or Ollama server (`docker-compose.ollama.yaml` pulls `qwen3-vl` via Ollama on first start).
 3. **`deepghs/nudenet_onnx` (`320n.onnx`) — development scripts only**
    - **Source**: https://huggingface.co/deepghs/nudenet_onnx
-   - **Usage**: Downloaded only by `scripts/part_detectors.py`, an experiment script that is not part of the program, the Windows portable build or the Docker image. NudeNet itself is published under AGPL-3.0; check the model repository's terms before use.
+   - **Usage**: Downloaded only by `scripts/experiments/part_detectors.py`, an experiment script that is not part of the program, the Windows portable build or the Docker image. NudeNet itself is published under AGPL-3.0; check the model repository's terms before use.
 4. **`Ultralytics YOLO11-pose` (`yolo11n-pose.pt`) — Optional**
    - **Source**: https://github.com/ultralytics/ultralytics
    - **License**: GNU Affero General Public License v3.0 (AGPL-3.0)

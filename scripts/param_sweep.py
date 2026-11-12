@@ -7,7 +7,6 @@ usage: param_sweep.py OUT.json [--groups dev,test,dev2,holdout2] [--only NAME,NA
 The table printed hides holdout2 (it is only for confirming a choice made on the others): add --show-holdout.
 """
 import argparse
-import dataclasses
 import json
 import sys
 import tempfile
@@ -38,6 +37,22 @@ SWEEPS = [
 ]
 
 
+def find(runs, name):
+    """The saved analysis of clip `name` made with the default analysis settings, from the first run that has one."""
+    from funscript_gen.cli import parse_generate_args
+    from funscript_gen.options import BY_NAME, analysis_key, resolve
+    from funscript_gen.pipeline import load_analysis
+
+    given, preset = parse_generate_args([])
+    want = analysis_key(resolve(given, preset))
+    for run in runs:
+        for path in sorted(Path(run).glob(f"*/{name}.analysis.pkl")):
+            analysis = load_analysis(path)
+            if all(analysis.key.get(k, BY_NAME[k].default) == v for k, v in want.items()):
+                return analysis
+    return None
+
+
 def _patch(overrides: dict):
     from funscript_gen.signal import process
 
@@ -62,8 +77,6 @@ def _one(task):
     from funscript_gen.report import debug_data
     from funscript_gen.signal import process
     from funscript_gen.validate import clips, load_manifest, score
-    from mask_depth import find
-
     manifest = load_manifest()
     clip = clips(manifest, name)[0]
     analysis = find(RUNS, name)
