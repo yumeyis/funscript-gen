@@ -388,9 +388,6 @@ The CLI messages, the web UI, the desktop app and the preview player come in Tra
 - Generating again keeps the scenes you flipped by hand the last time: with the last analysis reused, the flipped scenes stay as they were; when an analysis setting changed and the scenes or the directions may differ, a scene is flipped again only if the new output still runs against the direction you chose (matched by output direction, not by scene number). Edits that were not saved are still lost.
 - The player's own texts, and the analysis notes in the scene table, are made when the preview or the analysis is made, so after the language is changed they stay in the old language until the next one.
 
-**Other**
-- The rotation information of videos is not handled (a portrait video from a phone may be treated as a landscape picture).
-
 ---
 
 ## Usage notice and disclaimer

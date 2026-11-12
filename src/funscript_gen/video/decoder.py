@@ -39,7 +39,17 @@ def probe(path: str | Path) -> VideoInfo:
             duration_ms = 0.0
         frame_count = stream.frames or int(round(duration_ms / 1000.0 * fps))
         ctx = stream.codec_context
-        return VideoInfo(Path(path), ctx.width, ctx.height, fps, duration_ms, frame_count)
+        width, height = ctx.width, ctx.height
+        if _quarter_turns(next(container.decode(stream), None)) % 2:  # turned by 90 or 270 degrees for display
+            width, height = height, width
+        return VideoInfo(Path(path), width, height, fps, duration_ms, frame_count)
+
+
+def _quarter_turns(frame) -> int:
+    """How many counterclockwise quarter turns show the frame upright: phone videos are stored sideways with a display
+    rotation (displaymatrix) that players apply and the decoder does not."""
+    rotation = getattr(frame, "rotation", 0) if frame is not None else 0
+    return round(rotation / 90) % 4
 
 
 def scaled_size(width: int, height: int, max_side: int | None) -> tuple[int, int]:
@@ -64,7 +74,8 @@ def iter_frames(
     start_ms: float = 0.0,
     end_ms: float | None = None,
 ) -> Iterator[Frame]:
-    """Yield frames, keeping at most one per 1/target_fps time slot."""
+    """Yield frames, keeping at most one per 1/target_fps time slot. Frames come out the way a player shows them: a
+    display rotation in the file is applied."""
     step_ms = 1000.0 / target_fps if target_fps else None
     last_slot = -1
     with av.open(str(path)) as container:
@@ -91,4 +102,6 @@ def iter_frames(
             if t_ms < start_ms:
                 continue
             image = frame.to_ndarray(format="bgr24", width=width, height=height)
+            if turns := _quarter_turns(frame):
+                image = np.ascontiguousarray(np.rot90(image, turns))
             yield Frame(t_ms, image)

@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 套用影片的旋轉資訊（commit: `Apply the display rotation of a video when decoding`）
+- 目的：專案審視 C4：手機直拍的影片以橫向存放加旋轉資訊，以前被當成側躺的畫面。
+- 修改：`video/decoder.py` 讀 `frame.rotation` 並轉正，`probe` 的寬高一併對調；`tests/test_decoder.py`；README（中英）移除這項已知問題。
+- 驗證：`uv run pytest` 通過；78 段中只有 B06、AD01 有旋轉資訊，輸出其餘不變。AD01 default F1 0.187 → 0.634，但 `F1u` 0.648 → 0.638（進步來自方向剛好對）；B06 default −0.022。屬 PATCH（修 bug）。
+
 ## 2026-11-12 — 待確認依證據排序與檢查量指標（commit: `Order the next-to-check queue by evidence and score the review effort`）
 - 目的：專案審視 A1 剩下的兩項。
 - 修改：預覽的「下一個待確認」先走有反向證據的鏡頭、再走沒有證據的；`validate` 的表多一欄 `1st 1/4`（依待確認順序，前四分之一找到幾個方向錯的鏡頭）；測試。
