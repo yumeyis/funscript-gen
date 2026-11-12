@@ -252,7 +252,8 @@ grep -n -E '陰莖|陰道|龜頭|生殖器|插入|拔出|口交|自慰|penis|vul
 ```
 src/funscript_gen/
   cli.py              CLI 進入點
-  webui.py            Gradio Web UI
+  webui.py            Gradio Web UI 的處理函式與狀態（工作、設定、輸出、預覽、工具、批次、伺服器）
+  webui_layout.py     Web UI 的頁面：元件與接線（`build`）、CSS／JS、路徑框與設定表單；處理函式在呼叫時才從 webui 取（避免載入時互相匯入，測試對 webui 的 monkeypatch 仍然有效）
   ollama_setup.py     一鍵執行 Ollama（Docker 容器或已安裝的 ollama serve、下載模型），供 Web UI「設定」分頁使用
   subproc.py          執行 docker、git 等主控台程式（Windows 上不彈出主控台視窗）
   app.py              桌面模式（funscript-gen app）：本機的 Web UI，在 pywebview 視窗或瀏覽器中開啟，原生選檔對話框與拖放（檔案以路徑讀取，沒有上傳）

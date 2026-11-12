@@ -72,7 +72,7 @@
 
 - **D1 `.analysis.pkl` 是 pickle，卻被列為公開介面**：載入別人給的檔案等於執行任意程式碼，目前只有 `save_analysis` 的 docstring 提醒，README 的 `render` 範例與 SECURITY.md 都沒寫；`VideoAnalysis`／`ScenePlan` 一改欄位就要手動升 `ANALYSIS_FORMAT`，忘了升會在 render 時才出錯。建議改成 npz（陣列）＋ JSON（其餘欄位）並明確寫出版本；改之前先在 README 與 SECURITY.md 加上警告。屬於格式變更，要配合版本號（見 DEVELOPMENT 的表）。
 - **D2 CI 沒有靜態檢查**：本機有 `.ruff_cache` 但 `pyproject.toml` 沒有 ruff 設定，`tests.yml` 只跑 pytest。加上 ruff（先只開錯誤類規則）與型別檢查（可先只檢查 `options.py`、`signal/`、`evaluate.py` 這些純函式模組）。CI 也只測一個 Python 版本（`requires-python >= 3.11` 沒有上限，uv 自己選），至少測 3.11 與最新版；Docker 映像檔沒有在 CI 建置（現在靠人工記得重建）。
-- **D3（2026-11-12 第一步已做：方向判斷搬到 `direction.py`；`webui.py` 見後續紀錄）兩個過大的模組**：`webui.py` 2,006 行，其中 `build()` 單一函式 391 行；`pipeline.py` 1,281 行，同時放了分析的排程、方向規則（`flip_by_parts`、`flip_by_asymmetry`、分段對齊）與存檔。建議把方向判斷搬到獨立模組（`direction.py`，純函式、吃分析結果），`webui.py` 依分頁拆開。這兩處也是每次修改最常動到、最容易互相影響的地方；搬移時用 `--baseline` 確認逐點相同。
+- **D3（2026-11-12 已做：方向判斷搬到 `direction.py`、頁面搬到 `webui_layout.py`；`webui.py` 仍有約 1,500 行處理函式）兩個過大的模組**：`webui.py` 2,006 行，其中 `build()` 單一函式 391 行；`pipeline.py` 1,281 行，同時放了分析的排程、方向規則（`flip_by_parts`、`flip_by_asymmetry`、分段對齊）與存檔。建議把方向判斷搬到獨立模組（`direction.py`，純函式、吃分析結果），`webui.py` 依分頁拆開。這兩處也是每次修改最常動到、最容易互相影響的地方；搬移時用 `--baseline` 確認逐點相同。
 - **D4 AI 快取（2026-11-12 已做：原子寫入、壞檔視為沒有快取、`funscript-gen cache info／clear`；Web UI「輸出」分頁沒有對應按鈕，未做）**：`ResponseCache.put` 直接 `write_text`，不是先寫暫存檔再換名（部位框快取有做）；兩個程序同時跑或中途被中斷時可能留下半個 JSON，下次 `get` 會丟 `JSONDecodeError`。快取也沒有大小上限或清除指令（目前 AI 86 MB、部位框 59 MB，只會增加），部位框以影片路徑為鍵，搬動影片就失效並留下舊項目。建議：原子寫入、讀到壞檔當作沒有快取、加 `funscript-gen cache info／clear`（Web UI「輸出」分頁也放一個）。
 - **D5（2026-11-12 已做：10 個維護中的工具留在 `scripts/`，其餘 43 個移到 `scripts/experiments/`，ruff 與語法測試）`scripts/` 有 54 個一次性實驗腳本**：沒有測試覆蓋，依賴 `pipeline` 的內部函式，D3 的重構後多半會壞（目前是否都還能執行未逐一確認）。建議分成 `scripts/`（仍在用的工具：`check_history`、`detect_viewer`、`flow_dump`、`rescore_run`、`score_external`、`param_sweep`、`remote_validate.ps1`、`make_synthetic`）與 `scripts/experiments/`（結論已寫進 PLAN 的一次性實驗，標明不保證能執行），前者加一個匯入的冒煙測試。
 - **D6 文件本身**（2026-11-12 已做：2026-11-08 以前的開發紀錄移到歸檔，PLAN 從 957 行降到約 330 行；刪掉過時的「公開前決定 git 歷史」與重複的「Ollama 上的 8B」；DEVELOPMENT 的結構樹已修。還沒做：「已放棄的方案」重新分類、「3D 素材降低快慢門檻」改寫成現況）：
@@ -284,6 +284,12 @@
 - **批次處理與預覽編輯器擴充（2026-11-05 整理）**：批次產生一次一支依序處理，`webui` 只能上傳、不能指定伺服器上的資料夾（桌面模式 `app` 可以，見 2026-11-05）；CLI `batch` 可支援 `--save-analysis` 以便事後快速重跑 `render`；預覽播放器的幅度、頂點／底點與「上下顛倒」都可以只作用在框選的點（2026-11-12 起），但整個鏡頭的「反轉」按鈕與鏡頭表的反轉仍以鏡頭為單位。
 
 ## 開發紀錄（最近）
+
+- [x] **頁面搬出 webui.py：新增 webui_layout.py（2026-11-12，D3 第二步；純搬移，頁面結構不變）**
+  - 搬移：`build()`（391 行）、`UI_CSS`／`UI_JS`／`SEGMENTED_CSS`、`path_row`、`_control`、`settings_form`、`SETTINGS_TAB_GROUPS`、`LANGUAGE_LABEL`。`webui.py` 2,067 → 1,520 行，`webui_layout.py` 547 行。處理函式與狀態（工作、設定、輸出、預覽、批次、伺服器）仍在 `webui.py`。
+  - 接線方式：頁面函式需要的處理函式與狀態（`run`、`flip_from_table`、`_translated`、`LOCAL_FILES` 等約 70 個名稱）在**函式被呼叫時**才從 `funscript_gen.webui` 匯入，所以：(1) 載入時兩個模組不互相匯入，沒有循環；(2) 測試對 `webui` 的 monkeypatch（`OUTPUT_DIR`、`LOCAL_FILES`、`generate` 等）仍會被頁面取到，和搬移前相同；(3) `app.py` 與測試用的 `ui.build`、`ui.UI_JS`、`ui.settings_form` 等名稱由 `webui.py` 末尾重新匯出，不必改。不會變動的名稱（`BY_NAME`、`t`、`L`、`PRESETS` 等）在 layout 直接從原模組匯入；`webui.py` 保留 `BY_NAME`、`GROUPS`、`PRESETS`、`L` 等的匯入給測試用（以 noqa 標明）。
+  - 驗證：`uv run pytest` 425 項通過、ruff 無發現；用真正的伺服器（`ui.launch`，暫存設定檔）讀 `/config`：搬移前（HEAD 的 worktree）與搬移後都是 247 個元件、74 個事件處理，分頁為 Generate、Batch、Preview、Tools、Output、Settings。沒有用瀏覽器逐一操作各分頁（頁面程式碼是原樣搬移，結構以元件數與處理數比對）。
+  - 未做：`webui.py` 裡的各分頁處理函式（預覽、工具、批次、輸出、Ollama 設定）還在同一個檔；它們共用 `OUTPUT_DIR`、`LOCAL_FILES`、`_settings` 等模組狀態，而測試直接 monkeypatch 這些，拆開要先決定狀態放哪裡，這次不做。
 
 - [x] **方向判斷搬出 pipeline.py：新增 direction.py（2026-11-12，D3 第一步；純搬移，輸出逐點相同）**
   - 搬移（原樣剪下，沒有改邏輯）：`align_chunks`、`flip_by_asymmetry`、`flip_by_parts`、`_cosine`、`_anchor_weight`、`SOUND_NOTE_MIN`、`motion_size`、`flipped_scenes`、`toggle_flip`、`carry_flips`。`pipeline.py` 1,361 → 1,098 行，`direction.py` 263 行。
