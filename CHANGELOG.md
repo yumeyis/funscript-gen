@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-13 — 雜訊下限與今天的修改的回歸檢查（commit: `Record the noise floor of the validation`）
+- 目的：專案審視 B2：量同一份程式、空 AI 快取重跑的分數差，並確認 2026-11-12 的修改沒有回歸。
+- 修改：沒有改程式；PLAN、DEVELOPMENT 記錄結果，`holdout-log.md` 多一列。
+- 驗證：沒有 AI 時 78 段中 76 段逐點相同（只有旋轉修正影響的 B06、AD01 不同）；有 AI 時單段 ΔF1 平均 0.007–0.010、78 段平均差 +0.002（`F1u` +0.001），區間含 0。
+
 ## 2026-11-12 — batch 可存下分析（commit: `Add --save-analysis to batch`）
 - 目的：專案審視 C5 的後續工作：批次產生後可以只換輸出設定重算。
 - 修改：`funscript-gen batch --save-analysis`（每支另存 `<名稱>.analysis.pkl`）；`run_batch(save_analysis=)`、README（中英）、測試。

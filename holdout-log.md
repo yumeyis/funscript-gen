@@ -11,3 +11,4 @@ were not recorded (the development logs in PLAN.md and docs/archive/PLAN-archive
 | 2026-11-12 | a1-review | holdout: A08 C02 C03 D04 D05 M01 N01; holdout2: B05 B06 P01 P02 P03 R01 T01 V01 X01 Z01 AB01 AD01 AF01 AF02 AF03 AH01 AH02 AJ01 AL01 AN01 AP01 AR01 AR02 AT01 AV01 | A1: replay of full-1112 to score the review order (first quarter of the review order); output unchanged |
 | 2026-11-12 | rot1 | holdout2: AD01 | C4: video rotation fix, check of a holdout2 clip that has a rotation (the other one is in rot2) |
 | 2026-11-12 | rot2 | holdout2: B06 | C4: video rotation fix, the other clip with a rotation |
+| 2026-11-12 | noise-1112 | holdout: A08 C02 C03 D04 D05 M01 N01; holdout2: B05 B06 P01 P02 P03 R01 T01 V01 X01 Z01 AB01 AD01 AF01 AF02 AF03 AH01 AH02 AJ01 AL01 AN01 AP01 AR01 AR02 AT01 AV01 | B2: same code as full-1112 with an empty AI cache (noise floor), also checks this day's changes |
