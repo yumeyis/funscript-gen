@@ -70,7 +70,7 @@
 
 **D. 工程**
 
-- **D1 `.analysis.pkl` 是 pickle，卻被列為公開介面**：載入別人給的檔案等於執行任意程式碼，目前只有 `save_analysis` 的 docstring 提醒，README 的 `render` 範例與 SECURITY.md 都沒寫；`VideoAnalysis`／`ScenePlan` 一改欄位就要手動升 `ANALYSIS_FORMAT`，忘了升會在 render 時才出錯。建議改成 npz（陣列）＋ JSON（其餘欄位）並明確寫出版本；改之前先在 README 與 SECURITY.md 加上警告。屬於格式變更，要配合版本號（見 DEVELOPMENT 的表）。
+- **D1（2026-11-12 已做受限的載入：只接受 numpy、路徑與程式自己的資料類別；格式沒改成 npz＋JSON）`.analysis.pkl` 是 pickle，卻被列為公開介面**：載入別人給的檔案等於執行任意程式碼，目前只有 `save_analysis` 的 docstring 提醒，README 的 `render` 範例與 SECURITY.md 都沒寫；`VideoAnalysis`／`ScenePlan` 一改欄位就要手動升 `ANALYSIS_FORMAT`，忘了升會在 render 時才出錯。建議改成 npz（陣列）＋ JSON（其餘欄位）並明確寫出版本；改之前先在 README 與 SECURITY.md 加上警告。屬於格式變更，要配合版本號（見 DEVELOPMENT 的表）。
 - **D2（2026-11-12 已做：ruff、mypy 檢查純函式模組、Python 3.11／3.13 矩陣、Docker 建置；mypy 沒擴到 pipeline／direction／webui）CI 沒有靜態檢查**：本機有 `.ruff_cache` 但 `pyproject.toml` 沒有 ruff 設定，`tests.yml` 只跑 pytest。加上 ruff（先只開錯誤類規則）與型別檢查（可先只檢查 `options.py`、`signal/`、`evaluate.py` 這些純函式模組）。CI 也只測一個 Python 版本（`requires-python >= 3.11` 沒有上限，uv 自己選），至少測 3.11 與最新版；Docker 映像檔沒有在 CI 建置（現在靠人工記得重建）。
 - **D3（2026-11-12 已做：方向判斷搬到 `direction.py`、頁面搬到 `webui_layout.py`；`webui.py` 仍有約 1,500 行處理函式）兩個過大的模組**：`webui.py` 2,006 行，其中 `build()` 單一函式 391 行；`pipeline.py` 1,281 行，同時放了分析的排程、方向規則（`flip_by_parts`、`flip_by_asymmetry`、分段對齊）與存檔。建議把方向判斷搬到獨立模組（`direction.py`，純函式、吃分析結果），`webui.py` 依分頁拆開。這兩處也是每次修改最常動到、最容易互相影響的地方；搬移時用 `--baseline` 確認逐點相同。
 - **D4 AI 快取（2026-11-12 已做：原子寫入、壞檔視為沒有快取、`funscript-gen cache info／clear`；Web UI「輸出」分頁沒有對應按鈕，未做）**：`ResponseCache.put` 直接 `write_text`，不是先寫暫存檔再換名（部位框快取有做）；兩個程序同時跑或中途被中斷時可能留下半個 JSON，下次 `get` 會丟 `JSONDecodeError`。快取也沒有大小上限或清除指令（目前 AI 86 MB、部位框 59 MB，只會增加），部位框以影片路徑為鍵，搬動影片就失效並留下舊項目。建議：原子寫入、讀到壞檔當作沒有快取、加 `funscript-gen cache info／clear`（Web UI「輸出」分頁也放一個）。
@@ -278,6 +278,9 @@
 
 ## 開發紀錄（最近）
 
+- [x] **存下的分析改用受限的 unpickler 載入（2026-11-12，D1 的務實版；不動輸出）**
+  - `pipeline.load_analysis` 用 `pickle.Unpickler` 的子類：`find_class` 只放行 numpy 的陣列／純量重建函式、pathlib 的路徑類別、`set`／`frozenset`，以及 `pipeline`、`video.scenes`、`ai.prompts`、`signal.process`、`tracking.parts` 的**類別**（函式不行），其他丟 `UnpicklingError`。對 `out/runs/` 下 400 個既有的分析檔：377 個照常載入，其餘 23 個的失敗原因和改之前相同（在 Linux 讀 testhost 的 `WindowsPath`、舊 Python 的 `pathlib._local`）。測試 `tests/test_analysis_file.py`：存了再讀、`os.system` 的檔案被拒、程式內的函式被拒、格式版本不符。
+  - 為什麼不改成 npz＋JSON：`ScenePlan` 約 40 個欄位含 pydantic 模型、元組與多種陣列，改格式要寫一整套序列化並升 `ANALYSIS_FORMAT`（舊檔全部失效，也是公開介面的 MAJOR 變更）；受限的載入已擋掉原本的風險（載入時執行任意程式碼），格式不變。仍不建議開啟來路不明的檔案（README、SECURITY.md 已改成這樣說）；欄位改了忘記升 `ANALYSIS_FORMAT` 的問題沒有解決。
 - [x] **Windows 版說明：AI 是選用的（2026-11-12，C1 收尾；只改文件）**
   - `packaging/windows/README.txt`／`README.zh.txt` 加上：連不上 AI 伺服器時程式自動不用 AI 並在結果中說明，沒有伺服器也可以先試用。C1 要做的功能面（連不上就降級、不卡住）已由 f8d03c8 完成，所以不另外做「快速模式」按鈕：「使用 AI」開關本來就在 Web UI 的 AI 分頁，而 B4 量到的差異（沒見過的來源上持平）還沒拆到值得把它當成獨立模式。
 - [x] **整理「已放棄的方案」，重掃快慢門檻（2026-11-12，D6 剩下的部分；只改文件，沒有改程式）**

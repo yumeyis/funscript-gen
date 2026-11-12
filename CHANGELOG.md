@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 存下的分析以受限的 unpickler 載入（commit: `Load saved analyses with a restricted unpickler`）
+- 目的：專案審視 D1：`.analysis.pkl` 載入時可以執行任意程式碼。
+- 修改：`load_analysis` 只接受 numpy、路徑與程式自己的資料類別；SECURITY.md、README（中英）的警告改寫；`tests/test_analysis_file.py`。格式不變。
+- 驗證：`uv run pytest` 通過；既有的 400 個分析檔 377 個照常載入，其餘 23 個的失敗原因與之前相同。屬 PATCH（安全強化，格式不變）。
+
 ## 2026-11-12 — Windows 版說明：AI 是選用的（commit: `Say in the Windows readme that the AI is optional`）
 - 目的：專案審視 C1：Windows 版使用者解壓後沒有 AI 後端也不該卡住。
 - 修改：`packaging/windows/README.txt`／`README.zh.txt` 各加一段（連不上就自動不用 AI）。只改文件。

@@ -256,7 +256,7 @@ uv run funscript-gen generate video.mp4 --no-part-sign --no-asym-sign
 
 # 存下分析，之後換輸出設定重算（不必重新解碼與呼叫 AI；改分析設定會被拒絕）
 uv run funscript-gen generate video.mp4 --save-analysis video.analysis.pkl
-# 注意：.analysis.pkl 是 pickle 檔，只開啟自己產生的檔案；別人給的檔案可能在載入時執行任意程式碼
+# 注意：.analysis.pkl 是 pickle 檔，載入時會拒絕程式自己的資料類別以外的呼叫，但仍只開啟自己產生的檔案
 uv run funscript-gen render video.analysis.pkl -o video-40-90.funscript --range-low 40 --range-high 90
 
 # 較快：光流在 320 寬的畫面上計算（約快 2 倍，見「已知問題」的速度）

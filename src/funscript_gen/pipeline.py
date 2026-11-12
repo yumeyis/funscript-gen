@@ -264,11 +264,43 @@ def save_analysis(analysis: VideoAnalysis, path: str | Path) -> None:
                     protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def load_analysis(path: str | Path) -> VideoAnalysis:
+# What a saved analysis may contain besides plain values: numpy arrays and scalars, paths, and the classes of the
+# program's own data modules. load_analysis refuses everything else, so a file that holds a call to `os.system` (a
+# pickle can) fails to load instead of running it. A file that only uses these names cannot run code on its own, but
+# it is still not a format for files from strangers (see SECURITY.md).
+_SAFE_MODULES = ("funscript_gen.pipeline", "funscript_gen.video.scenes", "funscript_gen.ai.prompts",
+                 "funscript_gen.signal.process", "funscript_gen.tracking.parts")
+_SAFE_NAMES = {
+    "numpy": {"dtype", "ndarray"},
+    "numpy._core.multiarray": {"scalar", "_reconstruct"}, "numpy.core.multiarray": {"scalar", "_reconstruct"},
+    "numpy._core.numeric": {"_frombuffer"}, "numpy.core.numeric": {"_frombuffer"},
+    "pathlib": {"Path", "PurePath", "PosixPath", "WindowsPath", "PurePosixPath", "PureWindowsPath"},
+    "pathlib._local": {"Path", "PurePath", "PosixPath", "WindowsPath", "PurePosixPath", "PureWindowsPath"},
+    "builtins": {"set", "frozenset"},
+}
+
+
+def _safe_unpickler(f):
     import pickle
 
+    class Unpickler(pickle.Unpickler):
+        def find_class(self, module, name):
+            if name in _SAFE_NAMES.get(module, ()):
+                return super().find_class(module, name)
+            if module in _SAFE_MODULES:
+                found = super().find_class(module, name)
+                if isinstance(found, type):  # classes only: a function in these modules could be called by the file
+                    return found
+            raise pickle.UnpicklingError(f"{module}.{name} is not allowed in a saved analysis")
+
+    return Unpickler(f)
+
+
+def load_analysis(path: str | Path) -> VideoAnalysis:
+    """Load an analysis saved by save_analysis. Only the names in _SAFE_NAMES and the classes of _SAFE_MODULES are
+    accepted (pickle.UnpicklingError otherwise)."""
     with open(path, "rb") as f:
-        data = pickle.load(f)
+        data = _safe_unpickler(f).load()
     if not isinstance(data, dict) or data.get("format") != ANALYSIS_FORMAT:
         raise ValueError(f"{path}: saved by another version of funscript-gen, analyse the video again")
     return data["analysis"]

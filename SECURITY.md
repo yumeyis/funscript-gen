@@ -15,9 +15,9 @@ Please do **not** open a public issue for a security problem. Use GitHub's priva
   and key. Open it only on a network you trust.
 - The program collects no telemetry. Only sampled keyframes go to the AI endpoint you configure; use a server you run
   yourself. The API key is kept in `.env` (never committed).
-- Saved analyses (`*.analysis.pkl`, from `--save-analysis`) are Python pickle files: loading one can run arbitrary code. Open only files you made yourself.
+- Saved analyses (`*.analysis.pkl`, from `--save-analysis`) are Python pickle files. Loading accepts only numpy arrays, paths and the program's own data classes and refuses any other call (so a file that tries to run a command fails to load), but pickle is not a format for files from strangers: open only files you made yourself.
 - Web UI 設計給單人使用、沒有登入，預設只聽 `127.0.0.1`；開放區網後，能連到的人都能使用並修改 AI 端點與金鑰。
-- 存下的分析（`--save-analysis` 產生的 `*.analysis.pkl`）是 Python pickle 檔，載入時可能執行任意程式碼，只開啟自己產生的檔案。
+- 存下的分析（`--save-analysis` 產生的 `*.analysis.pkl`）是 Python pickle 檔。載入時只接受 numpy 陣列、路徑與程式自己的資料類別，其他呼叫一律拒絕（想執行指令的檔案會載入失敗），但 pickle 不適合來路不明的檔案：只開啟自己產生的檔案。
 - 程式不收集遙測；只有鏡頭關鍵幀會送到你設定的 AI 端點，請用自己架設的伺服器。API 金鑰存在 `.env`（不提交）。
 
 Only the latest release is supported. / 只維護最新的版本。

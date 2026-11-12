@@ -256,7 +256,7 @@ uv run funscript-gen generate video.mp4 --no-part-sign --no-asym-sign
 
 # Save the analysis, then recompute with other output settings (no decoding or AI calls again; changing an analysis setting is refused)
 uv run funscript-gen generate video.mp4 --save-analysis video.analysis.pkl
-# Note: .analysis.pkl is a pickle file; open only files you made yourself, since a file from someone else can run arbitrary code when loaded
+# Note: .analysis.pkl is a pickle file; loading refuses calls other than the program's own data classes, but still open only files you made yourself
 uv run funscript-gen render video.analysis.pkl -o video-40-90.funscript --range-low 40 --range-high 90
 
 # Faster: optical flow on a 320-wide picture (about twice as fast, see the speed under "Known issues")
