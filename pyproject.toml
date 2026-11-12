@@ -68,6 +68,10 @@ path = "src/funscript_gen/__init__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/funscript_gen"]
 
+# Lint (CI runs `uvx ruff@0.17.4 check`): only real errors for now (syntax errors, unused or undefined names).
+[tool.ruff.lint]
+select = ["E9", "F"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

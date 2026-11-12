@@ -292,7 +292,9 @@
   - 警告：README（中英）的 `render` 範例、SECURITY.md（中英）與 `save_analysis` 的 docstring 說明 `.analysis.pkl` 是 pickle、只開啟自己產生的檔案。格式本身（改成 npz＋JSON）仍是 D1 的待辦。
   - README（中英）：刪掉 `user` 設定組「驗證分數最好」（最新基準中 default 的 F1 與 `r` 不低於它），改成方向都對時較貼近人工腳本、整體分數相近。
   - DEVELOPMENT：分組表補上 dev2／holdout2，專案結構樹中錯位的 `.github/`、`CONTRIBUTING.md` 兩行移到正確位置。
-  - 未做：B1（完整重跑驗證表）、其餘 D 項。
+  - D2 的一部分：`pyproject.toml` 加 ruff 設定（只開 `E9`、`F`），`tests.yml` 新增 lint job（`uvx ruff@0.17.4 check src tests`，不改 `uv.lock`）；順手刪掉 tests 中 3 個沒用的匯入。`scripts/` 有 15 個發現（含 `miss_breakdown.py` 的未定義名稱 `used_scene`）沒有納入，留給 D5。型別檢查與多個 Python 版本的矩陣沒做（未驗證 3.12 以上能否通過，Windows 版固定用特定版本）。
+  - C4 的「旋轉資訊」沒做：要改解碼與所有用到寬高的地方，會改變輸出，需要驗證，不是小修。
+  - 進行中：B1／B4 的完整重跑（`out/runs/full-1112`，default、user、noai，`--clips all`），完成後換掉 DEVELOPMENT 的驗證表。
 
 - [x] **專案審視：缺點與改進方向寫進 PLAN（2026-11-12，使用者要求；只改文件，沒有改程式、沒有跑驗證）**
   - 做法：讀 PLAN、DEVELOPMENT、README、ARCHITECTURE、`validation.toml`、CI 設定，以及 `pipeline.py`、`webui.py`、`ai/cache.py` 等主要模組的結構（函式長度、例外處理、快取寫入、pickle 的使用）。

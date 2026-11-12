@@ -3,11 +3,9 @@ import json
 import numpy as np
 import pytest
 
-from funscript_gen import pipeline
 from funscript_gen.export.funscript import Action, Funscript
 from funscript_gen.pipeline import PipelineOptions, PipelineResult, ScenePlan, finalize, refinalize, toggle_flip
 from funscript_gen.signal.process import ProcessedSignal
-from funscript_gen.video.decoder import Frame
 from funscript_gen.video.scenes import Scene
 
 

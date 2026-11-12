@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — CI 加上 ruff 檢查（commit: `Add a ruff lint job to CI`）
+- 目的：專案審視 D2：CI 只跑 pytest，沒有靜態檢查。
+- 修改：`pyproject.toml` 加 ruff 設定（只開 `E9`、`F`）；`tests.yml` 新增 lint job（`uvx ruff@0.17.4 check src tests`）；刪掉 tests 中 3 個沒用的匯入。
+- 驗證：`uv run pytest` 358 項通過；ruff 在 src 與 tests 無發現。沒有改程式行為。屬 PATCH。
+
 ## 2026-11-12 — 快取原子寫入與文件修正（commit: `Make the AI cache atomic and fix review findings in the docs`）
 - 目的：處理專案審視中小而確定的問題。
 - 修改：`ai/cache.py` 原子寫入、壞檔視為沒有快取（附測試）；README／SECURITY 加上 pickle 警告；README 刪掉不符數字的「驗證分數最好」；DEVELOPMENT 補分組表並修正結構樹。
