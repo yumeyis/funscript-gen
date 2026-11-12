@@ -7,7 +7,7 @@
 | [README.md](README.md)（英文）、[README.zh.md](README.zh.md)（繁體中文） | 給使用者：功能、安裝、用法、目前的限制（GitHub 首頁顯示英文版；Docker、Windows 免安裝版的說明也各有英文版） |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | 系統流程圖：各步驟、可選項目、AI／GPU／CPU 的分工 |
 | [PLAN.md](PLAN.md) | 目前的架構、待解決的問題、仍有效的決策與限制、已放棄的方案、後續工作、最近的開發紀錄 |
-| [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md) | 2026-11-03 以前依時間的完整開發紀錄與實驗數字、之前的驗證紀錄 |
+| [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md) | 2026-11-08 以前依時間的完整開發紀錄與實驗數字、之前的驗證紀錄 |
 | [CHANGELOG.md](CHANGELOG.md) | 每次修改的摘要（對應一個 commit） |
 | [LICENSE](LICENSE)、[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | PolyForm Noncommercial 授權條款（禁止商業使用）與第三方套件／模型授權聲明 |
 

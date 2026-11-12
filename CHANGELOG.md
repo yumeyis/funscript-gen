@@ -1,6 +1,11 @@
 # CHANGELOG
 
-每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-03 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
+每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
+
+## 2026-11-12 — 整理 PLAN：舊紀錄移到歸檔（commit: `Move older PLAN development log entries to the archive`）
+- 目的：專案審視 D6：PLAN.md 957 行，超過一次讀檔的上限。
+- 修改：2026-11-04 至 11-08 的開發紀錄原樣移到 `docs/archive/PLAN-archive.md`；更新三份文件中「歸檔從哪天以前」的說法；刪掉過時與重複的後續工作。
+- 驗證：只改文件；`uv run pytest` 的檔案檢查（私人名稱、i18n）見下方執行。屬 PATCH。
 
 ## 2026-11-12 — CI 加上 ruff 檢查（commit: `Add a ruff lint job to CI`）
 - 目的：專案審視 D2：CI 只跑 pytest，沒有靜態檢查。
