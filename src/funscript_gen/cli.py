@@ -218,7 +218,7 @@ for _fn, _name, _signature in ((_generate, "generate", _generate_signature), (_r
 
 
 def _batch(paths: list[Path], output_dir: Optional[Path] = None, recursive: bool = False, overwrite: bool = False,
-           preset: Optional[str] = None, **given) -> None:
+           save_analysis: bool = False, preset: Optional[str] = None, **given) -> None:
     """Generate funscripts for many videos (files or folders) one after another with the same settings."""
     from funscript_gen.batch import BatchItem, find_videos, output_paths, run_batch
     from funscript_gen.options import OptionError, build, resolve
@@ -255,7 +255,8 @@ def _batch(paths: list[Path], output_dir: Optional[Path] = None, recursive: bool
             continue
         try:
             with _progress(opts, duration, transient=True) as on_progress:
-                run_batch([item], opts, overwrite=True, on_progress=lambda _k, phase, t: on_progress(phase, t))
+                run_batch([item], opts, overwrite=True, on_progress=lambda _k, phase, t: on_progress(phase, t),
+                          save_analysis=save_analysis)
         except KeyboardInterrupt:
             for rest in items[k:]:
                 rest.status = "cancelled"
@@ -296,6 +297,9 @@ def _batch_signature() -> inspect.Signature:
         ("overwrite", Annotated[bool, typer.Option(
             help="Replace scripts that already exist (default: skip those videos, so a stopped batch can go on)")],
          False),
+        ("save_analysis", Annotated[bool, typer.Option(
+            "--save-analysis", help="Also save each video's analysis beside its script (<name>.analysis.pkl), for "
+                                    "`render` with other output settings")], False),
         ("preset", Annotated[Optional[str], typer.Option(
             help=f"Start from a named set of settings ({', '.join(PRESETS)}); options given here override it")], None),
     ]

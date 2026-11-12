@@ -195,3 +195,15 @@ def test_batch_gives_the_same_scripts_as_generate(tmp_path):
     for v, item in zip(videos, items):
         assert [(a.at, a.pos) for a in Funscript.load(item.output).actions] == \
             [(a.at, a.pos) for a in generate(v, opts).funscript.actions]
+
+
+def test_run_batch_saves_each_analysis_beside_its_script_on_request(tmp_path, monkeypatch):
+    saved = []
+    monkeypatch.setattr(batch, "generate", lambda video, opts, progress=None: PipelineResult(
+        Funscript([Action(0, 0)]), [], analysis="the analysis"))
+    monkeypatch.setattr(batch, "save", lambda analysis, path: saved.append((analysis, Path(path).name)))
+    items = [BatchItem(tmp_path / f"{k}.mp4", tmp_path / "out" / f"{k}.funscript") for k in range(2)]
+    run_batch(items, PipelineOptions())
+    assert saved == []  # off by default
+    run_batch(items, PipelineOptions(), save_analysis=True)
+    assert saved == [("the analysis", "0.analysis.pkl"), ("the analysis", "1.analysis.pkl")]

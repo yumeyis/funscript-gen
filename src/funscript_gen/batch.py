@@ -9,6 +9,7 @@ from typing import Callable, Iterable, Literal
 
 from funscript_gen.devices import DeviceError
 from funscript_gen.pipeline import PipelineOptions, PipelineResult, generate
+from funscript_gen.pipeline import save_analysis as save
 
 VIDEO_SUFFIXES = {".mp4", ".m4v", ".mkv", ".webm", ".mov", ".avi", ".wmv", ".flv", ".ts", ".mpg", ".mpeg"}
 
@@ -71,12 +72,14 @@ def run_batch(
     on_done: Callable[[int, BatchItem], None] | None = None,
     stopped: Callable[[], bool] = lambda: False,
     keep_results: bool = False,
+    save_analysis: bool = False,
 ) -> list[BatchItem]:
     """Generate every item's script in turn and save it to its output. A video that fails is recorded and the next one
     runs (a step set to gpu without a usable GPU raises DeviceError instead); an existing output is kept (status "skipped") unless `overwrite`. When `stopped()` turns true (checked between
     videos, and after a video fails: a progress callback may raise to stop it) the rest are "cancelled".
     `on_progress(k, phase, t_ms)` gets generate()'s progress for item k. The analyses are kept only with `keep_results`
-    (the web UI opens the results afterwards and may render them again)."""
+    (the web UI opens the results afterwards and may render them again). With `save_analysis` each analysis is also
+    saved beside its output as <name>.analysis.pkl (for `render` with other output settings)."""
     for k, item in enumerate(items):
         if stopped():
             item.status = "cancelled"
@@ -91,6 +94,8 @@ def run_batch(
                 result = generate(item.video, opts, progress=progress)
                 item.output.parent.mkdir(parents=True, exist_ok=True)
                 result.funscript.save(item.output)
+                if save_analysis and result.analysis is not None:
+                    save(result.analysis, item.output.with_suffix(".analysis.pkl"))
                 item.status = "done"
                 # without keep_results only what the summary needs: the analysis is the large part
                 item.result = result if keep_results else PipelineResult(result.funscript, result.plans, result.part_device,

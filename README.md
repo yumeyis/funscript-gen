@@ -268,6 +268,7 @@ uv run funscript-gen generate video.mp4 --mode flow --axis vertical --roi 0.3,0.
 # Several videos or a whole folder (-r includes subfolders): scripts are written beside each video, and videos that already have one are skipped
 uv run funscript-gen batch ~/videos --preset user
 uv run funscript-gen batch a.mp4 b.mkv ~/videos -r -o ~/scripts --overwrite   # all written to ~/scripts, those that exist are redone
+uv run funscript-gen batch ~/videos --save-analysis   # also <name>.analysis.pkl beside each script, for `render` with other output settings
 
 # Compare with a hand-made script
 uv run funscript-gen compare reference.funscript video.funscript

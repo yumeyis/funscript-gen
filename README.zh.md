@@ -268,6 +268,7 @@ uv run funscript-gen generate video.mp4 --mode flow --axis vertical --roi 0.3,0.
 # 一次處理多支影片或整個資料夾（-r 連子資料夾）：腳本寫在各影片旁邊，已經有腳本的影片略過
 uv run funscript-gen batch ~/videos --preset user
 uv run funscript-gen batch a.mp4 b.mkv ~/videos -r -o ~/scripts --overwrite   # 全部寫到 ~/scripts，已有的也重做
+uv run funscript-gen batch ~/videos --save-analysis   # 每支另存 <名稱>.analysis.pkl，之後可用 `render` 換輸出設定重算
 
 # 與人工腳本比較
 uv run funscript-gen compare reference.funscript video.funscript
