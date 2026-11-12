@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-12 — 整理 PLAN 的「已放棄的方案」（commit: `Reorganize the abandoned approaches in PLAN and re-sweep the asymmetry threshold`）
+- 目的：專案審視 D6 剩下的部分。
+- 修改：PLAN 的「已放棄的方案」重新分類、依日期排序；方向段落過時的快慢門檻一句改成現況。只改文件。
+- 驗證：G 系列移出後重掃 `--asym-threshold`（46 段 `--replay`）：0.3 以上平坦，維持 0.5。
+
 ## 2026-11-12 — 保留組的使用紀錄（commit: `Log every use of the held-out validation clips`）
 - 目的：專案審視 B3：每看一次保留組的分數就洩漏一點，但次數沒有記錄。
 - 修改：`validate` 跑到 `holdout*` 組時在 `holdout-log.md` 加一列（`--purpose` 寫目的）；新檔 `holdout-log.md`（回補今天的 4 次）；DEVELOPMENT、PLAN、測試。
