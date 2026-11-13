@@ -26,7 +26,6 @@ Double-click FunscriptGen.exe.
 - The Tools tab merges the files of the axes of a multi-axis script into one file, or splits a file with several
   axes into one file per axis; the output can go in the original place (the original kept as .backup, or
   overwritten) or be saved into another folder.
-- Dropping files has not been confirmed on a real desktop (unverified); when it does nothing, press "Choose…".
 - Scripts are kept in data\out\<time>\ by default. To save them beside the video (a .funscript with the video's
   name), tick "Also save the script beside the video" under "Output files" in the Settings tab.
   A script of the same name beside the video that this program did not make is never overwritten.

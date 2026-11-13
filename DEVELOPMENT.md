@@ -79,7 +79,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\smoke-test
 - **凍結的注意事項**：PyInstaller 第一次建置只用「全部收集」的 spec 就成功，沒有漏檔；新增依名稱載入資源的套件時要確認它被收進去（冒煙測試的頁面檢查會抓到 Gradio 與其相依套件的缺漏）。Gradio 的 `.py` 不能省（見上表），`numpy.f2py` 之類被其他套件碰到的模組不能排除。
 - **效能**（testhost 量測，2026-11-08）：解壓縮 2.3 秒；warm 的伺服器可連線 4.54 秒、CLI `--help` 1.07 秒（匯入 Gradio 1.9 秒、scipy 0.6 秒、建立頁面 1.1 秒，凍結不會改變這些）。視窗不等這些：`app.run` 在執行緒中啟動伺服器（`app.Startup`），主執行緒馬上開視窗顯示載入頁，伺服器好了再 `load_url`（視窗約 0.6 秒出現）。
 - 骨架模式不放進去：CUDA 版 PyTorch 約 2.5 GB，超過 GitHub Release 單一檔案 2 GB 的上限。
-- 圖形介面的視窗（WebView2）只能在有桌面的工作階段中開啟，SSH 與 CI 無法測試，冒煙測試只檢查伺服器（`--ui none`）。因此桌面視窗的檔案拖放（pywebview 的 `pywebviewFullPath`、`document` 的 drop 處理器）沒有實機驗證：頁面端的流程用 headless Chromium 驗證（模擬 drop 事件後呼叫 `fgDropped`），`app.drop_handler` 用假視窗做單元測試。
+- 圖形介面的視窗（WebView2）只能在有桌面的工作階段中開啟，SSH 與 CI 無法測試，冒煙測試只檢查伺服器（`--ui none`）。頁面端的拖放流程用 headless Chromium 驗證（模擬 drop 事件後呼叫 `fgDropped`），`app.drop_handler` 用假視窗做單元測試；視窗本身（啟動、原生對話框、拖放、多軸工具、切換語言、關閉後結束）2026-11-13 由使用者在 testhost 的桌面上照檢查清單確認過（見 PLAN）。改到 `app.py`、拖放或對話框時要再請使用者在桌面上確認；沒有 WebView2 時改開瀏覽器的路徑仍未實機驗證。
 ## 版本與發布
 
 版本號採用 [Semantic Versioning 2.0](https://semver.org/lang/zh-TW/)（`MAJOR.MINOR.PATCH`），只寫在 `src/funscript_gen/__init__.py` 的 `__version__`（`pyproject.toml` 以 hatch 的 `dynamic = ["version"]` 讀取，Windows 版的檔名與輸出檔 metadata 也用它）。Git 標籤是 `v` 加上版本號（`v1.0.0`），每個標籤對應一個 GitHub Release。
