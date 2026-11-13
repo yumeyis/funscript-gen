@@ -1,7 +1,7 @@
 # funscript-gen image: the CLI and the web UI. Built from the repository root (see docker/README.md):
 #   docker build -f docker/Dockerfile -t funscript-gen .
 #   docker build -f docker/Dockerfile --build-arg WITH_POSE=1 -t funscript-gen:pose .   # + skeleton mode (CPU torch)
-FROM python:3.12-slim-bookworm
+FROM python:3.15-slim-bookworm
 
 # OpenCV (opencv-python) needs libGL and GLib at import time.
 RUN apt-get update \
