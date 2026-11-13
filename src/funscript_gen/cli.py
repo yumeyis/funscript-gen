@@ -409,7 +409,7 @@ def cache_info() -> None:
 
 @cache_app.command("clear")
 def cache_clear(
-    names: Annotated[Optional[list[str]], typer.Argument(help="ai, parts, poses or all (default: all)")] = None,
+    names: Annotated[Optional[list[str]], typer.Argument(help="ai, hashes, parts, poses or all (default: all)")] = None,
     older_than: Annotated[Optional[float], typer.Option(help="Only files not changed for this many days")] = None,
     yes: Annotated[bool, typer.Option("--yes", "-y", help="Do not ask")] = False,
 ) -> None:

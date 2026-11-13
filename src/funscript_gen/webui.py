@@ -1302,7 +1302,8 @@ def run(video_path, local_path, reference_file, previous, *values, progress=None
             result = render(analysis, replace(opts, flip_scenes=tuple(sorted(set(opts.flip_scenes) ^ kept))))
         else:
             result = generate(video, opts, progress=on_progress)
-            if isinstance(previous, Job) and previous.manual and previous.video == video:
+            old = previous.result.analysis if isinstance(previous, Job) and previous.manual else None
+            if old is not None and old.same_video(video):  # the same file's content, wherever it lies now
                 kept = set(carry_flips(previous.result, previous.manual, result))
                 for plan in result.plans:
                     if plan.scene.index in kept:

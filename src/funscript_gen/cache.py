@@ -2,7 +2,8 @@
 
 Only the caches the program can make again are cleared: the AI's answers (`ai`, one request each; asking again costs
 the AI's time and the answers may differ), the part boxes (`parts`, keyed by the video's path, size and time, so moving
-or editing a video leaves its entry behind) and the skeletons (`poses`). The downloaded models (`huggingface`) and the
+or editing a video leaves its entry behind), the videos' content hashes (`hashes`, kept the same way) and the
+skeletons (`poses`). The downloaded models (`huggingface`) and the
 window's data are listed but left alone.
 """
 
@@ -14,7 +15,7 @@ from pathlib import Path
 
 from funscript_gen.paths import cache_dir
 
-CLEARABLE = ("ai", "parts", "poses")
+CLEARABLE = ("ai", "hashes", "parts", "poses")
 
 
 @dataclass(frozen=True)

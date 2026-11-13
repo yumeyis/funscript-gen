@@ -2,6 +2,11 @@
 
 每次修改的摘要，新的在最上面；仍有效的決策與最近的開發紀錄在 [PLAN.md](PLAN.md)，2026-11-08 以前的完整數字在 [docs/archive/PLAN-archive.md](docs/archive/PLAN-archive.md)。`## vX.Y.Z — 日期` 標記一個發布的版本，包含它以下到上一個版本標題之間的條目（版本規則見 [DEVELOPMENT.md](DEVELOPMENT.md#版本與發布)）。v1.0.0 以前的條目記的 commit 標題屬於未公開的開發歷史，公開的儲存庫從 v1.0.0 開始。
 
+## 2026-11-13 — 依檔案內容判斷是不是同一支影片（commit: `Tell the same video by its content hash`）
+- 目的：重新產生時保留手動反轉、沿用分析，原本依路徑判斷是不是同一支影片：搬移或改名就不算，同一路徑換了檔案卻仍算。
+- 修改：新增 `fileid.py`（整個檔案的 SHA-256，存在新的 `hashes` 快取）；`VideoAnalysis.sha256` 與 `same_video()`，`serves` 與 Web UI 的保留反轉都改用它（舊的分析檔照舊比路徑）；`cache clear` 可清 `hashes`；README（中英）、DEVELOPMENT、測試。
+- 驗證：`uv run pytest` 445 項通過；以舊的分析檔 `--replay` 78/78 段與基準逐點相同。屬 PATCH（修正判斷，介面與格式相容）。
+
 ## v1.1.0rc5 — 2026-11-13（預發布版）
 - 每個鏡頭顯示「方向把握」（高／中／低），沒有證據的鏡頭會標出來並排進預覽的「下一個待確認」，有反向證據的排在前面。
 - 預覽播放器新增「上下顛倒」（`M` 鍵）：只把選取的一段反過來，不必整個鏡頭反轉；重新產生時會保留手動反轉的鏡頭。

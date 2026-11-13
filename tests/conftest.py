@@ -34,3 +34,11 @@ def no_part_cache(monkeypatch):
 def source_language():
     """Every test starts in zh-TW, whatever language an earlier test chose."""
     i18n.set_language("zh-TW")
+
+
+@pytest.fixture(autouse=True)
+def no_hash_cache(monkeypatch, tmp_path_factory):
+    """Keep the content hashes of test videos out of the user's cache."""
+    from funscript_gen import fileid
+
+    monkeypatch.setattr(fileid, "CACHE_DIR", tmp_path_factory.mktemp("hashes"))

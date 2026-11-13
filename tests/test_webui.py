@@ -725,6 +725,36 @@ def test_generating_again_keeps_the_scenes_flipped_by_hand(tmp_path, monkeypatch
     assert flipped_before  # the first script had actions
 
 
+def test_the_flips_follow_the_video_s_content_not_its_path(tmp_path, monkeypatch):
+    import shutil
+
+    from test_parallel import _clip
+
+    from funscript_gen import webui as ui
+
+    monkeypatch.setattr(ui, "OUTPUT_DIR", tmp_path / "out")
+    monkeypatch.setattr(ui, "_cleanup_file", tmp_path / "cleanup.json")
+    _clip(tmp_path / "c.mp4", seconds=3.0)
+    form = {n: ui.BY_NAME[n].default for n in ui.FORM_NAMES} | {"use_ai": False, "asym_audio": False, "flow_workers": 1}
+
+    def press(video, previous):
+        values = [form[n] for n in ui.FORM_NAMES]
+        return ui.run(str(video), "", None, previous, *values, progress=lambda *a, **k: None)[-2]
+
+    first = press(tmp_path / "c.mp4", None)
+    k = next(p.scene.index for p in first.result.plans if p.signal is not None and len(p.signal.actions))
+    ui.flip_scene(first, k)
+    moved = tmp_path / "elsewhere" / "renamed.mp4"
+    moved.parent.mkdir()
+    shutil.copy(tmp_path / "c.mp4", moved)
+    again = press(moved, first)  # the same file moved: its analysis and flip go on
+    assert again.result.analysis is first.result.analysis and again.manual == {k}
+
+    _clip(tmp_path / "c.mp4", seconds=2.0)  # another video under the first one's name
+    other = press(tmp_path / "c.mp4", first)
+    assert other.result.analysis is not first.result.analysis and other.manual == set()
+
+
 def test_uploaded_videos_are_cleaned_up_by_gradio():
     from funscript_gen import webui as ui
     from funscript_gen.webui_layout import UPLOAD_CLEANUP

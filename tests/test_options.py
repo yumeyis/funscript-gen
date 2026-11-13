@@ -154,3 +154,20 @@ def test_an_analysis_serves_the_same_video_with_the_same_analysis_settings(tmp_p
     assert not VideoAnalysis(video, no_parts, [], None, st).serves(video, key)  # no boxes
     video.write_bytes(b"xy")  # another file now
     assert not older.serves(video, key)
+
+
+def test_an_analysis_with_the_hash_knows_its_video_by_the_content(tmp_path):
+    from funscript_gen.fileid import file_hash
+    from funscript_gen.options import analysis_key
+    from funscript_gen.pipeline import VideoAnalysis
+
+    video, moved = tmp_path / "v.mp4", tmp_path / "other" / "renamed.mp4"
+    video.write_bytes(b"x" * 100)
+    moved.parent.mkdir()
+    moved.write_bytes(b"x" * 100)
+    key = analysis_key(resolve({}))
+    analysis = VideoAnalysis(video, key, [], None, (0, 0), sha256=file_hash(video))
+    assert analysis.same_video(moved) and analysis.serves(moved, key)  # moved or renamed: still the same video
+    video.write_bytes(b"y" * 100)  # another file under the old name
+    assert not analysis.same_video(video) and not analysis.serves(video, key)
+    assert not analysis.same_video(tmp_path / "gone.mp4")

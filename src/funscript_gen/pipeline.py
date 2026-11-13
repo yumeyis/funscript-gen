@@ -218,7 +218,8 @@ class HybridAnalysis:
 class VideoAnalysis:
     """The expensive part of a run (scene cut, AI, optical flow, part detection, sound): render() turns it into a
     script, and can do so again with other output settings. `key` holds the settings it was made with that a render
-    cannot change (options.analysis_key); `stat` (size, mtime) identifies the video file."""
+    cannot change (options.analysis_key); `sha256` identifies the video file by its content (`stat`, its size and
+    mtime, does so for analyses saved before the hash was kept)."""
 
     video: Path
     key: dict
@@ -229,15 +230,25 @@ class VideoAnalysis:
     parts_error: str | None = None  # the part detector could not be loaded
     flow_device: str | None = None  # "CPU", or "OpenCL: <GPU>" (None: no optical flow)
     ai_notice: str | None = None  # the AI was asked for but unreachable, so the run went without it (text of that time)
+    sha256: str = ""  # of the video file (fileid.file_hash); "": saved by an older version
+
+    def same_video(self, video: str | Path) -> bool:
+        """Whether `video` is the file this analysis was made from: the same content wherever it lies now. An
+        analysis without the hash (older) needs the same path, size and modification time."""
+        try:
+            if self.sha256:
+                from funscript_gen.fileid import file_hash
+
+                return file_hash(video) == self.sha256
+            st = Path(video).stat()
+        except OSError:
+            return False
+        return Path(video).resolve() == self.video.resolve() and (st.st_size, st.st_mtime_ns) == self.stat
 
     def serves(self, video: str | Path, key: dict) -> bool:
         """Whether rendering this analysis gives what a full run of `video` with settings `key` would. Without the
         part check, an analysis with part detection still serves (its boxes are just not used)."""
-        try:
-            st = Path(video).stat()
-        except OSError:
-            return False
-        if Path(video).resolve() != self.video.resolve() or (st.st_size, st.st_mtime_ns) != self.stat:
+        if not self.same_video(video):
             return False
         from funscript_gen.options import BY_NAME
 
@@ -905,6 +916,7 @@ def analyze_video(video: str | Path, opts: PipelineOptions | None = None, progre
     """The expensive steps: scene cut, AI plan, optical flow (or skeletons), part detection and the sound's onsets.
     `progress(phase, value)` reports them and may raise to stop."""
     from funscript_gen import devices
+    from funscript_gen.fileid import file_hash
     from funscript_gen.options import analysis_key, values_of
 
     opts = opts or PipelineOptions()
@@ -912,6 +924,7 @@ def analyze_video(video: str | Path, opts: PipelineOptions | None = None, progre
     report = progress or (lambda phase, t: None)
     st = video.stat()
     devices.check(opts)  # a step set to gpu without one: stop before the scene cut
+    digest = file_hash(video)  # before the decoding: it reads the file into the disk cache for it
     ai_notice = None
     if opts.use_ai:
         # Without a server every call would fail after its retries (about 3 s each, three calls per scene) and the
@@ -937,7 +950,7 @@ def analyze_video(video: str | Path, opts: PipelineOptions | None = None, progre
     envelope = onset_envelope(video)
     flow_device = None if opts.mode == "pose" else f"OpenCL: {devices.opencl_gpu()}" if flow_gpu else "CPU"
     return VideoAnalysis(video, analysis_key(values_of(opts)), plans, envelope, (st.st_size, st.st_mtime_ns),
-                         device, error, flow_device, ai_notice)
+                         device, error, flow_device, ai_notice, digest)
 
 
 def ai_unreachable(opts: PipelineOptions) -> str | None:
